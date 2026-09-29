@@ -1,0 +1,59 @@
+name: CI
+
+# todo.md T1-005. Lint + test on every pull request and on pushes to main.
+# No secrets are used or required by this workflow.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    name: lint and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        # The pinned wheels in requirements.txt resolve on Python 3.12-3.14
+        # (numpy 2.5.3 has no cp311 wheel). 3.13 is the CI reference version.
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Format check (ruff format --check)
+        run: ruff format --check .
+
+      - name: Test (pytest with coverage)
+        # BOOTSTRAP: the coverage gate is 0 until the Phase 7 test tasks
+        # (T7-002 ... T7-010) land; pyproject.toml already records the 80%
+        # target. Flip --cov-fail-under to 80 with those tests.
+        #
+        # Exit code 5 means "no tests collected". todo.md T1-004 explicitly
+        # allows a zero-test bootstrap until the Phase 7 tasks exist, so it is
+        # reported as a notice rather than a failure. Any other non-zero exit
+        # (lint error in a test, failed assertion, coverage breach) still fails.
+        run: |
+          set +e
+          python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=0
+          status=$?
+          if [ "$status" -eq 5 ]; then
+            echo "::notice::No tests collected yet (bootstrap). Phase 7 tests are pending."
+          elif [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
