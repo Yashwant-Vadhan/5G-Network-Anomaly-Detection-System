@@ -1,0 +1,18 @@
+# 5G-NADS development dependencies.
+#
+# Exact pins verified with `pip install --dry-run` on Python 3.12, 3.13 and
+# 3.14 (todo.md T1-003). Install into a virtual environment:
+#   python -m venv .venv
+#   source .venv/bin/activate          # POSIX
+#   .venv\Scripts\activate             # Windows (PowerShell / cmd)
+#   pip install -r requirements-dev.txt
+
+-r requirements.txt
+
+pytest==9.1.1
+pytest-cov==7.1.0
+ruff==0.16.9
+pre-commit==4.6.2
+
+# Notebooks are for EDA and model-selection studies only (overview §35).
+jupyter==1.1.1

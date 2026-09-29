@@ -1,0 +1,13 @@
+# 5G-NADS runtime dependencies.
+#
+# Exact pins verified with `pip install --dry-run` on Python 3.12, 3.13 and
+# 3.14 (todo.md T1-003).  numpy 2.5.3 publishes no cp311 wheel, so 3.12 is the
+# effective minimum supported version even though TECH_RULES.md states 3.11+.
+# No LLM or agent-framework package is listed (G13, TECH_RULES Decision Record).
+
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+joblib==1.6.0
+streamlit==1.64.0
+plotly==7.1.0
