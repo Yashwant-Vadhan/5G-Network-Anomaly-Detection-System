@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: block-raw-and-large-files
+        name: block raw data and files over 5 MB
+        entry: python scripts/check_staged_files.py
+        language: system
+        pass_filenames: false
