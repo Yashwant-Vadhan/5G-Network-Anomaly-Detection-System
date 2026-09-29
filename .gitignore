@@ -1,0 +1,52 @@
+# --- Raw, processed and model data: never committed (guardrail G7) ---
+# Only the raw-data checksum manifest and the committed real-data sample are
+# tracked; see todo.md T1-002 and docs/planning/TECH_RULES.md (Data Contracts).
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/README.md
+!data/raw/MANIFEST.sha256
+data/processed/*
+!data/processed/.gitkeep
+models/*
+!models/.gitkeep
+!models/*.meta.example.json
+
+# --- Secrets: none are required for the MVP; any future key uses an env var ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- Android collector (T2-001): no keystores, no local paths ---
+local.properties
+*.keystore
+*.jks
+build/
+.gradle/
+*.apk
+*.aab
+
+# --- Editors / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
