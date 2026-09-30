@@ -130,25 +130,25 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T1-008: Create `ml/schema.py` (validation helpers and exceptions)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Define `SchemaError`, `DataQualityError`, `ConfigError`; `validate_raw_columns(df)` (exact set + reports missing/extra columns); dtype map for C2; `assert_no_pii_columns(df)` rejecting columns like `phone`, `imsi`, `imei`, `latitude`, `longitude` (privacy rule, overview §49). Follow contract C1/C2 in TECH_RULES.
 **Dependencies:** T1-007
 **Acceptance Criteria:**
-- [ ] Missing column → `SchemaError` naming the column
-- [ ] Extra column `latitude` → `SchemaError`
-- [ ] Unit test file `tests/test_schema.py` with ≥3 cases passes
+- [x] Missing column → `SchemaError` naming the column
+- [x] Extra column `latitude` → `SchemaError`
+- [x] Unit test file `tests/test_schema.py` with ≥3 cases passes
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T1-009: Create agent data contracts `agents/contracts.py`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Frozen dataclasses per contract C6: `EventWindow` (pandas DataFrame slice + `event_id`, `session_id`, `start`, `end`, `context_before`, `ml` dict), `SignalReport(signal_condition, evidence)`, `CellReport(cell_event, evidence)`, `NetworkReport(network_state, deployment_mode, evidence)`, `Diagnosis(summary, evidence, confidence_note, anomaly_type)`, `Recommendation(text, kind)` where `kind ∈ {MONITORING, OPERATOR_ACTION}`. Add `to_dict()` for JSON (contract C5). `deployment_mode` validated against `NSA|SA|UNKNOWN`.
 **Dependencies:** T1-007
 **Acceptance Criteria:**
-- [ ] All dataclasses import and serialise to JSON
-- [ ] `deployment_mode='FOO'` raises `ValueError`
-- [ ] Docstrings reference overview §28
+- [x] All dataclasses import and serialise to JSON
+- [x] `deployment_mode='FOO'` raises `ValueError`
+- [x] Docstrings reference overview §28
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil
