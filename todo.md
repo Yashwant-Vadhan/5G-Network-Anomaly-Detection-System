@@ -322,13 +322,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T2-013: Create committed real-data sample `data/sample/`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Extract ≥60 consecutive rows from the Redmi stationary or movement CSV (prefer a stretch containing a PCI/NCI change if one exists) into `data/sample/sample_measurements.csv` — unmodified rows, same header. Add `data/sample/README.md` stating source file, row range, and that it is real data. Used by tests, CI and the demo.
 **Dependencies:** T2-005
 **Acceptance Criteria:**
-- [ ] File has ≥60 rows and header per C1
-- [ ] README states provenance
-- [ ] File size < 100 KB
+- [x] File has ≥60 rows and header per C1
+- [x] README states provenance
+- [x] File size < 100 KB
 **Estimated Effort:** 30 min
 **Assigned To:** Data collection
 **Owner:** Yashwant
