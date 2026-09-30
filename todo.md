@@ -334,13 +334,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-014: Create synthetic edge-case fixture (clearly labelled)
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/fixtures/edge_cases_synthetic.csv` (C1 header) covering: `NA` and `2147483647` in ss_/csi_ columns, unsorted rows, duplicate timestamp, >30 s gap, `UNKNOWN` and `NSA` deployment modes, an LTE-only stretch, all-`NA` CSI for one device, PCI change without signal change, low RSRP without PCI change. Add `tests/fixtures/README.md` explaining each row group. Filename suffix `_synthetic.csv` is what makes preprocessing set `is_synthetic=True` (G12).
 **Dependencies:** T1-007
 **Acceptance Criteria:**
-- [ ] Each edge case above has at least one row
-- [ ] README maps row ranges to cases
-- [ ] Filename ends `_synthetic.csv`
+- [x] Each edge case above has at least one row
+- [x] README maps row ranges to cases
+- [x] Filename ends `_synthetic.csv`
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Yashwant
