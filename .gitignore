@@ -4,6 +4,7 @@
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/README.md
+!data/raw/meta.template.json
 !data/raw/MANIFEST.sha256
 data/processed/*
 !data/processed/.gitkeep
