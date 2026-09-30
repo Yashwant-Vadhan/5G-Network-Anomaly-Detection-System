@@ -243,12 +243,12 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-006: Collect Redmi data — Scenario B (indoor movement)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Walk through different parts of a building, ≥200 samples. Note environment in `.meta.json`.
 **Dependencies:** T2-005
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] Meta file lists indoor movement route as a coarse label only
+- [x] ≥200 rows
+- [x] Meta file lists indoor movement route as a coarse label only
 **Estimated Effort:** 30 min
 **Assigned To:** Data collection
 **Owner:** Yashwant
