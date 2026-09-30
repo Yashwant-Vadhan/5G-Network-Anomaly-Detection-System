@@ -47,84 +47,84 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Reproducible dev environment, folder structure, shared config, data contracts, CI skeleton*
 
 #### T1-001: Create repository skeleton
-**Status:** ⬜
+**Status:** ✅
 **Description:** Create the directory tree from `docs/planning/TECH_RULES.md` (Folder Structure): `android-collector/`, `data/{raw,processed,sample}/`, `ml/`, `agents/`, `pipelines/`, `dashboard/pages/`, `models/`, `notebooks/`, `scripts/`, `docs/planning/`, `tests/fixtures/`, `.github/workflows/`. Add empty `__init__.py` in `ml/`, `agents/`, `pipelines/`, `dashboard/` and `.gitkeep` in otherwise-empty folders.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] All folders from TECH_RULES exist and are tracked by git
-- [ ] `python -c "import ml, agents, pipelines"` succeeds from repo root
-- [ ] No data files committed
+- [x] All folders from TECH_RULES exist and are tracked by git
+- [x] `python -c "import ml, agents, pipelines"` succeeds from repo root
+- [x] No data files committed
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T1-002: Add .gitignore, .env.example and README skeleton
-**Status:** ⬜
+**Status:** ✅
 **Description:** `.gitignore`: `data/raw/*`, `data/processed/*`, `models/*` (keep `!data/raw/README.md`, `!data/raw/MANIFEST.sha256`, `!data/sample/`, `!models/*.meta.example.json`), `.env`, `__pycache__/`, `.ipynb_checkpoints/`, Android `local.properties`, `*.keystore`, `*.jks`, `build/`. `.env.example` with `NADS_USE_LLM=false` and `OLLAMA_URL=http://localhost:11434` (placeholders only). `README.md` skeleton: title, one-line description (overview §60), status table (one row per PRD Must-Have, all ⬜), Non-Claims section (overview §53).
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] `git status` shows no data/model/secret files after creating dummy ones in ignored paths
-- [ ] README contains the status table and the Non-Claims list
-- [ ] `.env.example` contains no real values
+- [x] `git status` shows no data/model/secret files after creating dummy ones in ignored paths
+- [x] README contains the status table and the Non-Claims list
+- [x] `.env.example` contains no real values
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T1-003: Create pinned requirements files
-**Status:** ⬜
+**Status:** ✅
 **Description:** `requirements.txt`: pandas, numpy, scikit-learn, joblib, streamlit, plotly, pyyaml (only if used). `requirements-dev.txt`: `-r requirements.txt`, pytest, pytest-cov, ruff, pre-commit, jupyter. Pin exact versions after a clean install on the team's Python (3.11+ recommended). Document the venv setup in README (`python -m venv .venv`).
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] Fresh venv + `pip install -r requirements-dev.txt` succeeds on both teammates' machines
-- [ ] Versions are pinned (`==`)
-- [ ] No LLM/agent-framework package is listed
+- [x] Fresh venv + `pip install -r requirements-dev.txt` succeeds on both teammates' machines
+- [x] Versions are pinned (`==`)
+- [x] No LLM/agent-framework package is listed
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T1-004: Configure ruff, pytest, coverage and pre-commit
-**Status:** ⬜
+**Status:** ✅
 **Description:** `pyproject.toml`: ruff (line length 100, rules E,F,I,B,UP,N), pytest (`testpaths=["tests"]`), coverage source `ml`,`agents` with `fail_under=80` (proposed target). `.pre-commit-config.yaml`: ruff + ruff-format + a check that blocks committing files under `data/raw/` (except README/MANIFEST) and files > 5 MB.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] `ruff check .` and `pytest` run (pytest may report 0 tests)
-- [ ] `pre-commit run --all-files` passes
-- [ ] Adding a CSV to `data/raw/` and committing is blocked by the hook
+- [x] `ruff check .` and `pytest` run (pytest may report 0 tests)
+- [x] `pre-commit run --all-files` passes
+- [x] Adding a CSV to `data/raw/` and committing is blocked by the hook
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T1-005: Add GitHub Actions CI
-**Status:** ⬜
+**Status:** ✅
 **Description:** `.github/workflows/ci.yml`: trigger on pull_request and push to main; steps: checkout, setup-python (same version as pinned), `pip install -r requirements-dev.txt`, `ruff check .`, `ruff format --check .`, `pytest --cov --cov-fail-under=80` (allow zero-test bootstrap via a marker until T7 tasks land — document in file comment). Cache pip.
 **Dependencies:** T1-003, T1-004
 **Acceptance Criteria:**
-- [ ] CI runs green on a trivial PR
-- [ ] CI fails when a lint error is introduced
-- [ ] Workflow file has no secrets
+- [x] CI runs green on a trivial PR
+- [x] CI fails when a lint error is introduced
+- [x] Workflow file has no secrets
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T1-006: Add overview and planning docs to repo
-**Status:** ⬜
+**Status:** ✅
 **Description:** Copy `project-overview.md` to repo root and `PRD.md`, `DESIGN.md`, `TECH_RULES.md`, `ROADMAP.md` to `docs/planning/`. Copy this `todo.md` to repo root. Link all from README.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] All six files present at the paths above
-- [ ] README links resolve
+- [x] All six files present at the paths above
+- [x] README links resolve
 **Estimated Effort:** 15 min
 **Assigned To:** Docs
 **Owner:** Yashwant
 
 #### T1-007: Create shared config module `ml/config.py`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Constants only, each with an origin comment: `RAW_COLUMNS` (18, overview §11), `NA_TOKENS=["NA"]`, `SENTINEL_INTS=[2147483647]` (extend after EDA), `SAMPLING_SECONDS=3`, `WINDOW_SIZES=[5,10,20]`, `DEFAULT_WINDOW=10` (placeholder until T4-010), `SESSION_GAP_SECONDS` (placeholder ⚠️ UNCLEAR, set in T3-012), `RANDOM_STATE=42`, enum lists for anomaly types / severity / deployment mode, `FEATURE_COLUMNS` (initial list from overview §22, finalised in T4-005), path constants. No thresholds without an origin comment.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] Module imports without side effects
-- [ ] Every constant has a comment stating its origin or that it is a placeholder
-- [ ] `RAW_COLUMNS` matches overview §11 exactly and in order
+- [x] Module imports without side effects
+- [x] Every constant has a comment stating its origin or that it is a placeholder
+- [x] `RAW_COLUMNS` matches overview §11 exactly and in order
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
@@ -154,25 +154,25 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T1-010: Add CONTRIBUTING.md and PR template
-**Status:** ⬜
+**Status:** ✅
 **Description:** `CONTRIBUTING.md`: setup, branch naming `feat/<owner>/<task-id>-<slug>`, Conventional Commits with task ID, review rule (the other teammate reviews), how to claim a task (change status in `todo.md`), guardrails summary G1–G16 (link to TECH_RULES), AI-agent rules. `.github/pull_request_template.md` with checklist: task ID, acceptance criteria ticked, tests added, guardrails checked, `todo.md` status updated, README status changed only if tests pass.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] Both files exist
-- [ ] PR template appears when opening a PR
-- [ ] CONTRIBUTING lists both owners' branch prefixes
+- [x] Both files exist
+- [x] PR template appears when opening a PR
+- [x] CONTRIBUTING lists both owners' branch prefixes
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Yashwant
 
 #### T1-011: Add Makefile with standard targets
-**Status:** ⬜
+**Status:** ✅
 **Description:** Targets: `setup`, `lint`, `format`, `test`, `preprocess`, `pipeline`, `dashboard` (binds `127.0.0.1`), `clean-processed` (only touches `data/processed/`, never `data/raw/`). Each target echoes what it runs.
 **Dependencies:** T1-003
 **Acceptance Criteria:**
-- [ ] `make lint` and `make test` work
-- [ ] `make clean-processed` cannot delete anything in `data/raw/` (verified by test on a temp dir or by reading the recipe)
-- [ ] `make help` lists targets
+- [x] `make lint` and `make test` work
+- [x] `make clean-processed` cannot delete anything in `data/raw/` (verified by test on a temp dir or by reading the recipe)
+- [x] `make help` lists targets
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
@@ -183,13 +183,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Real multi-device NR dataset collected, checksummed, documented; test fixtures ready (replaces the generic Database phase — this project stores files, not a DB)*
 
 #### T2-001: Import Android collector project into repo
-**Status:** ⬜
+**Status:** ✅
 **Description:** Copy the existing 5G Network Tester project into `android-collector/5GNetworkTester/`. Remove `local.properties`, keystores, signing configs, build outputs. Add `android-collector/README.md`: package `com.example.a5gnetworktester`, how to build/install, permissions required, output CSV location. Do **not** modify collector logic in this task (it is already implemented).
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] No secrets/keystores in the folder (`git grep -iE "password|keystore"` clean)
-- [ ] README states the collector does no ML (overview §9)
-- [ ] Project opens in Android Studio
+- [x] No secrets/keystores in the folder (`git grep -iE "password|keystore"` clean)
+- [x] README states the collector does no ML (overview §9)
+- [x] Project opens in Android Studio
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
