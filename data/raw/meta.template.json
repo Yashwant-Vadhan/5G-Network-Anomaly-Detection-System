@@ -1,0 +1,9 @@
+{
+  "device": "redmi|samsung|oneplus",
+  "operator": "airtel|jio|vodafone",
+  "scenario": "scenarioA|scenarioB|scenarioC|scenarioD|scenarioE|scenarioF",
+  "environment": "indoor|outdoor",
+  "coarse_location_label": "campus_outdoor_zone1",
+  "collector_commit": "git-sha-or-version",
+  "notes": "Record any environment observations or known NA columns here (e.g. CSI always NA on Samsung)."
+}

@@ -16,7 +16,11 @@ import sys
 from pathlib import Path
 
 RAW_PREFIX = "data/raw/"
-RAW_ALLOWED = {"data/raw/README.md", "data/raw/MANIFEST.sha256"}
+RAW_ALLOWED = {
+    "data/raw/README.md",
+    "data/raw/meta.template.json",
+    "data/raw/MANIFEST.sha256",
+}
 MAX_SIZE_BYTES = 5 * 1024 * 1024
 
 

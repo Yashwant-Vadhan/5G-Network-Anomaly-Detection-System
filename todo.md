@@ -207,25 +207,25 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-003: Define raw-data naming convention and metadata template
-**Status:** ⬜
+**Status:** ✅
 **Description:** `data/raw/README.md`: filename `<device>_<operator>_<scenario>_<YYYYMMDD>_<HHMM>.csv` (scenarios A–F from overview §41), never edit/rename after manifesting, backup location note. Add `data/raw/meta.template.json`: `device, operator, scenario, environment (indoor|outdoor), coarse_location_label, collector_commit, notes` — **no GPS, no phone number**.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] README and template exist
-- [ ] Template contains no personal or precise-location fields
-- [ ] Naming examples match overview §10 devices
+- [x] README and template exist
+- [x] Template contains no personal or precise-location fields
+- [x] Naming examples match overview §10 devices
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Sushil
 
 #### T2-004: Write `scripts/make_manifest.py` (checksum manifest + verify)
-**Status:** ⬜
+**Status:** ✅
 **Description:** CLI: `python scripts/make_manifest.py data/raw` writes `data/raw/MANIFEST.sha256` (`<sha256>  <filename>` per CSV, sorted); `--verify` recomputes and exits non-zero on any mismatch or missing file, printing which. Uses only stdlib.
 **Dependencies:** T2-003
 **Acceptance Criteria:**
-- [ ] Manifest generated for a temp folder with 2 CSVs
-- [ ] Editing one byte then `--verify` exits 1 and names the file
-- [ ] Unit test added in `tests/test_manifest.py`
+- [x] Manifest generated for a temp folder with 2 CSVs
+- [x] Editing one byte then `--verify` exits 1 and names the file
+- [x] Unit test added in `tests/test_manifest.py`
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
@@ -346,12 +346,12 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-015: Record key project decisions in `docs/decisions.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Short ADR-style entries: (1) agents are deterministic Python, LLM optional/off (link TECH_RULES Decision Record); (2) Isolation Forest chosen as initial unsupervised baseline, not claimed best; (3) iPhone/iOS out of MVP; (4) no precise location stored; (5) files instead of a database; (6) local single-user tool so auth/rate-limit/HTTPS are N/A.
 **Dependencies:** T1-001
 **Acceptance Criteria:**
-- [ ] Six decisions recorded with date and rationale
-- [ ] Linked from README
+- [x] Six decisions recorded with date and rationale
+- [x] Linked from README
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Sushil
