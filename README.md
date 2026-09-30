@@ -94,6 +94,7 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`todo.md`](./todo.md) | Full task list with ownership, dependencies, and acceptance criteria |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, branch/commit conventions, task claiming, guardrail checklist for contributors and AI agents |
 | [`docs/eda_findings.md`](docs/eda_findings.md) | Collector verification results, EDA observations, and answers to open questions |
+| [`docs/decisions.md`](docs/decisions.md) | Architectural Decision Records (ADRs) covering agents, ML baseline, privacy, and storage |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims
