@@ -8,8 +8,8 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 
 | Component | Status |
 |---|---|
-| Android NR measurement collector | ✅ Implemented |
-| Real-device dataset collection | 🔄 In progress |
+| Android NR measurement collector | ✅ Implemented and verified against C1 |
+| Real-device dataset collection | 🔄 In progress (Redmi: 2505 samples collected; Samsung: pending) |
 | Data preprocessing pipeline | ⬜ Not started |
 | Feature engineering | ⬜ Not started |
 | Anomaly detection (baseline z-score + Isolation Forest) | ⬜ Not started |
@@ -93,6 +93,8 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/planning/ROADMAP.md`](docs/planning/ROADMAP.md) | Milestones, effort estimates, risk register |
 | [`todo.md`](./todo.md) | Full task list with ownership, dependencies, and acceptance criteria |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, branch/commit conventions, task claiming, guardrail checklist for contributors and AI agents |
+| [`docs/eda_findings.md`](docs/eda_findings.md) | Collector verification results, EDA observations, and answers to open questions |
+| [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims
 

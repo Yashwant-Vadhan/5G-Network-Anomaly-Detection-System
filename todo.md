@@ -195,13 +195,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-002: Verify collector CSV against contract C1 and document behaviour
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Run the app on the Redmi, export a short CSV, compare the header with C1 in TECH_RULES. Create `data/README.md` listing: collector version/commit, exact header, how `NA` and sentinels appear, observed `deployment_mode` values, timestamp format observed (**answers Open Question 1**), sampling interval observed.
 **Dependencies:** T2-001
 **Acceptance Criteria:**
-- [ ] Header matches C1 exactly
-- [ ] `data/README.md` records timestamp format and sentinel behaviour
-- [ ] Any mismatch is filed as a note in `docs/eda_findings.md` stub
+- [x] Header matches C1 exactly
+- [x] `data/README.md` records timestamp format and sentinel behaviour
+- [x] Any mismatch is filed as a note in `docs/eda_findings.md` stub
 **Estimated Effort:** 30 min
 **Assigned To:** QA
 **Owner:** Yashwant
@@ -231,13 +231,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T2-005: Collect Redmi data — Scenario A (stationary)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Redmi 13 5G (Airtel), phone stationary, ≥200 samples (~10 min at 3 s). Copy CSV to `data/raw/` using the naming convention and fill the `.meta.json`. Do not edit the CSV.
 **Dependencies:** T2-002, T2-003
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] File named per convention with matching `.meta.json`
-- [ ] Header matches C1
+- [x] ≥200 rows (1255 samples collected)
+- [x] File named per convention with matching `.meta.json`
+- [x] Header matches C1
 **Estimated Effort:** 30 min
 **Assigned To:** Data collection
 **Owner:** Yashwant
@@ -254,13 +254,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-007: Collect Redmi data — Scenario C (outdoor movement)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Move through an outdoor area, ≥200 samples; ideally cross at least one cell boundary (do not force it — observe naturally, overview §42).
 **Dependencies:** T2-005
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] Meta file complete
-- [ ] No location trace stored
+- [x] ≥200 rows (1250 samples collected)
+- [x] Meta file complete
+- [x] No location trace stored
 **Estimated Effort:** 45 min
 **Assigned To:** Data collection
 **Owner:** Yashwant
