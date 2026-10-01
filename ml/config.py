@@ -113,6 +113,9 @@ PERSIST_THRESHOLDS: dict[str, float] = {
 # Origin: `project-overview.md` §23 — threshold for rolling z-score baseline
 BASELINE_Z_THRESHOLD: float = 2.5
 
+# Origin: `notebooks/model_selection.ipynb` (todo.md T4-010) — default contamination rate
+IF_CONTAMINATION: float = 0.05
+
 # --- Model features (contract C3) ---------------------------------------------
 # Origin: `project-overview.md` §22, in the order given there. PLACEHOLDER:
 # "the final feature set must be determined after exploratory analysis" (§22);

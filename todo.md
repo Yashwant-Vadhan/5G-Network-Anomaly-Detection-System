@@ -619,13 +619,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-010: Sensitivity study: window size and contamination
-**Status:** ⬜
+**Status:** ✅
 **Description:** Notebook `notebooks/model_selection.ipynb`: run windows 5/10/20 and a few contamination values; report flagged fraction, score distributions, stability across seeds, and overlap between baseline and IF flags. No labels are used here — do not report accuracy. Choose defaults and update `ml/config.py`.
 **Dependencies:** T4-009, T4-007
 **Acceptance Criteria:**
-- [ ] Table of settings vs flagged fraction and seed stability
-- [ ] Chosen defaults justified in 3–5 sentences
-- [ ] Config updated
+- [x] Table of settings vs flagged fraction and seed stability
+- [x] Chosen defaults justified in 3–5 sentences
+- [x] Config updated
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
