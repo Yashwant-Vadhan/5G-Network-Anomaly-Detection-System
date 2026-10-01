@@ -494,13 +494,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T3-012: Write `docs/eda_findings.md` and resolve open questions
-**Status:** ⬜
+**Status:** ✅
 **Description:** Answer PRD Open Questions 1–4 with evidence: timestamp format, full sentinel list (then update `ml/config.py`), `SESSION_GAP_SECONDS`, candidate window sizes, shortlist of features with rationale, and list of documented assumptions (G10). Update `ml/config.py` placeholders in the same PR.
 **Dependencies:** T3-009, T3-010, T3-011
 **Acceptance Criteria:**
-- [ ] Each open question has an answer or an explicit 'still open' with reason
-- [ ] `ml/config.py` placeholders replaced or marked
-- [ ] Assumptions section present
+- [x] Each open question has an answer or an explicit 'still open' with reason
+- [x] `ml/config.py` placeholders replaced or marked
+- [x] Assumptions section present
 **Estimated Effort:** 45 min
 **Assigned To:** Docs
 **Owner:** Yashwant
