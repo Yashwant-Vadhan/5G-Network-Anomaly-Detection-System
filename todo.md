@@ -523,13 +523,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-002: Implement change indicators
-**Status:** ⬜
+**Status:** ✅
 **Description:** `add_change_flags(df)`: `pci_changed`, `nci_changed`, `network_changed` = 1 if current ≠ previous within session, else 0; first sample of session = 0; if either value missing → 0 and increment a `change_flag_unknown` count (logged, not a feature).
 **Dependencies:** T3-008
 **Acceptance Criteria:**
-- [ ] PCI 336→336→565 gives 0,0,1
-- [ ] Session start gives 0
-- [ ] Missing PCI does not create a change
+- [x] PCI 336→336→565 gives 0,0,1
+- [x] Session start gives 0
+- [x] Missing PCI does not create a change
 **Estimated Effort:** 30 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
