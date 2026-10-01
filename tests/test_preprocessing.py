@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from ml.config import RAW_COLUMNS
-from ml.preprocessing import coerce_numeric, load_raw_csv, load_raw_dir, parse_timestamps
+from ml.preprocessing import coerce_numeric, flag_invalid, load_raw_csv, load_raw_dir, parse_timestamps
 from ml.schema import DataQualityError, SchemaError
 
 
@@ -127,3 +127,23 @@ def test_coerce_numeric_sentinels_na_and_precision():
     assert coerced.loc[0, "registered"] is True or coerced.loc[0, "registered"] == True
     assert coerced.loc[1, "registered"] is False or coerced.loc[1, "registered"] == False
     assert pd.isna(coerced.loc[2, "registered"])
+
+
+def test_flag_invalid():
+    """Test flag_invalid marks out-of-bounds metrics invalid while keeping missing values valid."""
+    data = {
+        "ss_rsrp": [-85.0, -150.0, np.nan, -85.0],  # -150 is out of bounds (< -140)
+        "ss_rsrq": [-11.0, -11.0, np.nan, 30.0],    # 30 is out of bounds (> 20)
+        "ss_sinr": [18.0, 18.0, np.nan, 18.0],
+    }
+    df = pd.DataFrame(data)
+    flagged = flag_invalid(df)
+
+    # Row 0: valid (-85, -11, 18)
+    assert flagged.loc[0, "is_valid"] == True
+    # Row 1: invalid because ss_rsrp = -150
+    assert flagged.loc[1, "is_valid"] == False
+    # Row 2: valid because missing values do NOT trigger invalid
+    assert flagged.loc[2, "is_valid"] == True
+    # Row 3: invalid because ss_rsrq = 30
+    assert flagged.loc[3, "is_valid"] == False

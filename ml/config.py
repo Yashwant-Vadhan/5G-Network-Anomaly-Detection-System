@@ -62,6 +62,21 @@ DEFAULT_WINDOW: int = 10
 # distribution (T3-010).
 SESSION_GAP_SECONDS: int = 30
 
+# --- Plausible metric ranges for validity checking ----------------------------
+# Origin: Android official API documentation for CellSignalStrengthNr
+# https://developer.android.com/reference/android/telephony/CellSignalStrengthNr
+# SS-RSRP / CSI-RSRP valid range: [-140, -44] dBm
+# SS-RSRQ / CSI-RSRQ valid range: [-43, 20] dB
+# SS-SINR / CSI-SINR valid range: [-23, 40] dB
+VALID_RANGES: dict[str, tuple[float, float]] = {
+    "ss_rsrp": (-140.0, -44.0),
+    "ss_rsrq": (-43.0, 20.0),
+    "ss_sinr": (-23.0, 40.0),
+    "csi_rsrp": (-140.0, -44.0),
+    "csi_rsrq": (-43.0, 20.0),
+    "csi_sinr": (-23.0, 40.0),
+}
+
 # --- Reproducibility ----------------------------------------------------------
 # Documented assumption, not a measured value: a fixed seed is required by the
 # PRD (Success Metrics → Reproducibility) and TECH_RULES (Determinism), but no

@@ -398,13 +398,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T3-004: Implement plausible-range validity flag
-**Status:** ⬜
+**Status:** ✅
 **Description:** `flag_invalid(df)`: add `is_valid` (False when a non-missing metric is outside a plausible range). Ranges defined in `ml/config.py` as `VALID_RANGES` with origin comment. ⚠️ UNCLEAR: exact bounds — start from the Android `CellSignalStrengthNr` documented ranges for SS-RSRP/RSRQ/SINR *after verifying them in the current Android docs*, record the source URL in the comment. Rows are flagged, then removed only in the final processed output with counts logged.
 **Dependencies:** T3-003
 **Acceptance Criteria:**
-- [ ] Out-of-range values in fixture flagged
-- [ ] Missing values do NOT make a row invalid
-- [ ] Bounds have a documented source
+- [x] Out-of-range values in fixture flagged
+- [x] Missing values do NOT make a row invalid
+- [x] Bounds have a documented source
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant

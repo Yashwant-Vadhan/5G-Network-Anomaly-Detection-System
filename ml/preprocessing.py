@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ml.config import NA_TOKENS, SENTINEL_INTS
+from ml.config import NA_TOKENS, SENTINEL_INTS, VALID_RANGES
 from ml.schema import DataQualityError, SchemaError, assert_no_pii_columns, validate_raw_columns
 
 
@@ -150,4 +150,29 @@ def coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
         bool_map = {"true": True, "1": True, "false": False, "0": False}
         df["registered"] = series.map(bool_map).astype("boolean")
 
+    return df
+
+
+def flag_invalid(df: pd.DataFrame) -> pd.DataFrame:
+    """Flag rows containing non-missing signal metric values that fall outside plausible ranges.
+
+    Ranges are defined in ml.config.VALID_RANGES based on official Android CellSignalStrengthNr API bounds.
+    Missing values (NaN/pd.NA) do NOT trigger an invalid flag (is_valid remains True).
+
+    Args:
+        df: Input DataFrame with numeric signal metric columns.
+
+    Returns:
+        DataFrame with an added boolean 'is_valid' column.
+    """
+    df = df.copy()
+    is_valid_mask = pd.Series(True, index=df.index, dtype="boolean")
+
+    for col, (min_val, max_val) in VALID_RANGES.items():
+        if col in df.columns:
+            series = df[col]
+            out_of_bounds = series.notna() & ((series < min_val) | (series > max_val))
+            is_valid_mask = is_valid_mask & (~out_of_bounds)
+
+    df["is_valid"] = is_valid_mask
     return df
