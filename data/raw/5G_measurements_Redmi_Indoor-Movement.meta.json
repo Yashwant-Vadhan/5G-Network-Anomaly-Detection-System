@@ -1,0 +1,12 @@
+{
+  "device": "Redmi 13 5G (2406ERN9CI)",
+  "manufacturer": "Xiaomi",
+  "android_version": 16,
+  "operator": "Airtel",
+  "scenario": "B_indoor_movement",
+  "environment": "indoor",
+  "coarse_location_label": "building_indoor_movement",
+  "sample_count": 1255,
+  "collector_version": "com.example.a5gnetworktester v1.0",
+  "notes": "Redmi indoor movement measurement dataset (1255 samples at 3s polling interval)"
+}
