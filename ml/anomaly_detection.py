@@ -146,10 +146,10 @@ def if_scores(
 
     if valid_mask.any():
         valid_df = df.loc[valid_mask]
-        scaled_X = transform_features(valid_df, scaler, feature_cols=feature_cols)
+        scaled_x = transform_features(valid_df, scaler, feature_cols=feature_cols)
 
         # IsolationForest score_samples: lower values indicate higher anomaly degree
-        raw_scores = model.score_samples(scaled_X)
+        raw_scores = model.score_samples(scaled_x)
 
         # Normalise to [0.0, 1.0] where higher = more anomalous
         # Standard IF score_samples ranges around -0.5 for boundary, -0.7..-0.9 for anomalies

@@ -80,7 +80,7 @@ def train_iforest(
         raise ValueError("No valid eligible samples available to train IsolationForest.")
 
     # Scale training features
-    scaled_train_X = scaler.transform(train_df.values)
+    scaled_train_x = scaler.transform(train_df.values)
 
     # Fit IsolationForest model
     model = IsolationForest(
@@ -89,7 +89,7 @@ def train_iforest(
         random_state=RANDOM_STATE,
         n_jobs=-1,
     )
-    model.fit(scaled_train_X)
+    model.fit(scaled_train_x)
 
     # File paths
     model_path = out_dir_path / "if_v1.joblib"

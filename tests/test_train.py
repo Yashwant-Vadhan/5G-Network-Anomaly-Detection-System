@@ -45,9 +45,9 @@ def test_train_iforest_reproducibility(dummy_feature_df: pd.DataFrame, tmp_path:
     model1, _, _ = train_iforest(dummy_feature_df, out_dir=tmp_path / "run1")
     model2, _, _ = train_iforest(dummy_feature_df, out_dir=tmp_path / "run2")
 
-    test_X = dummy_feature_df[FEATURE_COLUMNS].values
-    scores1 = model1.score_samples(test_X)
-    scores2 = model2.score_samples(test_X)
+    test_x = dummy_feature_df[FEATURE_COLUMNS].values
+    scores1 = model1.score_samples(test_x)
+    scores2 = model2.score_samples(test_x)
 
     np.testing.assert_array_almost_equal(scores1, scores2)
 
