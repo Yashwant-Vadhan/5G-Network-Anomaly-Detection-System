@@ -631,13 +631,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-011: Classification rules — signal degradation and sudden degradation
-**Status:** ⬜
+**Status:** ✅
 **Description:** `ml/anomaly_analysis.py`: `is_signal_degradation(window)` (RSRP, RSRQ, SINR all trending down over a meaningful window per overview §17.1) and `is_sudden_degradation(window)` (large drop within a few samples, e.g., SINR +4→−10 per §17.2). Thresholds from config with EDA origin.
 **Dependencies:** T4-005
 **Acceptance Criteria:**
-- [ ] Overview §17.2 SINR sequence detected as sudden
-- [ ] Slow noisy fluctuation not detected
-- [ ] Low RSRP alone → False (G5)
+- [x] Overview §17.2 SINR sequence detected as sudden
+- [x] Slow noisy fluctuation not detected
+- [x] Low RSRP alone → False (G5)
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
