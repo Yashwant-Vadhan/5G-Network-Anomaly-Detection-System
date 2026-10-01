@@ -4,7 +4,7 @@ Implements rules for:
 - SIGNAL_DEGRADATION (steady downward trend in RSRP/RSRQ/SINR)
 - SUDDEN_SIGNAL_DEGRADATION (sharp drop within 1-3 samples)
 - PERSISTENT_POOR_QUALITY (extended run of poor signal metrics)
-- COMBINED_ANOMALY (cell change + signal degradation + persistence)
+- COMBINED_ANOMALY (cell transition + degradation + persistence)
 - Anomaly precedence logic per project-overview.md §17, §47.
 """
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import pandas as pd
 
-from ml.config import PERSIST_THRESHOLDS
+from ml.config import ANOMALY_TYPES, PERSIST_THRESHOLDS
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,6 @@ def is_signal_degradation(window_df: pd.DataFrame, min_drop_rsrp: float = 8.0) -
         return False
 
     rsrp = window_df["ss_rsrp"].dropna()
-    rsrq = window_df["ss_rsrq"].dropna()
     sinr = window_df["ss_sinr"].dropna()
 
     if len(rsrp) < 3 or len(sinr) < 3:
@@ -86,3 +85,106 @@ def is_sudden_degradation(window_df: pd.DataFrame, max_samples: int = 3) -> bool
                 return True
 
     return False
+
+
+def is_persistent_poor(window_df: pd.DataFrame, min_run: int = 3) -> bool:
+    """Detect persistent poor quality metric runs.
+
+    Args:
+        window_df: Sliding window DataFrame.
+        min_run: Minimum run length required.
+
+    Returns:
+        True if RSRP, RSRQ, or SINR stay below PERSIST_THRESHOLDS for >= min_run samples.
+    """
+    if window_df.empty:
+        return False
+
+    for col in ["weak_rsrp_run", "poor_rsrq_run", "poor_sinr_run"]:
+        if col in window_df.columns and (window_df[col] >= min_run).any():
+            return True
+
+    # Fallback to direct raw threshold check if run columns absent
+    rsrp = window_df["ss_rsrp"].dropna()
+    if len(rsrp) >= min_run and (rsrp <= PERSIST_THRESHOLDS["weak_rsrp"]).all():
+        return True
+
+    return False
+
+
+def is_cell_transition(window_df: pd.DataFrame) -> bool:
+    """Check if a PCI/NCI change occurs within the window.
+
+    Cell transition alone is an informational event, NOT an anomaly (Guardrail G6).
+    """
+    if "pci_changed" in window_df.columns and (window_df["pci_changed"] == 1).any():
+        return True
+    if "nci_changed" in window_df.columns and (window_df["nci_changed"] == 1).any():
+        return True
+    return False
+
+
+def is_network_transition(window_df: pd.DataFrame) -> bool:
+    """Check if a network state transition (e.g. 5G NR <-> LTE) occurs within the window."""
+    if "network_changed" in window_df.columns and (window_df["network_changed"] == 1).any():
+        return True
+    return False
+
+
+def is_combined_anomaly(window_df: pd.DataFrame) -> bool:
+    """Detect combined anomaly: cell transition + signal degradation + persistence.
+
+    Origin: project-overview.md §17.6, §47.
+    """
+    has_cell = is_cell_transition(window_df) or is_network_transition(window_df)
+    has_deg = is_signal_degradation(window_df) or is_sudden_degradation(window_df)
+    has_pers = is_persistent_poor(window_df)
+
+    return has_cell and (has_deg or has_pers)
+
+
+def classify_sample(window_df: pd.DataFrame, is_ml_anomaly: bool = False) -> str:
+    """Classify anomaly type per window adhering to strict precedence order.
+
+    Precedence Order:
+    1. COMBINED_ANOMALY
+    2. PERSISTENT_POOR_QUALITY
+    3. SUDDEN_SIGNAL_DEGRADATION
+    4. SIGNAL_DEGRADATION
+    5. NETWORK_STATE_TRANSITION
+    6. CELL_TRANSITION
+    7. STATISTICAL_ONLY (if ML flagged but no rule evidence)
+    8. NORMAL
+
+    Args:
+        window_df: Sliding window DataFrame ending at current sample.
+        is_ml_anomaly: Boolean flag indicating if ML baseline/IF model flagged the sample.
+
+    Returns:
+        One of ANOMALY_TYPES standard strings.
+    """
+    if window_df.empty:
+        return "NORMAL"
+
+    if is_combined_anomaly(window_df):
+        return "COMBINED_ANOMALY"
+
+    if is_persistent_poor(window_df):
+        return "PERSISTENT_POOR_QUALITY"
+
+    if is_sudden_degradation(window_df):
+        return "SUDDEN_SIGNAL_DEGRADATION"
+
+    if is_signal_degradation(window_df):
+        return "SIGNAL_DEGRADATION"
+
+    if is_network_transition(window_df):
+        return "NETWORK_STATE_TRANSITION"
+
+    if is_cell_transition(window_df):
+        return "CELL_TRANSITION"
+
+    if is_ml_anomaly:
+        return "STATISTICAL_ONLY"
+
+    return "NORMAL"
