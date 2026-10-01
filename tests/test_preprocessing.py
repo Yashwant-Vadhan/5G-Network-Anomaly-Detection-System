@@ -39,7 +39,9 @@ def test_load_raw_csv_valid(tmp_path: Path):
 def test_load_raw_csv_bad_header(tmp_path: Path):
     """Test that bad header causes SchemaError."""
     csv_file = tmp_path / "bad_header.csv"
-    csv_file.write_text("timestamp,device,operator\n2026-09-28T10:00:00Z,Redmi,Airtel\n", encoding="utf-8")
+    csv_file.write_text(
+        "timestamp,device,operator\n2026-09-28T10:00:00Z,Redmi,Airtel\n", encoding="utf-8"
+    )
 
     with pytest.raises(SchemaError):
         load_raw_csv(csv_file)
@@ -80,7 +82,7 @@ def test_parse_timestamps_sorting_and_duplicates():
             "2026-09-28T10:00:09Z",  # earlier timestamp
             "2026-09-28T10:00:20Z",  # duplicate 1
             "2026-09-28T10:00:20Z",  # duplicate 2
-            "NOT_A_TIMESTAMP",       # invalid
+            "NOT_A_TIMESTAMP",  # invalid
         ],
         "device": ["Redmi 13 5G"] * 5,
         "val": [1, 2, 3, 4, 5],
@@ -130,12 +132,12 @@ def test_coerce_numeric_sentinels_na_and_precision():
 
     # Assert missing != 0 (Guardrail G2 & G3)
     assert coerced.loc[1, "ss_rsrp"] != 0.0 or np.isnan(coerced.loc[1, "ss_rsrp"])
-    assert coerced.loc[1, "ss_rsrp"] is not 0
+    assert coerced.loc[1, "ss_rsrp"] != 0
     assert not (coerced.loc[1, "ss_rsrp"] == 0)
 
     # Check boolean registered conversion
-    assert coerced.loc[0, "registered"] is True or coerced.loc[0, "registered"] == True
-    assert coerced.loc[1, "registered"] is False or coerced.loc[1, "registered"] == False
+    assert coerced.loc[0, "registered"] is True or coerced.loc[0, "registered"]
+    assert coerced.loc[1, "registered"] is False or not coerced.loc[1, "registered"]
     assert pd.isna(coerced.loc[2, "registered"])
 
 
@@ -143,16 +145,16 @@ def test_flag_invalid():
     """Test flag_invalid marks out-of-bounds metrics invalid while keeping missing values valid."""
     data = {
         "ss_rsrp": [-85.0, -150.0, np.nan, -85.0],  # -150 is out of bounds (< -140)
-        "ss_rsrq": [-11.0, -11.0, np.nan, 30.0],    # 30 is out of bounds (> 20)
+        "ss_rsrq": [-11.0, -11.0, np.nan, 30.0],  # 30 is out of bounds (> 20)
         "ss_sinr": [18.0, 18.0, np.nan, 18.0],
     }
     df = pd.DataFrame(data)
     flagged = flag_invalid(df)
 
-    assert flagged.loc[0, "is_valid"] == True
-    assert flagged.loc[1, "is_valid"] == False
-    assert flagged.loc[2, "is_valid"] == True
-    assert flagged.loc[3, "is_valid"] == False
+    assert flagged.loc[0, "is_valid"]
+    assert not flagged.loc[1, "is_valid"]
+    assert flagged.loc[2, "is_valid"]
+    assert not flagged.loc[3, "is_valid"]
 
 
 def test_add_missing_flags():
@@ -168,15 +170,15 @@ def test_add_missing_flags():
     df = pd.DataFrame(data)
     flagged = add_missing_flags(df)
 
-    assert flagged.loc[0, "model_eligible"] == True
-    assert flagged.loc[0, "csi_available"] == True
+    assert flagged.loc[0, "model_eligible"]
+    assert flagged.loc[0, "csi_available"]
 
     # Missing SINR -> model_eligible=False
-    assert flagged.loc[1, "model_eligible"] == False
-    assert flagged.loc[1, "csi_available"] == False
+    assert not flagged.loc[1, "model_eligible"]
+    assert not flagged.loc[1, "csi_available"]
 
     # All-NA CSI device -> csi_available=False
-    assert flagged.loc[2, "csi_available"] == False
+    assert not flagged.loc[2, "csi_available"]
 
     # Confirm module code contains no fillna or interpolate on measurement columns (G2/G3)
     preprocessing_code = Path("ml/preprocessing.py").read_text(encoding="utf-8")
@@ -186,7 +188,9 @@ def test_add_missing_flags():
 
 def test_add_sessions():
     """Test sessionization breaks on >30 s time gap and sample_idx resets."""
-    timestamps = pd.to_datetime(["2026-09-28T10:00:00Z", "2026-09-28T10:00:03Z", "2026-09-28T10:01:00Z"])
+    timestamps = pd.to_datetime(
+        ["2026-09-28T10:00:00Z", "2026-09-28T10:00:03Z", "2026-09-28T10:01:00Z"]
+    )
     data = {
         "timestamp": timestamps,
         "device": ["Redmi 13 5G"] * 3,
@@ -218,7 +222,7 @@ def test_preprocess_and_idempotency(tmp_path: Path):
     # Run 1
     clean_df1 = preprocess(raw_dir, out_dir)
     assert len(clean_df1) == 2
-    assert clean_df1.iloc[0]["is_synthetic"] == True
+    assert clean_df1.iloc[0]["is_synthetic"]
     csv_file = out_dir / "measurements_clean.csv"
     assert csv_file.exists()
     assert (out_dir / "preprocess_log.json").exists()

@@ -13,8 +13,19 @@ from pathlib import Path
 
 import pandas as pd
 
-from ml.config import NA_TOKENS, RAW_DIR, REPO_ROOT, SAMPLING_SECONDS, SENTINEL_INTS, SESSION_GAP_SECONDS, VALID_RANGES
-from ml.schema import C2_DTYPES, ConfigError, DataQualityError, SchemaError, assert_no_pii_columns, validate_raw_columns
+from ml.config import (
+    NA_TOKENS,
+    SENTINEL_INTS,
+    SESSION_GAP_SECONDS,
+    VALID_RANGES,
+)
+from ml.schema import (
+    ConfigError,
+    DataQualityError,
+    SchemaError,
+    assert_no_pii_columns,
+    validate_raw_columns,
+)
 
 
 def load_raw_csv(path: str | Path) -> pd.DataFrame:
@@ -159,7 +170,8 @@ def coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
 def flag_invalid(df: pd.DataFrame) -> pd.DataFrame:
     """Flag rows containing non-missing signal metric values that fall outside plausible ranges.
 
-    Ranges are defined in ml.config.VALID_RANGES based on official Android CellSignalStrengthNr API bounds.
+    Ranges are defined in ml.config.VALID_RANGES based on official Android
+    CellSignalStrengthNr API bounds.
     Missing values (NaN/pd.NA) do NOT trigger an invalid flag (is_valid remains True).
 
     Args:
@@ -187,7 +199,8 @@ def add_missing_flags(df: pd.DataFrame) -> pd.DataFrame:
     MISSING VALUE POLICY (Guardrail G2/G3 & overview §13):
     Missing radio measurements are NEVER imputed (no standard replacement or estimation functions).
     - 'csi_available': True if any of csi_rsrp, csi_rsrq, csi_sinr is non-null.
-    - 'model_eligible': True if all base model signal metrics (ss_rsrp, ss_rsrq, ss_sinr) are non-null.
+    - 'model_eligible': True if all base model signal metrics (ss_rsrp, ss_rsrq,
+      ss_sinr) are non-null.
 
     Args:
         df: Input DataFrame with numeric signal columns.
@@ -230,7 +243,11 @@ def add_sessions(df: pd.DataFrame, gap_seconds: int = SESSION_GAP_SECONDS) -> pd
     df = df.copy()
 
     device_series = df["device"].astype(str)
-    file_series = df["source_file"].astype(str) if "source_file" in df.columns else pd.Series("", index=df.index)
+    file_series = (
+        df["source_file"].astype(str)
+        if "source_file" in df.columns
+        else pd.Series("", index=df.index)
+    )
 
     time_diff = df.groupby("device")["timestamp"].diff().dt.total_seconds()
     gap_break = time_diff > gap_seconds
@@ -269,7 +286,9 @@ def preprocess(raw_dir: str | Path, out_dir: str | Path) -> pd.DataFrame:
     out_path = Path(out_dir).resolve()
 
     if out_path == raw_path or raw_path in out_path.parents:
-        raise ConfigError(f"Output directory {out_path} cannot be inside raw directory {raw_path} (Guardrail G7).")
+        raise ConfigError(
+            f"Output directory {out_path} cannot be inside raw directory {raw_path} (Guardrail G7)."
+        )
 
     out_path.mkdir(parents=True, exist_ok=True)
 
@@ -295,7 +314,9 @@ def preprocess(raw_dir: str | Path, out_dir: str | Path) -> pd.DataFrame:
 
     # 7. Add synthetic indicator
     if "source_file" in sessionized_df.columns:
-        sessionized_df["is_synthetic"] = sessionized_df["source_file"].str.contains("_synthetic", case=False, na=False)
+        sessionized_df["is_synthetic"] = sessionized_df["source_file"].str.contains(
+            "_synthetic", case=False, na=False
+        )
     else:
         sessionized_df["is_synthetic"] = False
 
@@ -346,7 +367,9 @@ def preprocess(raw_dir: str | Path, out_dir: str | Path) -> pd.DataFrame:
         "unparseable_timestamp_rows": unparseable_count,
         "invalid_range_rows_dropped": invalid_rows_count,
         "clean_output_rows": len(clean_df),
-        "total_sessions": clean_df["session_id"].nunique() if "session_id" in clean_df.columns else 0,
+        "total_sessions": clean_df["session_id"].nunique()
+        if "session_id" in clean_df.columns
+        else 0,
     }
     log_file = out_path / "preprocess_log.json"
     with open(log_file, "w", encoding="utf-8") as f:
@@ -359,15 +382,23 @@ def main() -> None:
     """CLI entrypoint for ml.preprocessing module."""
     parser = argparse.ArgumentParser(description="5G-NADS Preprocessing Pipeline")
     parser.add_argument("--input", "-i", default="data/raw", help="Path to input raw CSV directory")
-    parser.add_argument("--output", "-o", default="data/processed", help="Path to output processed directory")
+    parser.add_argument(
+        "--output", "-o", default="data/processed", help="Path to output processed directory"
+    )
     args = parser.parse_args()
 
     try:
         clean_df = preprocess(args.input, args.output)
-        print(f"Successfully preprocessed {len(clean_df)} records from '{args.input}' to '{args.output}'.")
+        print(
+            f"Successfully preprocessed {len(clean_df)} records from "
+            f"'{args.input}' to '{args.output}'."
+        )
     except (SchemaError, DataQualityError) as err:
         print(f"PREPROCESSING ERROR: {err}", file=sys.stderr)
-        print("Hint: Verify input header matches Contract C1 and CSV files are non-empty.", file=sys.stderr)
+        print(
+            "Hint: Verify input header matches Contract C1 and CSV files are non-empty.",
+            file=sys.stderr,
+        )
         sys.exit(2)
     except ConfigError as err:
         print(f"CONFIGURATION ERROR: {err}", file=sys.stderr)

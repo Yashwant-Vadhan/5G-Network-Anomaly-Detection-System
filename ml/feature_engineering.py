@@ -91,7 +91,10 @@ def add_change_flags(df: pd.DataFrame) -> pd.DataFrame:
             change_flag_unknown += unknown_count
 
     if change_flag_unknown > 0:
-        logger.info("change_flag_unknown: %d comparisons had missing values (treated as no change)", change_flag_unknown)
+        logger.info(
+            "change_flag_unknown: %d comparisons had missing values (treated as no change)",
+            change_flag_unknown,
+        )
 
     return df
 
