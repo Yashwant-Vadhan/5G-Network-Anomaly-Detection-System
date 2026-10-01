@@ -1,13 +1,10 @@
 """Unit tests for ml/anomaly_analysis.py (T4-011, T4-013)."""
 
 import pandas as pd
-import pytest
 
 from ml.anomaly_analysis import (
     classify_sample,
-    is_cell_transition,
     is_combined_anomaly,
-    is_persistent_poor,
     is_signal_degradation,
     is_sudden_degradation,
 )
@@ -116,3 +113,41 @@ def test_precedence_order():
         }
     )
     assert classify_sample(df_sudden) == "SUDDEN_SIGNAL_DEGRADATION"
+
+
+def test_estimate_severity_monotonicity():
+    """Verify monotonic severity estimation where higher evidence yields higher severity."""
+    from ml.anomaly_analysis import estimate_severity
+
+    assert estimate_severity("NORMAL") == "LOW"
+    assert estimate_severity("CELL_TRANSITION") == "LOW"
+    assert estimate_severity("SIGNAL_DEGRADATION") == "MEDIUM"
+    assert estimate_severity("COMBINED_ANOMALY") == "HIGH"
+    assert estimate_severity("SIGNAL_DEGRADATION", persist_run=6) == "HIGH"
+
+
+def test_detect_end_to_end(tmp_path):
+    """Verify detect function runs end-to-end and creates scores.csv and events.json."""
+    from ml.anomaly_analysis import detect
+
+    df = pd.DataFrame(
+        {
+            "device": ["Redmi"] * 10,
+            "session_id": ["s1"] * 10,
+            "timestamp": pd.date_range("2026-09-28T10:00:00Z", periods=10, freq="3s"),
+            "ss_rsrp": [-80.0] * 5 + [-120.0] * 5,
+            "ss_rsrq": [-10.0] * 10,
+            "ss_sinr": [20.0] * 5 + [-5.0] * 5,
+            "pci": [336] * 10,
+            "nci": [100] * 10,
+            "network_type": ["NR"] * 10,
+        }
+    )
+
+    scores_df, events = detect(df, out_dir=tmp_path, window_size=5)
+
+    assert "anomaly_type" in scores_df.columns
+    assert "severity" in scores_df.columns
+    assert (tmp_path / "scores.csv").exists()
+    assert (tmp_path / "events.json").exists()
+    assert isinstance(events, list)

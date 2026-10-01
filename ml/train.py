@@ -6,12 +6,12 @@ todo.md T4-008, and Guardrail G11 (real data only unless explicit flag).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
 import json
 import logging
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Sequence
 
 import joblib
 import pandas as pd
@@ -19,7 +19,7 @@ import sklearn
 from sklearn.ensemble import IsolationForest
 
 from ml.config import FEATURE_COLUMNS, MODELS_DIR, RANDOM_STATE
-from ml.scaler import fit_scaler, transform_features
+from ml.scaler import fit_scaler
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,11 @@ def train_iforest(
     scaler, _ = fit_scaler(df, feature_cols=feature_cols, out_dir=out_dir_path)
 
     # Prepare training dataset
-    eligible_mask = df["model_eligible"].fillna(False) if "model_eligible" in df.columns else pd.Series(True, index=df.index)
+    eligible_mask = (
+        df["model_eligible"].fillna(False)
+        if "model_eligible" in df.columns
+        else pd.Series(True, index=df.index)
+    )
     feat_df = df.loc[eligible_mask, list(feature_cols)]
     valid_mask = feat_df.notna().all(axis=1)
     train_df = feat_df.loc[valid_mask]
@@ -105,7 +109,7 @@ def train_iforest(
         "sklearn_version": sklearn.__version__,
         "training_rows": len(train_df),
         "training_data_sha256": data_sha256,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
 
     with open(meta_path, "w", encoding="utf-8") as f:

@@ -7,8 +7,8 @@ per project-overview.md §23-24 and todo.md Phase 4.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import joblib
 import numpy as np
@@ -133,7 +133,11 @@ def if_scores(
             raise FileNotFoundError(f"Saved StandardScaler not found at {scaler_file}")
         scaler = joblib.load(scaler_file)
 
-    eligible_mask = df["model_eligible"].fillna(False) if "model_eligible" in df.columns else pd.Series(True, index=df.index)
+    eligible_mask = (
+        df["model_eligible"].fillna(False)
+        if "model_eligible" in df.columns
+        else pd.Series(True, index=df.index)
+    )
     feat_df = df[list(feature_cols)]
     valid_mask = eligible_mask & feat_df.notna().all(axis=1)
 
@@ -143,10 +147,10 @@ def if_scores(
     if valid_mask.any():
         valid_df = df.loc[valid_mask]
         scaled_X = transform_features(valid_df, scaler, feature_cols=feature_cols)
-        
+
         # IsolationForest score_samples: lower values indicate higher anomaly degree
         raw_scores = model.score_samples(scaled_X)
-        
+
         # Normalise to [0.0, 1.0] where higher = more anomalous
         # Standard IF score_samples ranges around -0.5 for boundary, -0.7..-0.9 for anomalies
         norm_scores = np.clip(0.5 - raw_scores, 0.0, 1.0)

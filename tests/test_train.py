@@ -31,7 +31,7 @@ def test_train_iforest_saves_artifacts(dummy_feature_df: pd.DataFrame, tmp_path:
     assert model_path.name == "if_v1.joblib"
     assert meta_path.name == "if_v1.meta.json"
 
-    with open(meta_path, "r", encoding="utf-8") as f:
+    with open(meta_path, encoding="utf-8") as f:
         meta = json.load(f)
 
     assert meta["model_name"] == "if_v1"

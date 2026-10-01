@@ -11,9 +11,11 @@ Implements rules for:
 from __future__ import annotations
 
 import logging
+from pathlib import Path
+
 import pandas as pd
 
-from ml.config import ANOMALY_TYPES, PERSIST_THRESHOLDS
+from ml.config import PERSIST_THRESHOLDS
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ def is_sudden_degradation(window_df: pd.DataFrame, max_samples: int = 3) -> bool
 
     # Check consecutive 1-to-3 sample deltas for SINR and RSRP
     recent_df = window_df.tail(max_samples + 1)
-    
+
     sinr = recent_df["ss_sinr"].dropna().values
     rsrp = recent_df["ss_rsrp"].dropna().values
 
@@ -188,3 +190,200 @@ def classify_sample(window_df: pd.DataFrame, is_ml_anomaly: bool = False) -> str
         return "STATISTICAL_ONLY"
 
     return "NORMAL"
+
+
+def estimate_severity(
+    anomaly_type: str,
+    if_score: float | None = None,
+    z_max: float = 0.0,
+    persist_run: int = 0,
+) -> str:
+    """Estimate anomaly severity (LOW, MEDIUM, HIGH) based on multi-factor evidence.
+
+    Origin: project-overview.md §46, todo.md T4-014.
+    Provisional heuristic: monotonic ranking based on anomaly classification,
+    ML score intensity, baseline z-score deviation, and persistence length.
+
+    Args:
+        anomaly_type: Categorical anomaly type string.
+        if_score: Isolation Forest anomaly score in [0, 1].
+        z_max: Maximum baseline z-score deviation.
+        persist_run: Maximum persistence run length in samples.
+
+    Returns:
+        One of "LOW", "MEDIUM", "HIGH".
+    """
+    if anomaly_type in ("NORMAL", "CELL_TRANSITION", "NETWORK_STATE_TRANSITION"):
+        return "LOW"
+
+    if (
+        anomaly_type == "COMBINED_ANOMALY"
+        or persist_run >= 5
+        or z_max >= 4.0
+        or (if_score is not None and if_score >= 0.8)
+    ):
+        return "HIGH"
+
+    if (
+        anomaly_type in ("SUDDEN_SIGNAL_DEGRADATION", "PERSISTENT_POOR_QUALITY")
+        or z_max >= 3.0
+        or (if_score is not None and if_score >= 0.65)
+    ):
+        return "MEDIUM"
+
+    if anomaly_type in ("SIGNAL_DEGRADATION", "STATISTICAL_ONLY"):
+        return "MEDIUM"
+
+    return "LOW"
+
+
+def detect(
+    df: pd.DataFrame,
+    out_dir: str | Path = "data/processed",
+    window_size: int = 10,
+) -> tuple[pd.DataFrame, list[dict]]:
+    """Execute end-to-end anomaly detection pipeline and group contiguous events.
+
+    Origin: project-overview.md §23-25, contract C4, todo.md T4-015.
+
+    Args:
+        df: Input DataFrame with C2/C3 preprocessed and feature columns.
+        out_dir: Output path directory for scores.csv and events.json.
+        window_size: Sliding window size for rule classification.
+
+    Returns:
+        Tuple of (scores_df, events_list).
+    """
+    import json
+    from pathlib import Path
+
+    import joblib
+
+    from ml.anomaly_detection import baseline_scores, if_scores
+    from ml.config import MODELS_DIR
+    from ml.feature_engineering import build_features
+
+    df = build_features(df)
+    df = baseline_scores(df)
+
+    # Load model and scaler if present to calculate IF scores
+    model_path = Path(MODELS_DIR) / "if_v1.joblib"
+    scaler_path = Path(MODELS_DIR) / "scaler.joblib"
+    if model_path.exists() and scaler_path.exists():
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        df = if_scores(df, model=model, scaler=scaler)
+    else:
+        df["if_score"] = pd.NA
+        df["if_flag"] = False
+
+    anomaly_types = []
+    severities = []
+
+    for idx in range(len(df)):
+        start_idx = max(0, idx - window_size + 1)
+        sub_df = df.iloc[start_idx : idx + 1]
+
+        is_ml = bool(df.iloc[idx].get("baseline_flag", False) or df.iloc[idx].get("if_flag", False))
+        atype = classify_sample(sub_df, is_ml_anomaly=is_ml)
+
+        if_val = df.iloc[idx].get("if_score")
+        if_val_float = float(if_val) if pd.notna(if_val) else None
+        z_val = float(df.iloc[idx].get("baseline_z_max", 0.0))
+
+        run_val = 0
+        for rcol in ["weak_rsrp_run", "poor_rsrq_run", "poor_sinr_run"]:
+            if rcol in df.columns and pd.notna(df.iloc[idx][rcol]):
+                run_val = max(run_val, int(df.iloc[idx][rcol]))
+
+        sev = estimate_severity(atype, if_score=if_val_float, z_max=z_val, persist_run=run_val)
+
+        anomaly_types.append(atype)
+        severities.append(sev)
+
+    df["anomaly_type"] = anomaly_types
+    df["severity"] = severities
+
+    # Group contiguous events
+    events = []
+    event_id_counter = 1
+
+    # Anomaly flag if not NORMAL and not simple CELL/NETWORK event
+    is_anom = df["anomaly_type"].isin(
+        [
+            "SIGNAL_DEGRADATION",
+            "SUDDEN_SIGNAL_DEGRADATION",
+            "PERSISTENT_POOR_QUALITY",
+            "COMBINED_ANOMALY",
+            "STATISTICAL_ONLY",
+        ]
+    )
+
+    df["is_anom"] = is_anom
+
+    for session_id, group in df.groupby("session_id", sort=False):
+        group = group.sort_values("timestamp")
+        in_event = False
+        event_rows = []
+
+        for _, row in group.iterrows():
+            if row["is_anom"]:
+                if not in_event:
+                    in_event = True
+                    event_rows = [row]
+                else:
+                    event_rows.append(row)
+            else:
+                if in_event:
+                    # Close event
+                    event_df = pd.DataFrame(event_rows)
+                    evt = {
+                        "event_id": f"evt-{event_id_counter:03d}",
+                        "session_id": session_id,
+                        "device": str(event_df["device"].iloc[0]),
+                        "start_time": str(event_df["timestamp"].iloc[0]),
+                        "end_time": str(event_df["timestamp"].iloc[-1]),
+                        "sample_count": len(event_df),
+                        "anomaly_type": str(event_df["anomaly_type"].mode().iloc[0]),
+                        "max_severity": str(
+                            "HIGH"
+                            if "HIGH" in event_df["severity"].values
+                            else ("MEDIUM" if "MEDIUM" in event_df["severity"].values else "LOW")
+                        ),
+                    }
+                    events.append(evt)
+                    event_id_counter += 1
+                    in_event = False
+                    event_rows = []
+
+        if in_event and event_rows:
+            event_df = pd.DataFrame(event_rows)
+            evt = {
+                "event_id": f"evt-{event_id_counter:03d}",
+                "session_id": session_id,
+                "device": str(event_df["device"].iloc[0]),
+                "start_time": str(event_df["timestamp"].iloc[0]),
+                "end_time": str(event_df["timestamp"].iloc[-1]),
+                "sample_count": len(event_df),
+                "anomaly_type": str(event_df["anomaly_type"].mode().iloc[0]),
+                "max_severity": str(
+                    "HIGH"
+                    if "HIGH" in event_df["severity"].values
+                    else ("MEDIUM" if "MEDIUM" in event_df["severity"].values else "LOW")
+                ),
+            }
+            events.append(evt)
+            event_id_counter += 1
+
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    scores_csv = out_path / "scores.csv"
+    df.to_csv(scores_csv, index=False)
+
+    events_json = out_path / "events.json"
+    with open(events_json, "w", encoding="utf-8") as f:
+        json.dump(events, f, indent=2)
+
+    logger.info("Saved scores to %s and %d events to %s", scores_csv, len(events), events_json)
+    return df, events

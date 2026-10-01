@@ -7,8 +7,8 @@ as specified in todo.md T4-006 and project-overview.md §22.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import joblib
 import numpy as np
@@ -44,8 +44,12 @@ def fit_scaler(
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Filter eligible rows
-    eligible_mask = df["model_eligible"].fillna(False) if "model_eligible" in df.columns else pd.Series(True, index=df.index)
-    
+    eligible_mask = (
+        df["model_eligible"].fillna(False)
+        if "model_eligible" in df.columns
+        else pd.Series(True, index=df.index)
+    )
+
     # Check for NaN in feature_cols among eligible rows
     feat_df = df.loc[eligible_mask, list(feature_cols)]
     non_null_mask = feat_df.notna().all(axis=1)
@@ -56,7 +60,7 @@ def fit_scaler(
 
     scaler = StandardScaler()
     scaler.fit(fit_df.values)
-    
+
     joblib.dump(scaler, out_path)
     logger.info("Fitted StandardScaler on %d eligible rows, saved to %s", len(fit_df), out_path)
 
@@ -82,7 +86,11 @@ def transform_features(
     """
     scaled_matrix = np.full((len(df), len(feature_cols)), np.nan, dtype=np.float64)
 
-    eligible_mask = df["model_eligible"].fillna(False) if "model_eligible" in df.columns else pd.Series(True, index=df.index)
+    eligible_mask = (
+        df["model_eligible"].fillna(False)
+        if "model_eligible" in df.columns
+        else pd.Series(True, index=df.index)
+    )
     feat_df = df[list(feature_cols)]
     valid_mask = eligible_mask & feat_df.notna().all(axis=1)
 

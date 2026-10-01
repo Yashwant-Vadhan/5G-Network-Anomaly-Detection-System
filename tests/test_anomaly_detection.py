@@ -1,6 +1,7 @@
 """Unit tests for ml/anomaly_detection.py."""
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -63,6 +64,7 @@ def test_if_scores(tmp_path: Path):
 
     model, _, _ = train_iforest(df, out_dir=tmp_path)
     from joblib import load
+
     scaler = load(tmp_path / "scaler.joblib")
 
     scored_df = if_scores(df, model=model, scaler=scaler, threshold=0.5)
