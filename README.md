@@ -9,8 +9,8 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Component | Status |
 |---|---|
 | Android NR measurement collector | ✅ Implemented and verified against C1 |
-| Real-device dataset collection | ✅ Completed (Redmi: 2505 samples; Samsung: 1772 samples collected) |
-| Data preprocessing pipeline | ⬜ Not started |
+| Real-device dataset collection | ✅ Completed (Redmi: 3760 samples; Samsung: 1772 samples across 3 scenarios each) |
+| Data preprocessing pipeline | ✅ Implemented and verified against C2 (30 unit tests passing) |
 | Feature engineering | ⬜ Not started |
 | Anomaly detection (baseline z-score + Isolation Forest) | ⬜ Not started |
 | Anomaly classification & severity | ⬜ Not started |

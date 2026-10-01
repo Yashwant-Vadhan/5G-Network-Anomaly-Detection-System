@@ -1,7 +1,7 @@
 # todo.md — 5G-NADS (5G Network Anomaly Detection System)
 > Generated from: `PRD.md` · `DESIGN.md` · `TECH_RULES.md` · `ROADMAP.md` (in `docs/planning/`) and the source-of-truth `project-overview.md`
 > Target: MVP-first execution by **two developers** and their AI coding agents (Cursor, Claude Code, Codex, Gemini CLI, Windsurf)
-> Last Updated: 2026-09-28
+> Last Updated: 2026-10-02
 
 ---
 
@@ -410,49 +410,49 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T3-005: Implement missing-value policy flags
-**Status:** ⬜
+**Status:** ✅
 **Description:** `add_missing_flags(df)`: `csi_available` (any `csi_*` present, informational only), `model_eligible` (all model-required base columns `ss_rsrp`,`ss_rsrq`,`ss_sinr` present). **No imputation** of measurements (no ffill/interpolate/mean-fill). Document the policy at the top of the function.
 **Dependencies:** T3-003
 **Acceptance Criteria:**
-- [ ] Rows with missing SINR have `model_eligible=False` and remain in the output
-- [ ] All-NA CSI device gets `csi_available=False` and is not marked invalid
-- [ ] Test greps the module to confirm no `fillna`/`interpolate` on measurement columns
+- [x] Rows with missing SINR have `model_eligible=False` and remain in the output
+- [x] All-NA CSI device gets `csi_available=False` and is not marked invalid
+- [x] Test greps the module to confirm no `fillna`/`interpolate` on measurement columns
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T3-006: Implement sessionization
-**Status:** ⬜
+**Status:** ✅
 **Description:** `add_sessions(df, gap_seconds=SESSION_GAP_SECONDS)`: within each device, new `session_id` (`<device_slug>-<n>`) when the time gap exceeds the threshold or `source_file` changes; add `sample_idx`. Threshold from `ml/config.py`.
 **Dependencies:** T3-002
 **Acceptance Criteria:**
-- [ ] Fixture with a >30 s gap yields 2 sessions
-- [ ] `sample_idx` restarts at 0 per session
-- [ ] Different devices never share a session
+- [x] Fixture with a >30 s gap yields 2 sessions
+- [x] `sample_idx` restarts at 0 per session
+- [x] Different devices never share a session
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T3-007: Write processed output with raw-protection guard and log
-**Status:** ⬜
+**Status:** ✅
 **Description:** `preprocess(raw_dir, out_dir) -> DataFrame`: compose steps in overview §25 order, add `is_synthetic` (True iff source filename contains `_synthetic`), drop only `is_valid=False` rows, write `data/processed/measurements_clean.csv` (contract C2) and `data/processed/preprocess_log.json` (row counts per step, rejected reasons). Raise if `out_dir` resolves inside `data/raw/` (G7).
 **Dependencies:** T3-004, T3-005, T3-006
 **Acceptance Criteria:**
-- [ ] Output has all C2 columns
-- [ ] Log counts add up (loaded = kept + rejected)
-- [ ] Writing into `data/raw/` raises `ConfigError`
+- [x] Output has all C2 columns
+- [x] Log counts add up (loaded = kept + rejected)
+- [x] Writing into `data/raw/` raises `ConfigError`
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T3-008: Add preprocessing CLI and idempotency check
-**Status:** ⬜
+**Status:** ✅
 **Description:** `python -m ml.preprocessing --input data/raw --output data/processed` with `--help`, exit code 2 on `SchemaError`/`DataQualityError` with a one-line fix hint. Running twice must produce byte-identical `measurements_clean.csv` (G8).
 **Dependencies:** T3-007
 **Acceptance Criteria:**
-- [ ] Two runs → identical SHA-256 of output
-- [ ] Bad input prints one-line cause, exit code 2
-- [ ] `make preprocess` works
+- [x] Two runs → identical SHA-256 of output
+- [x] Bad input prints one-line cause, exit code 2
+- [x] `make preprocess` works
 **Estimated Effort:** 30 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil

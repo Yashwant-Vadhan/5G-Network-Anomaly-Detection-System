@@ -1,5 +1,6 @@
 """Unit tests for ml/preprocessing.py."""
 
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -7,8 +8,17 @@ import pandas as pd
 import pytest
 
 from ml.config import RAW_COLUMNS
-from ml.preprocessing import coerce_numeric, flag_invalid, load_raw_csv, load_raw_dir, parse_timestamps
-from ml.schema import DataQualityError, SchemaError
+from ml.preprocessing import (
+    add_missing_flags,
+    add_sessions,
+    coerce_numeric,
+    flag_invalid,
+    load_raw_csv,
+    load_raw_dir,
+    parse_timestamps,
+    preprocess,
+)
+from ml.schema import ConfigError, DataQualityError, SchemaError
 
 
 def test_load_raw_csv_valid(tmp_path: Path):
@@ -139,11 +149,84 @@ def test_flag_invalid():
     df = pd.DataFrame(data)
     flagged = flag_invalid(df)
 
-    # Row 0: valid (-85, -11, 18)
     assert flagged.loc[0, "is_valid"] == True
-    # Row 1: invalid because ss_rsrp = -150
     assert flagged.loc[1, "is_valid"] == False
-    # Row 2: valid because missing values do NOT trigger invalid
     assert flagged.loc[2, "is_valid"] == True
-    # Row 3: invalid because ss_rsrq = 30
     assert flagged.loc[3, "is_valid"] == False
+
+
+def test_add_missing_flags():
+    """Test add_missing_flags sets csi_available and model_eligible correctly."""
+    data = {
+        "ss_rsrp": [-85.0, -85.0, np.nan],
+        "ss_rsrq": [-11.0, -11.0, -11.0],
+        "ss_sinr": [18.0, np.nan, 18.0],
+        "csi_rsrp": [-88.0, np.nan, np.nan],
+        "csi_rsrq": [-12.0, np.nan, np.nan],
+        "csi_sinr": [15.0, np.nan, np.nan],
+    }
+    df = pd.DataFrame(data)
+    flagged = add_missing_flags(df)
+
+    assert flagged.loc[0, "model_eligible"] == True
+    assert flagged.loc[0, "csi_available"] == True
+
+    # Missing SINR -> model_eligible=False
+    assert flagged.loc[1, "model_eligible"] == False
+    assert flagged.loc[1, "csi_available"] == False
+
+    # All-NA CSI device -> csi_available=False
+    assert flagged.loc[2, "csi_available"] == False
+
+    # Confirm module code contains no fillna or interpolate on measurement columns (G2/G3)
+    preprocessing_code = Path("ml/preprocessing.py").read_text(encoding="utf-8")
+    assert "fillna" not in preprocessing_code
+    assert "interpolate" not in preprocessing_code
+
+
+def test_add_sessions():
+    """Test sessionization breaks on >30 s time gap and sample_idx resets."""
+    timestamps = pd.to_datetime(["2026-09-28T10:00:00Z", "2026-09-28T10:00:03Z", "2026-09-28T10:01:00Z"])
+    data = {
+        "timestamp": timestamps,
+        "device": ["Redmi 13 5G"] * 3,
+        "source_file": ["data.csv"] * 3,
+    }
+    df = pd.DataFrame(data)
+    sessionized = add_sessions(df, gap_seconds=30)
+
+    assert sessionized.loc[0, "session_id"] == sessionized.loc[1, "session_id"]
+    assert sessionized.loc[2, "session_id"] != sessionized.loc[0, "session_id"]
+    assert list(sessionized["sample_idx"]) == [0, 1, 0]
+
+
+def test_preprocess_and_idempotency(tmp_path: Path):
+    """Test full preprocess pipeline execution, raw protection, and idempotency (G8)."""
+    raw_dir = tmp_path / "raw"
+    out_dir = tmp_path / "processed"
+    raw_dir.mkdir()
+
+    header = ",".join(RAW_COLUMNS)
+    row1 = "2026-09-28T10:00:00Z,Redmi 13 5G,Xiaomi,16,Airtel,NR,SA,5G,true,-85,-11,18,-88,-12,15,336,13322280247,630000"
+    row2 = "2026-09-28T10:00:03Z,Redmi 13 5G,Xiaomi,16,Airtel,NR,SA,5G,true,-86,-12,17,-89,-13,14,336,13322280247,630000"
+    (raw_dir / "sample_synthetic.csv").write_text(f"{header}\n{row1}\n{row2}\n", encoding="utf-8")
+
+    # Raw directory output protection test (G7)
+    with pytest.raises(ConfigError):
+        preprocess(raw_dir, raw_dir / "subfolder")
+
+    # Run 1
+    clean_df1 = preprocess(raw_dir, out_dir)
+    assert len(clean_df1) == 2
+    assert clean_df1.iloc[0]["is_synthetic"] == True
+    csv_file = out_dir / "measurements_clean.csv"
+    assert csv_file.exists()
+    assert (out_dir / "preprocess_log.json").exists()
+
+    hash1 = hashlib.sha256(csv_file.read_bytes()).hexdigest()
+
+    # Run 2 (idempotency check)
+    preprocess(raw_dir, out_dir)
+    hash2 = hashlib.sha256(csv_file.read_bytes()).hexdigest()
+
+    assert hash1 == hash2

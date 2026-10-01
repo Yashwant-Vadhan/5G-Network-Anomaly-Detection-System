@@ -32,11 +32,11 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Dependencies:** none (starts immediately). Data collection needs phones and physical movement — schedule it early, it is the least compressible work.
 - **Estimated Complexity:** Low–Medium (logistics-heavy, not algorithm-heavy).
 - **Acceptance Criteria:**
-  - [ ] `pip install -r requirements-dev.txt`, `make lint test` work on both machines and CI is green.
-  - [ ] Contracts C1–C6 and `ml/config.py` / `ml/schema.py` / `agents/contracts.py` merged.
-  - [ ] ≥200 samples per scenario (A/B/C) for Redmi and Samsung in `data/raw/`, manifest committed and `--verify` passes.
-  - [ ] `data/sample/` (real) and `tests/fixtures/edge_cases_synthetic.csv` (labelled synthetic) exist.
-  - [ ] Timestamp format and sentinel behaviour documented in `data/README.md`.
+  - [x] `pip install -r requirements-dev.txt`, `make lint test` work on both machines and CI is green.
+  - [x] Contracts C1–C6 and `ml/config.py` / `ml/schema.py` / `agents/contracts.py` merged.
+  - [x] ≥200 samples per scenario (A/B/C) for Redmi and Samsung in `data/raw/`, manifest committed and `--verify` passes.
+  - [x] `data/sample/` (real) and `tests/fixtures/edge_cases_synthetic.csv` (labelled synthetic) exist.
+  - [x] Timestamp format and sentinel behaviour documented in `data/README.md`.
 
 ### Milestone 1 — MVP Core
 - **Objective:** Raw CSV → scored, classified, agent-explained events, produced by code and verified by tests on the sample.
@@ -44,7 +44,7 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Dependencies:** M0 (contracts, fixtures, at least Redmi + Samsung stationary data). EDA (T3-012) gates threshold-dependent tasks in Phase 4.
 - **Estimated Complexity:** High (most of the intellectual work; the critical path of ~21 sequential hours runs through here and into evaluation).
 - **Acceptance Criteria:**
-  - [ ] Preprocessing is idempotent (identical output hash on two runs) and never writes into `data/raw/`.
+  - [x] Preprocessing is idempotent (identical output hash on two runs) and never writes into `data/raw/`.
   - [ ] `scores.csv` (C4) and `events_diagnosed.json` (C5) generated from `data/sample/`.
   - [ ] Negative cases pass: low RSRP alone, low SINR alone, PCI/NCI change alone, 5G→LTE alone, UNKNOWN alone → **not anomalies**.
   - [ ] Network Agent never outputs SA for UNKNOWN; agent modules do not import scikit-learn.
