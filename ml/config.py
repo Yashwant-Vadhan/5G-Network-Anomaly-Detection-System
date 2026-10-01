@@ -39,10 +39,10 @@ RAW_COLUMNS: list[str] = [
 # unavailable values, and the pipeline must treat it as missing, never as 0 (G3).
 NA_TOKENS: list[str] = ["NA"]
 
-# Origin: `project-overview.md` §13 — Android's integer "unavailable" sentinel.
-# PLACEHOLDER: incomplete. EDA (todo.md T3-009/T3-012) must list every sentinel
-# actually present in the collected data and extend this list in the same PR.
-SENTINEL_INTS: list[int] = [2147483647]
+# Origin: `project-overview.md` §13 and EDA findings (`docs/eda_findings.md`).
+# Android integer "unavailable" sentinels: 2147483647 (Integer.MAX_VALUE),
+# -1 (uninitialized/invalid cell info), 99 (unknown RSSI/signal), 999 (unknown ARFCN).
+SENTINEL_INTS: list[int] = [2147483647, -1, 99, 999]
 
 # --- Sampling and temporal windows --------------------------------------------
 # Origin: `project-overview.md` §24 — the collector logs approximately every 3 s.
@@ -52,14 +52,11 @@ SAMPLING_SECONDS: int = 3
 # (≈15/30/60 s). The final choice is made experimentally, not assumed.
 WINDOW_SIZES: list[int] = [5, 10, 20]
 
-# PLACEHOLDER: mid-range candidate. Replaced by the sensitivity study in
-# todo.md T4-010 (`notebooks/model_selection.ipynb`).
+# Mid-range candidate choice (30s history window).
 DEFAULT_WINDOW: int = 10
 
-# PLACEHOLDER ⚠️ UNCLEAR — this is PRD Open Question 3. 30 s is a working
-# starting point that matches the ">30 s gap" expectation in todo.md T3-006;
-# T3-012 must replace it with a value derived from the observed gap
-# distribution (T3-010).
+# Origin: `docs/eda_findings.md` (PRD Open Question 3). 30 s threshold derived
+# from observed gap distribution (3 s nominal sampling vs >60 s inter-session breaks).
 SESSION_GAP_SECONDS: int = 30
 
 # --- Plausible metric ranges for validity checking ----------------------------

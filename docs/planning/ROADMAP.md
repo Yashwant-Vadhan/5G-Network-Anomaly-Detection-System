@@ -48,7 +48,7 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [ ] `scores.csv` (C4) and `events_diagnosed.json` (C5) generated from `data/sample/`.
   - [ ] Negative cases pass: low RSRP alone, low SINR alone, PCI/NCI change alone, 5G→LTE alone, UNKNOWN alone → **not anomalies**.
   - [ ] Network Agent never outputs SA for UNKNOWN; agent modules do not import scikit-learn.
-  - [ ] `docs/eda_findings.md` answers PRD Open Questions 1–4 or states why they remain open.
+  - [x] `docs/eda_findings.md` answers PRD Open Questions 1–4 or states why they remain open.
 
 ### Milestone 2 — MVP Complete & Polish
 - **Objective:** A demonstrable, tested, evaluated, documented system and a tagged release.
