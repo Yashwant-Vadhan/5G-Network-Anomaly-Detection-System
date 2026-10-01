@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from ml.config import NA_TOKENS, SENTINEL_INTS
 from ml.schema import DataQualityError, SchemaError, assert_no_pii_columns, validate_raw_columns
 
 
@@ -108,3 +109,45 @@ def parse_timestamps(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Stable sort by device, then timestamp
     sorted_df = clean_df.sort_values(by=["device", "timestamp"], kind="stable", ignore_index=True)
     return sorted_df, rejected_df
+
+
+def coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    """Coerce signal metrics, cell identifiers, and boolean flags to proper nullable types.
+
+    Converts 'NA' tokens and sentinel integers (e.g. 2147483647) to missing (NaN/pd.NA),
+    preserving 64-bit precision for large NCI values. Missing values are never filled with 0.
+
+    Args:
+        df: Input DataFrame with raw string values.
+
+    Returns:
+        DataFrame with coerced numeric, boolean, and string dtypes per Contract C2.
+    """
+    df = df.copy()
+
+    float_cols = ["ss_rsrp", "ss_rsrq", "ss_sinr", "csi_rsrp", "csi_rsrq", "csi_sinr"]
+    int_cols = ["pci", "nci", "nrarfcn"]
+
+    sentinel_str_set = {str(s) for s in SENTINEL_INTS} | set(NA_TOKENS) | {"", "None", "null"}
+
+    # Process float signal columns
+    for col in float_cols:
+        if col in df.columns:
+            series = df[col].astype(str).str.strip()
+            series = series.apply(lambda x: pd.NA if x in sentinel_str_set else x)
+            df[col] = pd.to_numeric(series, errors="coerce").astype("float64")
+
+    # Process nullable Int64 cell columns (64-bit precision for NCI)
+    for col in int_cols:
+        if col in df.columns:
+            series = df[col].astype(str).str.strip()
+            series = series.apply(lambda x: pd.NA if x in sentinel_str_set else x)
+            df[col] = pd.to_numeric(series, errors="coerce").astype("Int64")
+
+    # Process registered boolean column
+    if "registered" in df.columns:
+        series = df["registered"].astype(str).str.strip().str.lower()
+        bool_map = {"true": True, "1": True, "false": False, "0": False}
+        df["registered"] = series.map(bool_map).astype("boolean")
+
+    return df

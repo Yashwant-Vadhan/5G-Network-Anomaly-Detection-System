@@ -386,13 +386,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T3-003: Implement numeric coercion and NA/sentinel → missing
-**Status:** ⬜
+**Status:** ✅
 **Description:** `coerce_numeric(df)`: convert `ss_*`, `csi_*`, `pci`, `nci`, `nrarfcn` to nullable numeric (`Int64`/`float64`; `nci` must stay 64-bit-safe); convert `NA` and every value in `SENTINEL_INTS` to missing; convert `registered` to nullable boolean. Never produce 0 for missing (G2, G3).
 **Dependencies:** T3-001
 **Acceptance Criteria:**
-- [ ] `2147483647` and `NA` become missing in the fixture
-- [ ] `nci=13322280247` survives without precision loss
-- [ ] Test asserts missing ≠ 0
+- [x] `2147483647` and `NA` become missing in the fixture
+- [x] `nci=13322280247` survives without precision loss
+- [x] Test asserts missing ≠ 0
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant

@@ -2,11 +2,12 @@
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from ml.config import RAW_COLUMNS
-from ml.preprocessing import load_raw_csv, load_raw_dir, parse_timestamps
+from ml.preprocessing import coerce_numeric, load_raw_csv, load_raw_dir, parse_timestamps
 from ml.schema import DataQualityError, SchemaError
 
 
@@ -89,6 +90,40 @@ def test_parse_timestamps_sorting_and_duplicates():
     assert timestamps == sorted(timestamps)
 
     # Check duplicate flags
-    # The two 10:00:20Z rows should have dup_ts=True, others False
     dup_flags = list(clean_df["dup_ts"])
     assert dup_flags == [False, False, True, True]
+
+
+def test_coerce_numeric_sentinels_na_and_precision():
+    """Test numeric coercion for NA tokens, 2147483647 sentinels, 64-bit NCI, and missing != 0."""
+    raw_data = {
+        "ss_rsrp": ["-85", "NA", "2147483647"],
+        "csi_rsrp": ["-88", "2147483647", "NA"],
+        "pci": ["336", "NA", "2147483647"],
+        "nci": ["13322280247", "NA", "2147483647"],
+        "nrarfcn": ["630000", "NA", "2147483647"],
+        "registered": ["true", "false", "NA"],
+    }
+    df = pd.DataFrame(raw_data)
+    coerced = coerce_numeric(df)
+
+    # Check 64-bit NCI precision preservation
+    assert coerced.loc[0, "nci"] == 13322280247
+    assert str(coerced.loc[0, "nci"]) == "13322280247"
+
+    # Check sentinel and NA coercion to missing
+    assert np.isnan(coerced.loc[1, "ss_rsrp"])
+    assert np.isnan(coerced.loc[2, "ss_rsrp"])
+    assert pd.isna(coerced.loc[1, "pci"])
+    assert pd.isna(coerced.loc[2, "pci"])
+    assert pd.isna(coerced.loc[1, "nci"])
+
+    # Assert missing != 0 (Guardrail G2 & G3)
+    assert coerced.loc[1, "ss_rsrp"] != 0.0 or np.isnan(coerced.loc[1, "ss_rsrp"])
+    assert coerced.loc[1, "ss_rsrp"] is not 0
+    assert not (coerced.loc[1, "ss_rsrp"] == 0)
+
+    # Check boolean registered conversion
+    assert coerced.loc[0, "registered"] is True or coerced.loc[0, "registered"] == True
+    assert coerced.loc[1, "registered"] is False or coerced.loc[1, "registered"] == False
+    assert pd.isna(coerced.loc[2, "registered"])
