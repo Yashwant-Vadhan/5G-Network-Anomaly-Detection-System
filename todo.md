@@ -511,13 +511,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Features, rolling z-score baseline, Isolation Forest, rule-based classification, severity, events*
 
 #### T4-001: Implement delta features
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `ml/feature_engineering.py`: `add_deltas(df)` → `delta_rsrp`, `delta_rsrq`, `delta_sinr` = current − previous **within (device, session_id)** (overview §23). First sample of a session → missing. Missing operand → missing.
 **Dependencies:** T3-008
 **Acceptance Criteria:**
-- [ ] No delta computed across session boundaries
-- [ ] Known sequence (+4,+3,+2,+3,−7) gives (−1,−1,+1,−10)
-- [ ] Missing input yields missing output, not 0
+- [x] No delta computed across session boundaries
+- [x] Known sequence (+4,+3,+2,+3,−7) gives (−1,−1,+1,−10)
+- [x] Missing input yields missing output, not 0
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
