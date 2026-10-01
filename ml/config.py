@@ -44,6 +44,20 @@ NA_TOKENS: list[str] = ["NA"]
 # actually present in the collected data and extend this list in the same PR.
 SENTINEL_INTS: list[int] = [2147483647]
 
+# --- Plausible metric ranges --------------------------------------------------
+# Origin: Android Telephony API documentation for `CellSignalStrengthNr`
+# - SS-RSRP: [-140, -44] dBm (source: https://developer.android.com/reference/android/telephony/CellSignalStrengthNr#ssRsrp)
+# - SS-RSRQ: [-43, 20] dB (source: https://developer.android.com/reference/android/telephony/CellSignalStrengthNr#ssRsrq)
+# - SS-SINR: [-23, 40] dB (source: https://developer.android.com/reference/android/telephony/CellSignalStrengthNr#ssSinr)
+VALID_RANGES: dict[str, tuple[float, float]] = {
+    "ss_rsrp": (-140.0, -44.0),
+    "ss_rsrq": (-43.0, 20.0),
+    "ss_sinr": (-23.0, 40.0),
+    "csi_rsrp": (-140.0, -44.0),
+    "csi_rsrq": (-43.0, 20.0),
+    "csi_sinr": (-23.0, 40.0),
+}
+
 # --- Sampling and temporal windows --------------------------------------------
 # Origin: `project-overview.md` §24 — the collector logs approximately every 3 s.
 SAMPLING_SECONDS: int = 3
