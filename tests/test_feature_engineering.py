@@ -202,3 +202,48 @@ def test_add_rolling_window_respected():
     assert result_w5.loc[4, "rolling_mean_rsrp"] == pytest.approx(-84.0)
     # idx 5 uses [-82, -84, -86, -88, -90] → mean = -86.0
     assert result_w5.loc[5, "rolling_mean_rsrp"] == pytest.approx(-86.0)
+
+
+# ---------------------------------------------------------------------------
+# T4-004 & T4-005: add_persistence & build_features
+# ---------------------------------------------------------------------------
+
+
+def test_add_persistence():
+    """Weak RSRP run-length should increment when < -110 dBm and reset otherwise."""
+    from ml.feature_engineering import add_persistence
+
+    df = pd.DataFrame(
+        {
+            "device": ["Redmi"] * 6,
+            "session_id": ["s1"] * 6,
+            "ss_rsrp": [-100.0, -115.0, -120.0, -105.0, -112.0, np.nan],
+            "ss_rsrq": [-10.0] * 6,
+            "ss_sinr": [20.0] * 6,
+        }
+    )
+    result = add_persistence(df)
+    assert list(result["weak_rsrp_run"]) == [0, 1, 2, 0, 1, 0]
+
+
+def test_build_features():
+    """build_features should add all C3 feature columns."""
+    from ml.feature_engineering import build_features
+
+    df = pd.DataFrame(
+        {
+            "device": ["Redmi"] * 5,
+            "session_id": ["s1"] * 5,
+            "ss_rsrp": [-80.0, -81.0, -82.0, -83.0, -84.0],
+            "ss_rsrq": [-10.0] * 5,
+            "ss_sinr": [20.0] * 5,
+            "pci": [336] * 5,
+            "nci": [100] * 5,
+            "network_type": ["NR"] * 5,
+        }
+    )
+    result = build_features(df)
+    assert "delta_rsrp" in result.columns
+    assert "pci_changed" in result.columns
+    assert "rolling_mean_rsrp" in result.columns
+    assert "weak_rsrp_run" in result.columns

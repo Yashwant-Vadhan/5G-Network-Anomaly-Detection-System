@@ -104,6 +104,18 @@ SEVERITY_LEVELS: list[str] = ["LOW", "MEDIUM", "HIGH"]
 # never promoted to `SA` (G4).
 DEPLOYMENT_MODES: list[str] = ["NSA", "SA", "UNKNOWN"]
 
+# --- Persistence and Anomaly Thresholds ---------------------------------------
+# Origin: `docs/eda_findings.md` / `project-overview.md` §23 — dataset-specific
+# poor quality thresholds derived from empirical EDA 10th-percentiles.
+PERSIST_THRESHOLDS: dict[str, float] = {
+    "weak_rsrp": -110.0,
+    "poor_rsrq": -15.0,
+    "poor_sinr": 0.0,
+}
+
+# Origin: `project-overview.md` §23 — threshold for rolling z-score baseline
+BASELINE_Z_THRESHOLD: float = 2.5
+
 # --- Model features (contract C3) ---------------------------------------------
 # Origin: `project-overview.md` §22, in the order given there. PLACEHOLDER:
 # "the final feature set must be determined after exploratory analysis" (§22);

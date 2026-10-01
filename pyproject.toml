@@ -3,7 +3,7 @@ line-length = 100
 # Minimum Python verified for the pinned wheels in requirements.txt is 3.12
 # (todo.md T1-003); TECH_RULES.md states "3.11+ (verify team version)".
 target-version = "py312"
-extend-exclude = ["android-collector", "data", "notebooks", "models", ".venv"]
+extend-exclude = ["android-collector", "data", "notebooks", "models", ".venv", "scratch"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N"]

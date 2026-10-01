@@ -137,8 +137,72 @@ def add_rolling(df: pd.DataFrame, window: int = DEFAULT_WINDOW) -> pd.DataFrame:
                 lambda x: x.rolling(window=window, min_periods=min_periods).std()
             )
             df[std_col] = grouped_std
-        else:
-            df[mean_col] = pd.NA
-            df[std_col] = pd.NA
+    return df
 
+
+def add_persistence(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute run-length persistence features for poor signal conditions within sessions.
+
+    Adds columns: weak_rsrp_run, poor_rsrq_run, poor_sinr_run (int >= 0).
+    Thresholds defined in ml.config.PERSIST_THRESHOLDS.
+    Reset to 0 at session boundaries and whenever a missing value is encountered.
+
+    Origin: project-overview.md §23, todo.md T4-004 — dataset-specific run-length features.
+
+    Args:
+        df: Input DataFrame with numeric ss_rsrp, ss_rsrq, ss_sinr and session_id.
+
+    Returns:
+        DataFrame with added persistence run-length columns.
+    """
+    df = df.copy()
+    from ml.config import PERSIST_THRESHOLDS
+
+    group_cols = ["device", "session_id"] if "session_id" in df.columns else ["device"]
+
+    mappings = [
+        ("ss_rsrp", "weak_rsrp_run", PERSIST_THRESHOLDS["weak_rsrp"]),
+        ("ss_rsrq", "poor_rsrq_run", PERSIST_THRESHOLDS["poor_rsrq"]),
+        ("ss_sinr", "poor_sinr_run", PERSIST_THRESHOLDS["poor_sinr"]),
+    ]
+
+    for metric, run_col, threshold in mappings:
+        if metric not in df.columns:
+            df[run_col] = 0
+            continue
+
+        def calc_run(series: pd.Series, thresh: float = threshold) -> pd.Series:
+            runs = []
+            curr = 0
+            for val in series:
+                if pd.isna(val):
+                    curr = 0
+                elif val < thresh:
+                    curr += 1
+                else:
+                    curr = 0
+                runs.append(curr)
+            return pd.Series(runs, index=series.index, dtype="int64")
+
+        df[run_col] = df.groupby(group_cols, observed=True)[metric].transform(calc_run)
+
+    return df
+
+
+def build_features(df: pd.DataFrame, window: int = DEFAULT_WINDOW) -> pd.DataFrame:
+    """Compose all feature engineering transformations raw clean -> feature dataset.
+
+    Origin: todo.md T4-005 — build_features pipeline composition.
+
+    Args:
+        df: Preprocessed DataFrame conforming to Contract C2.
+        window: Rolling window size in number of samples.
+
+    Returns:
+        Feature-engineered DataFrame conforming to Contract C3.
+    """
+    df = add_deltas(df)
+    df = add_change_flags(df)
+    df = add_rolling(df, window=window)
+    df = add_persistence(df)
     return df

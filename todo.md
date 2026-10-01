@@ -458,37 +458,37 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T3-009: EDA part 1 — missing values and distributions
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `notebooks/exploratory_analysis.ipynb` section 1: missing-value counts per column per device, histograms of `ss_rsrp`, `ss_rsrq`, `ss_sinr` per device, distinct `deployment_mode` and `network_type` values, list of sentinel values actually present. Each plot followed by a 1–2 sentence markdown observation (facts only).
 **Dependencies:** T3-008, T2-005, T2-008
 **Acceptance Criteria:**
-- [ ] Notebook runs top-to-bottom on `data/processed/`
-- [ ] Missing-value table present
-- [ ] Sentinel list feeds `SENTINEL_INTS` update note
+- [x] Notebook runs top-to-bottom on `data/processed/`
+- [x] Missing-value table present
+- [x] Sentinel list feeds `SENTINEL_INTS` update note
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
 
 #### T3-010: EDA part 2 — time series and transitions
-**Status:** ⬜
+**Status:** ✅
 **Description:** Section 2: RSRP/RSRQ/SINR over time per session, PCI/NCI change markers, network-type transitions, sample-interval distribution (verify ~3 s), gap distribution (informs session gap). Mark 'interesting events' without labelling them anomalies (overview §14).
 **Dependencies:** T3-008, T2-005
 **Acceptance Criteria:**
-- [ ] Plots for every session of both devices
-- [ ] Sample-interval histogram present
-- [ ] Interesting events listed with timestamps, not labelled anomalous
+- [x] Plots for every session of both devices
+- [x] Sample-interval histogram present
+- [x] Interesting events listed with timestamps, not labelled anomalous
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
 
 #### T3-011: EDA part 3 — device and operator comparison
-**Status:** ⬜
+**Status:** ✅
 **Description:** Section 3: compare Redmi vs Samsung (and OnePlus if available): metric distributions, CSI availability, deployment-mode values, cell-change frequency. State explicitly that differences may come from modem/API behaviour, not the network (overview §48.5).
 **Dependencies:** T3-009, T2-008
 **Acceptance Criteria:**
-- [ ] Comparison tables/plots exist
-- [ ] Caveat text present
-- [ ] No claim of operator superiority
+- [x] Comparison tables/plots exist
+- [x] Caveat text present
+- [x] No claim of operator superiority
 **Estimated Effort:** 45 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
@@ -547,25 +547,25 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-004: Implement persistence (run-length) features
-**Status:** ⬜
+**Status:** ✅
 **Description:** `add_persistence(df)`: `weak_rsrp_run`, `poor_rsrq_run`, `poor_sinr_run` = consecutive samples currently beyond the dataset-specific thresholds in `ml/config.py` (`PERSIST_THRESHOLDS`, values taken from EDA percentiles and documented as **dataset-specific, not universal**). Reset at session boundaries and at missing values.
 **Dependencies:** T3-012, T4-001
 **Acceptance Criteria:**
-- [ ] Run lengths verified on a hand-made sequence
-- [ ] Thresholds have origin comment referencing `docs/eda_findings.md`
-- [ ] Missing sample resets the run
+- [x] Run lengths verified on a hand-made sequence
+- [x] Thresholds have origin comment referencing `docs/eda_findings.md`
+- [x] Missing sample resets the run
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T4-005: Assemble `build_features` and finalise `FEATURE_COLUMNS`
-**Status:** ⬜
+**Status:** ✅
 **Description:** `build_features(df, window) -> DataFrame` composing T4-001…004; writes `data/processed/features.csv` (contract C3). Finalise `FEATURE_COLUMNS` in `ml/config.py` per EDA (base metrics + cell-context `pci`,`nci`,`nrarfcn` only if EDA supports using them as numeric features — ⚠️ UNCLEAR: raw IDs are categorical, not magnitudes; prefer change flags; record the decision). `csi_*` are NOT model features.
 **Dependencies:** T4-001, T4-002, T4-003, T4-004
 **Acceptance Criteria:**
-- [ ] Output has every C3 column
-- [ ] `FEATURE_COLUMNS` documented with rationale
-- [ ] Deterministic output hash across two runs
+- [x] Output has every C3 column
+- [x] `FEATURE_COLUMNS` documented with rationale
+- [x] Deterministic output hash across two runs
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
@@ -583,13 +583,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-007: Implement rolling z-score baseline
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `ml/anomaly_detection.py`: `baseline_scores(df)` → `baseline_z_rsrp/rsrq/sinr` (deviation of current value from the preceding rolling mean/std, excluding the current sample), `baseline_z_max`, `baseline_flag` when |z| ≥ `BASELINE_Z_THRESHOLD` (config, documented, tuned in T4-010). std=0 → z=0.
 **Dependencies:** T4-003
 **Acceptance Criteria:**
-- [ ] Flat signal gives no flags
-- [ ] A large step change is flagged
-- [ ] Warm-up rows unflagged and marked
+- [x] Flat signal gives no flags
+- [x] A large step change is flagged
+- [x] Warm-up rows unflagged and marked
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
