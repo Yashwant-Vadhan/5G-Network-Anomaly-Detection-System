@@ -1,0 +1,12 @@
+{
+  "device": "Samsung Galaxy A15 5G (SM-A156E/DS)",
+  "manufacturer": "Samsung",
+  "android_version": 16,
+  "operator": "Airtel",
+  "scenario": "C_outdoor_movement",
+  "environment": "outdoor",
+  "coarse_location_label": "campus_outdoor_route",
+  "sample_count": 502,
+  "collector_version": "com.example.a5gnetworktester v1.0",
+  "notes": "Samsung travel/outdoor movement measurement dataset (502 samples). CSI fields (csi_rsrp, csi_rsrq, csi_sinr) are reported as NA by the device framework."
+}

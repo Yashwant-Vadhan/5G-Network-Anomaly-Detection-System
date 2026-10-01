@@ -41,7 +41,11 @@ def violations(files: list[str]) -> list[str]:
     """Return one human-readable message per blocked path."""
     problems: list[str] = []
     for name in files:
-        if name.startswith(RAW_PREFIX) and name not in RAW_ALLOWED:
+        if (
+            name.startswith(RAW_PREFIX)
+            and name not in RAW_ALLOWED
+            and not name.endswith(".meta.json")
+        ):
             problems.append(
                 f"{name}: raw measurement data must not be committed (guardrail G7). "
                 f"Keep it in {RAW_PREFIX} locally and manifest it with "

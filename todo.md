@@ -266,35 +266,35 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-008: Collect Samsung data — Scenario A (stationary)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Install the collector on Sushil's Samsung SM-A156E/DS (Airtel), stationary, ≥200 samples. Copy CSV to `data/raw/` per convention + `.meta.json`. Record which columns are `NA` (e.g., CSI) in the meta notes.
 **Dependencies:** T2-001, T2-003
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] Named per convention
-- [ ] Meta notes list any always-`NA` columns
+- [x] ≥200 rows (506 samples collected)
+- [x] Named per convention
+- [x] Meta notes list any always-`NA` columns
 **Estimated Effort:** 30 min
 **Assigned To:** Data collection
 **Owner:** Sushil
 
 #### T2-009: Collect Samsung data — Scenario B (indoor movement)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Same procedure as T2-006 on the Samsung.
 **Dependencies:** T2-008
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] Meta complete
+- [x] ≥200 rows (764 samples collected)
+- [x] Meta complete
 **Estimated Effort:** 30 min
 **Assigned To:** Data collection
 **Owner:** Sushil
 
 #### T2-010: Collect Samsung data — Scenario C (outdoor movement)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Human-only. Same procedure as T2-007 on the Samsung.
 **Dependencies:** T2-008
 **Acceptance Criteria:**
-- [ ] ≥200 rows
-- [ ] Meta complete
+- [x] ≥200 rows (502 samples collected)
+- [x] Meta complete
 **Estimated Effort:** 45 min
 **Assigned To:** Data collection
 **Owner:** Sushil
@@ -311,12 +311,12 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T2-012: Generate and commit the raw-data manifest
-**Status:** ⬜
+**Status:** ✅
 **Description:** Run `scripts/make_manifest.py data/raw`, commit `MANIFEST.sha256` (hashes only, not data). Re-run whenever new raw files are added; never modify existing lines.
 **Dependencies:** T2-004, T2-005, T2-008
 **Acceptance Criteria:**
-- [ ] `--verify` passes
-- [ ] Manifest committed, raw CSVs not committed
+- [x] `--verify` passes
+- [x] Manifest committed, raw CSVs not committed
 **Estimated Effort:** 15 min
 **Assigned To:** DevOps
 **Owner:** Sushil
