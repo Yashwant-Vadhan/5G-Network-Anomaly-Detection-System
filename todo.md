@@ -595,13 +595,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T4-008: Train Isolation Forest with provenance metadata
-**Status:** ⬜
+**Status:** ✅
 **Description:** `ml/train.py`: `IsolationForest(random_state=RANDOM_STATE, n_estimators, contamination from config)` on scaled eligible features; save `models/if_v1.joblib` and `models/if_v1.meta.json` (feature list, params, seed, sklearn version, training-data SHA-256, row count, date). Real data only unless a synthetic flag is explicitly passed (G11).
 **Dependencies:** T4-006, T3-012
 **Acceptance Criteria:**
-- [ ] Two runs produce identical scores
-- [ ] Metadata file complete
-- [ ] Training with `is_synthetic` rows requires an explicit flag
+- [x] Two runs produce identical scores
+- [x] Metadata file complete
+- [x] Training with `is_synthetic` rows requires an explicit flag
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
