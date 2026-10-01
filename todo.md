@@ -374,13 +374,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T3-002: Implement timestamp parsing and sorting
-**Status:** ⬜
+**Status:** ✅
 **Description:** `parse_timestamps(df)`: parse `timestamp` using the format documented in `data/README.md` (⚠️ UNCLEAR until T2-002 — if not decided, try ISO-8601 and epoch-ms, fail loudly on ambiguity), store as timezone-aware or documented-naive datetime; sort by `device`, `timestamp` (stable); rows with unparseable timestamps go to a `rejected_rows` frame with reason, never silently dropped.
 **Dependencies:** T3-001, T2-002
 **Acceptance Criteria:**
-- [ ] Sorted output verified on unsorted fixture
-- [ ] Unparseable timestamp rows counted in the log
-- [ ] Duplicate timestamps kept but flagged `dup_ts=True`
+- [x] Sorted output verified on unsorted fixture
+- [x] Unparseable timestamp rows counted in the log
+- [x] Duplicate timestamps kept but flagged `dup_ts=True`
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant

@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from ml.config import RAW_COLUMNS
-from ml.preprocessing import load_raw_csv, load_raw_dir
+from ml.preprocessing import load_raw_csv, load_raw_dir, parse_timestamps
 from ml.schema import DataQualityError, SchemaError
 
 
@@ -59,3 +59,36 @@ def test_load_raw_dir(tmp_path: Path):
     assert len(df) == 2
     assert df.loc[0, "source_file"] == "a_data.csv"
     assert df.loc[1, "source_file"] == "b_data.csv"
+
+
+def test_parse_timestamps_sorting_and_duplicates():
+    """Test parse_timestamps sorting, duplicate timestamp flagging, and unparseable rejection."""
+    data = {
+        "timestamp": [
+            "2026-09-28T10:00:15Z",  # out of order
+            "2026-09-28T10:00:09Z",  # earlier timestamp
+            "2026-09-28T10:00:20Z",  # duplicate 1
+            "2026-09-28T10:00:20Z",  # duplicate 2
+            "NOT_A_TIMESTAMP",       # invalid
+        ],
+        "device": ["Redmi 13 5G"] * 5,
+        "val": [1, 2, 3, 4, 5],
+    }
+    raw_df = pd.DataFrame(data)
+
+    clean_df, rejected_df = parse_timestamps(raw_df)
+
+    # Check unparseable rejection
+    assert len(rejected_df) == 1
+    assert rejected_df.iloc[0]["timestamp"] == "NOT_A_TIMESTAMP"
+    assert rejected_df.iloc[0]["reject_reason"] == "unparseable_timestamp"
+
+    # Check clean df length and order
+    assert len(clean_df) == 4
+    timestamps = list(clean_df["timestamp"])
+    assert timestamps == sorted(timestamps)
+
+    # Check duplicate flags
+    # The two 10:00:20Z rows should have dup_ts=True, others False
+    dup_flags = list(clean_df["dup_ts"])
+    assert dup_flags == [False, False, True, True]

@@ -75,3 +75,36 @@ def load_raw_dir(dir_path: str | Path) -> pd.DataFrame:
 
     dfs = [load_raw_csv(p) for p in csv_paths]
     return pd.concat(dfs, ignore_index=True)
+
+
+def parse_timestamps(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Parse timestamp column, reject unparseable rows, flag duplicate timestamps, and sort.
+
+    Supports collector local timestamp format ('dd-MM-yy HH:mm:ss') and ISO-8601 strings.
+    Rows with unparseable timestamps are extracted into a separate rejected DataFrame with reason.
+    Valid rows are flagged for duplicate timestamps via 'dup_ts' and stably sorted by
+    ['device', 'timestamp'].
+
+    Args:
+        df: Input DataFrame containing raw string 'timestamp' and 'device' columns.
+
+    Returns:
+        Tuple of (clean_sorted_df, rejected_rows_df).
+    """
+    df = df.copy()
+    parsed_ts = pd.to_datetime(df["timestamp"], format="mixed", errors="coerce", utc=True)
+
+    invalid_mask = parsed_ts.isna()
+    rejected_df = df[invalid_mask].copy()
+    if not rejected_df.empty:
+        rejected_df["reject_reason"] = "unparseable_timestamp"
+
+    clean_df = df[~invalid_mask].copy()
+    clean_df["timestamp"] = parsed_ts[~invalid_mask]
+
+    # Flag duplicate timestamps within the same device
+    clean_df["dup_ts"] = clean_df.duplicated(subset=["device", "timestamp"], keep=False)
+
+    # Stable sort by device, then timestamp
+    sorted_df = clean_df.sort_values(by=["device", "timestamp"], kind="stable", ignore_index=True)
+    return sorted_df, rejected_df
