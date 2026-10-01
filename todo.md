@@ -535,13 +535,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-003: Implement rolling statistics
-**Status:** ⬜
+**Status:** ✅
 **Description:** `add_rolling(df, window)`: `rolling_mean_*` and `rolling_std_*` for rsrp/rsrq/sinr, computed per session, `min_periods` documented (e.g., `max(2, window//2)`), window from config (5/10/20; ≈15/30/60 s). Std of a single value → missing (not 0).
 **Dependencies:** T3-008, T1-007
 **Acceptance Criteria:**
-- [ ] No leakage across sessions
-- [ ] Window parameter respected
-- [ ] Test verifies a hand-computed mean/std on 5 values
+- [x] No leakage across sessions
+- [x] Window parameter respected
+- [x] Test verifies a hand-computed mean/std on 5 values
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
