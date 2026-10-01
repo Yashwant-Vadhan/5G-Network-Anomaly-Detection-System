@@ -1,9 +1,13 @@
 """Unit tests for ml/anomaly_detection.py."""
 
+from pathlib import Path
+import numpy as np
 import pandas as pd
 import pytest
 
-from ml.anomaly_detection import baseline_scores
+from ml.anomaly_detection import baseline_scores, if_scores
+from ml.config import FEATURE_COLUMNS
+from ml.train import train_iforest
 
 
 def test_baseline_scores_flat_signal():
@@ -44,3 +48,34 @@ def test_baseline_scores_step_change_flagged():
     # Sample at idx 5 (drop to -120) has large z-score and baseline_flag=True
     assert result.loc[5, "baseline_z_rsrp"] > 2.5
     assert result.loc[5, "baseline_flag"]
+
+
+def test_if_scores(tmp_path: Path):
+    """Test IsolationForest scoring function, score range, and ineligible row handling."""
+    data = {col: np.random.RandomState(42).randn(20) * 5 + 50 for col in FEATURE_COLUMNS}
+    df = pd.DataFrame(data)
+    df["model_eligible"] = True
+    df["is_synthetic"] = False
+
+    # Make row 5 ineligible and row 10 missing feature
+    df.loc[5, "model_eligible"] = False
+    df.loc[10, "ss_rsrp"] = np.nan
+
+    model, _, _ = train_iforest(df, out_dir=tmp_path)
+    from joblib import load
+    scaler = load(tmp_path / "scaler.joblib")
+
+    scored_df = if_scores(df, model=model, scaler=scaler, threshold=0.5)
+
+    assert "if_score" in scored_df.columns
+    assert "if_flag" in scored_df.columns
+
+    valid_scores = scored_df.loc[scored_df["if_score"].notna(), "if_score"]
+    assert (valid_scores >= 0.0).all()
+    assert (valid_scores <= 1.0).all()
+
+    # Ineligible rows 5 and 10 should be NaN score and False flag
+    assert pd.isna(scored_df.loc[5, "if_score"])
+    assert not scored_df.loc[5, "if_flag"]
+    assert pd.isna(scored_df.loc[10, "if_score"])
+    assert not scored_df.loc[10, "if_flag"]

@@ -607,13 +607,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-009: Implement Isolation Forest scoring
-**Status:** ⬜
+**Status:** ✅
 **Description:** `if_scores(df, model, scaler)` → `if_score` in [0,1] (document the exact normalisation from `score_samples`; higher = more unusual) and `if_flag` by a documented threshold (from contamination or quantile). Ineligible rows get missing score.
 **Dependencies:** T4-008
 **Acceptance Criteria:**
-- [ ] Score range [0,1] verified
-- [ ] Ineligible rows unscored
-- [ ] Formula written in the docstring and `docs/ml_methodology.md` stub
+- [x] Score range [0,1] verified
+- [x] Ineligible rows unscored
+- [x] Formula written in the docstring and `docs/ml_methodology.md` stub
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
