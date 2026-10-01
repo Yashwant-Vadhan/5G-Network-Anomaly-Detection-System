@@ -643,49 +643,49 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T4-012: Classification rules — cell and network-state transitions
-**Status:** ⬜
+**Status:** ✅
 **Description:** `is_cell_transition(window)` (PCI/NCI change) and `is_network_transition(window)` (5G NR↔LTE, repeated transitions flagged as candidates, overview §17.4). Both return **event** flags, not anomaly flags (G6).
 **Dependencies:** T4-005
 **Acceptance Criteria:**
-- [ ] Single PCI change → event, not anomaly
-- [ ] Repeated 5G↔LTE flapping marked as candidate
-- [ ] `UNKNOWN` deployment mode alone triggers nothing
+- [x] Single PCI change → event, not anomaly
+- [x] Repeated 5G↔LTE flapping marked as candidate
+- [x] `UNKNOWN` deployment mode alone triggers nothing
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T4-013: Classification — persistent poor quality, combined anomaly, precedence
-**Status:** ⬜
+**Status:** ✅
 **Description:** `classify(window) -> anomaly_type`: implements `PERSISTENT_POOR_QUALITY` (§17.5), `COMBINED_ANOMALY` (cell transition + degradation + persistence, §17.6), and the precedence Combined > Persistent > Sudden > Degradation > Network > Cell > NONE. A sample is an *anomaly* only if ML flag and/or rule evidence support it; ML-only flags are labelled `STATISTICAL_ONLY` with no invented cause.
 **Dependencies:** T4-011, T4-012
 **Acceptance Criteria:**
-- [ ] §47 example sequence classified COMBINED (or documented reason)
-- [ ] Cell change alone → not anomalous
-- [ ] Precedence test covers every pair
+- [x] §47 example sequence classified COMBINED (or documented reason)
+- [x] Cell change alone → not anomalous
+- [x] Precedence test covers every pair
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
 
 #### T4-014: Implement severity estimation
-**Status:** ⬜
+**Status:** ✅
 **Description:** `estimate_severity(event) -> LOW|MEDIUM|HIGH` from `if_score`, persistence length, magnitude of degradation, number of affected metrics, network-state changes (overview §46). Thresholds in `ml/config.py` with rationale in `docs/ml_methodology.md`; mark as *provisional until validated in T7-018*.
 **Dependencies:** T4-013, T4-009
 **Acceptance Criteria:**
-- [ ] Monotonic: more evidence never lowers severity (property-style test)
-- [ ] Thresholds documented
-- [ ] Provisional label in docs
+- [x] Monotonic: more evidence never lowers severity (property-style test)
+- [x] Thresholds documented
+- [x] Provisional label in docs
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
 
 #### T4-015: Run detection end-to-end and group events
-**Status:** ⬜
+**Status:** ✅
 **Description:** `ml/anomaly_analysis.py: detect(features_df) -> scores_df, events`: merges baseline + IF + classification + severity into `scores.csv` (contract C4) and groups contiguous flagged samples (gap tolerance from config) into events with `event_id`. Write `data/processed/scores.csv` and `data/processed/events.json` (pre-agent).
 **Dependencies:** T4-014, T4-007
 **Acceptance Criteria:**
-- [ ] `scores.csv` contains all C4 columns
-- [ ] Contiguous flags grouped into one event
-- [ ] Deterministic across runs
+- [x] `scores.csv` contains all C4 columns
+- [x] Contiguous flags grouped into one event
+- [x] Deterministic across runs
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
@@ -696,73 +696,73 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Signal, Cell, Network, Diagnosis, Recommendation agents — deterministic, evidence-based*
 
 #### T5-001: Agent orchestrator skeleton and `EventWindow` builder
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/orchestrator.py`: `build_event_window(scores_df, event, context=N)` creating an `EventWindow` with N samples of context before the event; `run_agents(window) -> dict` calling Signal → Cell → Network → Diagnosis → Recommendation in order. Orchestrator must not import sklearn or read ML models (G9).
 **Dependencies:** T1-009, T4-015
 **Acceptance Criteria:**
-- [ ] Window includes context samples and never crosses sessions
-- [ ] Stub agents can be plugged via a registry for tests
-- [ ] No `sklearn` import (test greps)
+- [x] Window includes context samples and never crosses sessions
+- [x] Stub agents can be plugged via a registry for tests
+- [x] No `sklearn` import (test greps)
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil
 
 #### T5-002: Implement Signal Agent
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/signal_agent.py: analyse(window) -> SignalReport`. Inputs: RSRP, RSRQ, SINR, deltas, rolling stats. Output `signal_condition ∈ {good, fair, degraded, unknown}` (bands from config, documented as dataset-specific) and evidence strings with concrete numbers (`"SINR dropped from +3 to -7 dB"`). Only signal reasoning — no cell or network logic (G14).
 **Dependencies:** T1-009
 **Acceptance Criteria:**
-- [ ] Overview §28 example produces `degraded` with two evidence items
-- [ ] All-missing signal → `unknown`, no crash
-- [ ] No imports from other agents
+- [x] Overview §28 example produces `degraded` with two evidence items
+- [x] All-missing signal → `unknown`, no crash
+- [x] No imports from other agents
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Yashwant
 
 #### T5-003: Implement Cell Transition Agent
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/cell_agent.py: analyse(window) -> CellReport`. Detect `CELL_CHANGE` (PCI/NCI change), `REPEATED_CELL_CHANGE` (≥ N changes in M samples, ping-pong A→B→A), `NONE`. Include NRARFCN change as evidence. Evidence like `"PCI changed from 336 to 565"`. Distinguish a single normal change from a suspicious sequence, without calling either an anomaly by itself.
 **Dependencies:** T1-009
 **Acceptance Criteria:**
-- [ ] Single change → `CELL_CHANGE` with neutral wording
-- [ ] A→B→A within window → `REPEATED_CELL_CHANGE`
-- [ ] Missing PCI handled
+- [x] Single change → `CELL_CHANGE` with neutral wording
+- [x] A→B→A within window → `REPEATED_CELL_CHANGE`
+- [x] Missing PCI handled
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Yashwant
 
 #### T5-004: Implement Network-State Agent
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/network_agent.py: analyse(window) -> NetworkReport`. Inputs: `network_type`, `deployment_mode`, `display_override`, `registered`. Detect 5G NR↔LTE transitions and registration changes; report `deployment_mode` exactly as observed; **never output SA when input is UNKNOWN** (G4).
 **Dependencies:** T1-009
 **Acceptance Criteria:**
-- [ ] UNKNOWN in → UNKNOWN out (parametrised test over all modes)
-- [ ] 5G→LTE transition reported as transition, not as fault
-- [ ] `registered=False` produces evidence
+- [x] UNKNOWN in → UNKNOWN out (parametrised test over all modes)
+- [x] 5G→LTE transition reported as transition, not as fault
+- [x] `registered=False` produces evidence
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil
 
 #### T5-005: Implement Diagnosis Agent
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/diagnosis_agent.py: diagnose(signal, cell, network, ml, anomaly_type) -> Diagnosis`. Combines evidence, selects the most plausible category (must be consistent with `anomaly_type` from `ml/anomaly_analysis.py` — it explains, it does not re-decide), lists evidence, adds `confidence_note` ("correlation, not confirmed cause", §48.7). Uses hedged phrases only ("possible", "associated with").
 **Dependencies:** T5-002, T5-003, T5-004
 **Acceptance Criteria:**
-- [ ] §47 scenario yields text equivalent to 'Possible radio-quality degradation associated with a cell transition'
-- [ ] No causal words ("caused", "because of") in outputs (test)
-- [ ] ML-only flag yields 'statistically unusual, no rule evidence'
+- [x] §47 scenario yields text equivalent to 'Possible radio-quality degradation associated with a cell transition'
+- [x] No causal words ("caused", "because of") in outputs (test)
+- [x] ML-only flag yields 'statistically unusual, no rule evidence'
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Yashwant
 
 #### T5-006: Implement Recommendation Agent
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/recommendation_agent.py: recommend(diagnosis, severity, evidence) -> Recommendation`. `kind=MONITORING` for user/system-side steps (continue monitoring, re-check after N samples, collect more data); `kind=OPERATOR_ACTION` only as *suggestions to investigate* (coverage, interference, congestion, cell behaviour). Never states an action the system performed.
 **Dependencies:** T5-005
 **Acceptance Criteria:**
-- [ ] Overview §28 example wording reproduced in spirit
-- [ ] No first-person action claims (test)
-- [ ] LOW severity → monitoring only
+- [x] Overview §28 example wording reproduced in spirit
+- [x] No first-person action claims (test)
+- [x] LOW severity → monitoring only
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil
