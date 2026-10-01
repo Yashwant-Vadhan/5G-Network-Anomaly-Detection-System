@@ -571,13 +571,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T4-006: Implement feature scaling
-**Status:** ⬜
+**Status:** ✅
 **Description:** `fit_scaler(train_df)` / `transform(df)` using `StandardScaler` on `FEATURE_COLUMNS`, fit on the training partition only, saved with joblib next to the model. Rows with `model_eligible=False` or missing features are excluded from fit and transform and stay `model_eligible=False`.
 **Dependencies:** T4-005
 **Acceptance Criteria:**
-- [ ] Scaler fitted on train only (test asserts fit rows count)
-- [ ] Ineligible rows are skipped, not imputed
-- [ ] Scaler file saved to `models/`
+- [x] Scaler fitted on train only (test asserts fit rows count)
+- [x] Ineligible rows are skipped, not imputed
+- [x] Scaler file saved to `models/`
 **Estimated Effort:** 30 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
