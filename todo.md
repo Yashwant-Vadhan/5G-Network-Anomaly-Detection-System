@@ -362,13 +362,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Reproducible raw → clean pipeline and EDA findings that fix the open questions (replaces the generic Auth phase — not applicable to a local tool)*
 
 #### T3-001: Implement `load_raw_csv` and column validation
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `ml/preprocessing.py`: `load_raw_csv(path) -> DataFrame` reading all columns as strings first (preserve `NA`), calling `validate_raw_columns` and `assert_no_pii_columns`; adds `source_file` column. `load_raw_dir(dir)` concatenates all CSVs deterministically (sorted filenames). Refuses paths outside `data/raw/` only when called via CLI (function itself is generic for tests).
 **Dependencies:** T1-008
 **Acceptance Criteria:**
-- [ ] Valid file loads with 18 columns + `source_file`
-- [ ] Bad header → `SchemaError`
-- [ ] Empty file → `DataQualityError`
+- [x] Valid file loads with 18 columns + `source_file`
+- [x] Bad header → `SchemaError`
+- [x] Empty file → `DataQualityError`
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
