@@ -57,6 +57,8 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Estimated Complexity:** Medium–High (evaluation with tiny, self-labelled data needs careful honesty).
 - **Acceptance Criteria:**
   - [ ] `make setup demo` works from a fresh clone on both teammates' machines.
+  - [x] End-to-end pipeline CLI (T7-001), full integration test (T7-007), and security/privacy checks (T7-009) implemented and passing.
+  - [x] Labelling guidelines (T7-011) and evaluation labels for labeller 1 (T7-012) created.
   - [ ] Coverage ≥80% on `ml/` and `agents/` *(proposed target)*; all guardrails G1–G16 mapped to a test or documented check.
   - [ ] `docs/results.md` reports precision/recall/F1/FPR/detection rate/latency for **both** baseline and IF on the same labels, with label counts; states plainly if IF does not beat the baseline.
   - [ ] False positives investigated in `docs/false_positive_analysis.md`.

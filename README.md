@@ -16,8 +16,8 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Anomaly classification & severity | ✅ Implemented and verified |
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
 | Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
-| End-to-end pipeline & tests | 🔄 In progress (pipeline CLI implemented — T7-001) |
-| Evaluation (baseline vs. Isolation Forest) | ⬜ Not started |
+| End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
+| Evaluation & Labelling Guidelines | 🔄 In progress (Labelling guidelines T7-011 and Yashwant evaluation labels T7-012 completed) |
 
 Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md).
 
@@ -58,7 +58,8 @@ commands directly, e.g. `python -m ruff check .` and `python -m pytest`.
 ├── data/
 │   ├── raw/               # immutable, git-ignored; real device CSVs
 │   ├── processed/         # generated, git-ignored
-│   └── sample/            # small committed real-data excerpt
+│   ├── sample/            # small committed real-data excerpt
+│   └── eval/              # ground truth evaluation labels
 ├── ml/                    # preprocessing, feature engineering, detection models
 ├── agents/                # Signal / Cell / Network / Diagnosis / Recommendation agents
 ├── pipelines/             # end-to-end pipeline CLI
@@ -95,6 +96,8 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, branch/commit conventions, task claiming, guardrail checklist for contributors and AI agents |
 | [`docs/eda_findings.md`](docs/eda_findings.md) | Collector verification results, EDA observations, and answers to open questions |
 | [`docs/decisions.md`](docs/decisions.md) | Architectural Decision Records (ADRs) covering agents, ML baseline, privacy, and storage |
+| [`docs/testing.md`](docs/testing.md) | Security and privacy checks, test suite structure, and non-applicable security items |
+| [`docs/labelling_guidelines.md`](docs/labelling_guidelines.md) | Guidelines and blind labelling schema for human ground-truth evaluation |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims
