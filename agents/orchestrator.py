@@ -93,13 +93,14 @@ def run_agents(window: EventWindow) -> dict[str, Any]:
         window: EventWindow input context.
 
     Returns:
-        Dictionary containing all structured agent reports.
+        Dictionary containing all structured agent reports matching Contract C5.
     """
     from agents.cell_agent import analyze as analyze_cell
     from agents.diagnosis_agent import diagnose
     from agents.network_agent import analyze as analyze_network
     from agents.recommendation_agent import recommend
     from agents.signal_agent import analyze as analyze_signal
+    from agents.text_renderer import render
 
     # 1. Signal Agent
     signal_report: SignalReport = analyze_signal(window)
@@ -122,11 +123,97 @@ def run_agents(window: EventWindow) -> dict[str, Any]:
     # 5. Recommendation Agent
     recommendation_report: Recommendation = recommend(diagnosis=diagnosis_report)
 
+    # Render explanation text
+    rendered_text: str = render(diagnosis_report, recommendation_report)
+
     return {
         "event_id": window.event_id,
+        "session_id": window.session_id,
+        "start": window.start,
+        "end": window.end,
+        "anomaly_type": window.ml.get("anomaly_type", "NORMAL"),
+        "severity": window.ml.get("max_severity", "LOW"),
+        "ml": window.ml,
+        "signal": signal_report.to_dict(),
+        "cell": cell_report.to_dict(),
+        "network": network_report.to_dict(),
         "signal_report": signal_report.to_dict(),
         "cell_report": cell_report.to_dict(),
         "network_report": network_report.to_dict(),
         "diagnosis": diagnosis_report.to_dict(),
         "recommendation": recommendation_report.to_dict(),
+        "explanation_text": rendered_text,
     }
+
+
+REQUIRED_C5_KEYS: set[str] = {
+    "event_id",
+    "session_id",
+    "start",
+    "end",
+    "anomaly_type",
+    "severity",
+    "ml",
+    "signal",
+    "cell",
+    "network",
+    "diagnosis",
+    "recommendation",
+}
+
+
+def validate_c5_record(record: dict[str, Any]) -> None:
+    """Validate that an event record contains all required C5 contract keys."""
+    missing = REQUIRED_C5_KEYS - set(record.keys())
+    if missing:
+        raise ValueError(
+            f"Invalid C5 record '{record.get('event_id', 'unknown')}': missing required keys {sorted(missing)}"
+        )
+
+
+def run_all_events(
+    scores_df: pd.DataFrame,
+    events: list[dict[str, Any]],
+    context_samples: int = 5,
+) -> list[dict[str, Any]]:
+    """Run agent pipeline for all detected events in a dataset.
+
+    Args:
+        scores_df: Scored measurements DataFrame.
+        events: List of event dictionaries.
+        context_samples: Number of preceding context samples to include.
+
+    Returns:
+        List of diagnosed event dictionaries adhering to Contract C5.
+    """
+    diagnosed_events = []
+    for event in events:
+        window = build_event_window(scores_df, event, context_samples=context_samples)
+        record = run_agents(window)
+        diagnosed_events.append(record)
+    return diagnosed_events
+
+
+def write_events_diagnosed(events: list[dict[str, Any]], path: Path | str) -> None:
+    """Validate all event records against Contract C5 and write to JSON.
+
+    Fails loudly without writing a partial file if any record is invalid.
+
+    Args:
+        events: List of diagnosed event dictionaries.
+        path: Path to output JSON file.
+    """
+    import json
+    from pathlib import Path
+
+    for record in events:
+        validate_c5_record(record)
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(events, f, indent=2)
+
+    logger.info("Successfully wrote %d diagnosed events to %s", len(events), output_path)
+

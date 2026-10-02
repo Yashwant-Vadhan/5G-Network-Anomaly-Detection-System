@@ -13,8 +13,8 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Data preprocessing pipeline | ✅ Implemented and verified against C2 (30 unit tests passing) |
 | Feature engineering | ✅ Implemented and verified against C3 |
 | Anomaly detection (baseline z-score + Isolation Forest) | ✅ Implemented and verified |
-| Anomaly classification & severity | 🔄 In progress (signal and sudden degradation rules done — T4-011) |
-| Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ⬜ Not started |
+| Anomaly classification & severity | ✅ Implemented and verified |
+| Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
 | Interpretability dashboard (Streamlit) | ⬜ Not started |
 | End-to-end pipeline & tests | ⬜ Not started |
 | Evaluation (baseline vs. Isolation Forest) | ⬜ Not started |

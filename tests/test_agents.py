@@ -132,3 +132,70 @@ def test_text_renderer_all_types_and_determinism():
         for forbidden in FORBIDDEN_WORDS:
             assert forbidden not in lower_text
 
+
+def test_write_events_diagnosed_contract_c5(tmp_path):
+    """T5-008: Verify write_events_diagnosed produces valid C5 JSON matching example keys."""
+    import json
+    from agents.orchestrator import write_events_diagnosed
+
+    df = pd.DataFrame(
+        {
+            "ss_rsrp": [-80.0, -85.0, -115.0],
+            "ss_sinr": [20.0, 10.0, -5.0],
+            "pci": [336, 336, 565],
+            "network_type": ["NR", "NR", "NR"],
+            "deployment_mode": ["NSA", "NSA", "NSA"],
+            "registered": [True, True, True],
+        }
+    )
+
+    window = EventWindow(
+        df=df,
+        event_id="evt-c5-001",
+        session_id="redmi-1",
+        start="2026-09-28T10:00:00Z",
+        end="2026-09-28T10:00:06Z",
+        context_before=0,
+        ml={"anomaly_type": "COMBINED_ANOMALY", "max_severity": "MEDIUM", "if_score": 0.71},
+    )
+
+    res = run_agents(window)
+    out_file = tmp_path / "events_diagnosed.json"
+
+    write_events_diagnosed([res], out_file)
+
+    assert out_file.exists()
+    with open(out_file, encoding="utf-8") as f:
+        data = json.load(f)
+
+    assert len(data) == 1
+    rec = data[0]
+    assert rec["event_id"] == "evt-c5-001"
+    assert rec["session_id"] == "redmi-1"
+    assert rec["anomaly_type"] == "COMBINED_ANOMALY"
+    assert "signal" in rec
+    assert "cell" in rec
+    assert "network" in rec
+    assert "diagnosis" in rec
+    assert "recommendation" in rec
+
+
+def test_write_events_diagnosed_fails_on_missing_keys(tmp_path):
+    """T5-008: Verify write_events_diagnosed raises ValueError and does not write file when keys are missing."""
+    import pytest
+    from agents.orchestrator import write_events_diagnosed
+
+    incomplete_event = {
+        "event_id": "evt-bad",
+        "session_id": "redmi-1",
+        # Missing start, end, signal, cell, network, diagnosis, recommendation, etc.
+    }
+
+    out_file = tmp_path / "events_diagnosed_bad.json"
+
+    with pytest.raises(ValueError, match="missing required keys"):
+        write_events_diagnosed([incomplete_event], out_file)
+
+    assert not out_file.exists()
+
+

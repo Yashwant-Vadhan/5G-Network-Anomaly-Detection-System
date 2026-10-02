@@ -780,13 +780,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T5-008: Wire orchestrator output to `events_diagnosed.json`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Extend `run_agents` and add `write_events_diagnosed(events, path)` producing contract C5; validate each record against `agents/contracts.py` before writing; fail loudly on missing keys.
 **Dependencies:** T5-001, T5-006, T5-007
 **Acceptance Criteria:**
-- [ ] Output matches contract C5 example keys
-- [ ] Invalid record raises instead of writing partial file
-- [ ] Runs on `data/sample/` output
+- [x] Output matches contract C5 example keys
+- [x] Invalid record raises instead of writing partial file
+- [x] Runs on `data/sample/` output
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil

@@ -45,9 +45,9 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Estimated Complexity:** High (most of the intellectual work; the critical path of ~21 sequential hours runs through here and into evaluation).
 - **Acceptance Criteria:**
   - [x] Preprocessing is idempotent (identical output hash on two runs) and never writes into `data/raw/`.
-  - [ ] `scores.csv` (C4) and `events_diagnosed.json` (C5) generated from `data/sample/`.
-  - [ ] Negative cases pass: low RSRP alone, low SINR alone, PCI/NCI change alone, 5G→LTE alone, UNKNOWN alone → **not anomalies**.
-  - [ ] Network Agent never outputs SA for UNKNOWN; agent modules do not import scikit-learn.
+  - [x] `scores.csv` (C4) and `events_diagnosed.json` (C5) generated from `data/sample/`.
+  - [x] Negative cases pass: low RSRP alone, low SINR alone, PCI/NCI change alone, 5G→LTE alone, UNKNOWN alone → **not anomalies**.
+  - [x] Network Agent never outputs SA for UNKNOWN; agent modules do not import scikit-learn.
   - [x] `docs/eda_findings.md` answers PRD Open Questions 1–4 or states why they remain open.
 
 ### Milestone 2 — MVP Complete & Polish
