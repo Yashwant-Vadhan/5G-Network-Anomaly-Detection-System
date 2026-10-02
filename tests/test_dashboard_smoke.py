@@ -37,14 +37,14 @@ def test_page_2_signal_explorer_smoke():
 
 def test_page_3_cells_and_network_smoke():
     """Verify Cells and Network page loads without exception."""
-    at = AppTest.from_file(str(PAGES_DIR / "3_Cells_and_Network.py"), default_timeout=10)
+    at = AppTest.from_file(str(PAGES_DIR / "3_Cells_And_Network.py"), default_timeout=10)
     at.run()
     assert not at.exception
 
 
 def test_page_4_events_and_diagnosis_smoke():
     """Verify Events and Diagnosis page loads without exception."""
-    at = AppTest.from_file(str(PAGES_DIR / "4_Events_and_Diagnosis.py"), default_timeout=10)
+    at = AppTest.from_file(str(PAGES_DIR / "4_Events_And_Diagnosis.py"), default_timeout=10)
     at.run()
     assert not at.exception
 
@@ -58,6 +58,6 @@ def test_page_5_data_quality_smoke():
 
 def test_page_6_about_smoke():
     """Verify About and Limitations page loads without exception and includes Non-Claims."""
-    at = AppTest.from_file(str(PAGES_DIR / "6_About_and_Limitations.py"), default_timeout=10)
+    at = AppTest.from_file(str(PAGES_DIR / "6_About_And_Limitations.py"), default_timeout=10)
     at.run()
     assert not at.exception
