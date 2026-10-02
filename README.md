@@ -16,7 +16,7 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Anomaly classification & severity | ✅ Implemented and verified |
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
 | Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
-| End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), security/privacy (T7-009), unit & smoke tests (93/93 passing in CI) |
+| End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
 | Evaluation & Labelling Guidelines | 🔄 In progress (Labelling guidelines T7-011 and Yashwant evaluation labels T7-012 completed) |
 
 Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md).
