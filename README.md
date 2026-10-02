@@ -17,7 +17,7 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
 | Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
 | End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
-| Evaluation & Labelling Guidelines | 🔄 In progress (Labelling guidelines T7-011 and Yashwant evaluation labels T7-012 completed) |
+| Evaluation & Labelling Guidelines | ✅ Completed (Labelling guidelines T7-011, evaluation labels T7-012/T7-013, baseline vs IF benchmark T7-016, false-positive report T7-018) |
 
 Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md).
 
@@ -99,6 +99,8 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/testing.md`](docs/testing.md) | Security and privacy checks, test suite structure, and non-applicable security items |
 | [`docs/guardrails_checklist.md`](docs/guardrails_checklist.md) | Complete audit mapping of G1–G16 guardrails to test suites and enforcement mechanisms |
 | [`docs/labelling_guidelines.md`](docs/labelling_guidelines.md) | Guidelines and blind labelling schema for human ground-truth evaluation |
+| [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
+| [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md) | False positive & negative investigation report with severity validation |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims

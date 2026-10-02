@@ -60,8 +60,8 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [x] End-to-end pipeline CLI (T7-001), full integration test (T7-007), and security/privacy checks (T7-009) implemented and passing.
   - [x] Labelling guidelines (T7-011) and evaluation labels for labeller 1 (T7-012) created.
   - [ ] Coverage ≥80% on `ml/` and `agents/` *(proposed target)*; all guardrails G1–G16 mapped to a test or documented check.
-  - [ ] `docs/results.md` reports precision/recall/F1/FPR/detection rate/latency for **both** baseline and IF on the same labels, with label counts; states plainly if IF does not beat the baseline.
-  - [ ] False positives investigated in `docs/false_positive_analysis.md`.
+  - [x] `docs/results.md` reports precision/recall/F1/FPR/detection rate/latency for **both** baseline and IF on the same labels, with label counts; states plainly if IF does not beat the baseline.
+  - [x] False positives investigated in `docs/false_positive_analysis.md`.
   - [ ] README, dashboard About page and slides contain the Non-Claims (overview §53).
   - [ ] Overview §58 Definition of Done audited with evidence links; `v1.0.0` tagged only if MVP is complete.
 
