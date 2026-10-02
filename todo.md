@@ -1364,12 +1364,12 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T9-006: (Optional) iOS collection research note
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** One-page note on what an iOS collector could and could not expose (the Android Telephony collector cannot be reused, overview §10); no code; mark unknowns as unknown.
 **Dependencies:** T2-015
 **Acceptance Criteria:**
-- [ ] Note exists with sources or 'unverified' flags
-- [ ] States it is out of MVP
+- [x] Note exists with sources or 'unverified' flags
+- [x] States it is out of MVP
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Yashwant
