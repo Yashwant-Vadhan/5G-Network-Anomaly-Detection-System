@@ -1328,13 +1328,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T9-003: (Optional) Supplementary public LTE benchmark
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Use a public labelled cellular anomaly dataset (e.g., the Kaggle ones mentioned in overview §38 — check licence/terms before use) in a separate notebook; adapt features; report results **labelled as LTE/4G supplementary**, never as the project's 5G dataset (§38.2).
 **Dependencies:** T4-009
 **Acceptance Criteria:**
-- [ ] Notebook separate from main pipeline
-- [ ] Results labelled LTE/4G
-- [ ] Licence/terms noted
+- [x] Notebook separate from main pipeline
+- [x] Results labelled LTE/4G
+- [x] Licence/terms noted
 **Estimated Effort:** 90 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
