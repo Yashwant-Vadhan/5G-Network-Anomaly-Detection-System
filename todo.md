@@ -1054,13 +1054,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-010: Guardrail coverage audit (G1–G16)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Create `docs/guardrails_checklist.md` mapping G1–G16 (TECH_RULES) to the test/check that enforces each or to the reason it is documentation-only. Add missing tests found by the audit.
 **Dependencies:** T7-002, T7-003, T7-004, T7-005, T7-006
 **Acceptance Criteria:**
-- [ ] All 16 rows filled
-- [ ] Any gap has a new test or an explicit accepted-risk note
-- [ ] Linked from README
+- [x] All 16 rows filled
+- [x] Any gap has a new test or an explicit accepted-risk note
+- [x] Linked from README
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
