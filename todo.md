@@ -970,13 +970,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-003: Unit tests — feature engineering
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_features.py`: deltas, change flags, rolling stats, persistence, session boundaries, missing handling, determinism; use the overview's SINR/RSRP sequences as expected values.
 **Dependencies:** T4-005
 **Acceptance Criteria:**
-- [ ] Every feature has a hand-computed expectation
-- [ ] Session-boundary test present
-- [ ] Coverage of `ml/feature_engineering.py` ≥ 85%
+- [x] Every feature has a hand-computed expectation
+- [x] Session-boundary test present
+- [x] Coverage of `ml/feature_engineering.py` ≥ 85%
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
