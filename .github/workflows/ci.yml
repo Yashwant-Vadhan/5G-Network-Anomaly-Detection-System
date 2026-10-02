@@ -40,11 +40,5 @@ jobs:
         run: ruff format --check .
 
       - name: Test (pytest with coverage)
-        run: |
-          set +e
-          python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=80
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            exit "$status"
-          fi
+        run: python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=80
 
