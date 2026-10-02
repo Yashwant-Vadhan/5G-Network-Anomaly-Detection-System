@@ -1179,13 +1179,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: README, architecture, dataset, methodology, results, limitations, presentation, v1.0.0*
 
 #### T8-001: Finalise README
-**Status:** ⬜
+**Status:** ✅
 **Description:** Sections: what/why, architecture diagram, quick start (`make setup`, `make pipeline`, `make dashboard`), data policy (raw not committed), repo map, status table updated to reflect **only tested components** (G16), Non-Claims, links to docs and `todo.md`.
 **Dependencies:** T7-007, T6-012
 **Acceptance Criteria:**
-- [ ] Fresh-clone instructions work
-- [ ] Status table matches test reality
-- [ ] Non-Claims present
+- [x] Fresh-clone instructions work
+- [x] Status table matches test reality
+- [x] Non-Claims present
 **Estimated Effort:** 60 min
 **Assigned To:** Docs
 **Owner:** Yashwant

@@ -33,8 +33,6 @@ Full architecture, data contracts, and rationale: [`docs/planning/TECH_RULES.md`
 
 ## Quick Start
 
-> Tooling (`make lint`, `make test`, `make help`) is in place; the analysis pipeline commands below are the target workflow and arrive with the later phases of `todo.md`.
-
 ```bash
 git clone https://github.com/Yashwant-Vadhan/5G-Network-Anomaly-Detection-System.git
 cd 5G-Network-Anomaly-Detection-System
@@ -42,9 +40,9 @@ python -m venv .venv
 source .venv/bin/activate            # POSIX
 .venv\Scripts\activate               # Windows (PowerShell / cmd)
 pip install -r requirements-dev.txt  # Python 3.12+
-make lint test          # verify setup
-make pipeline           # run preprocessing → features → detection → agents
-make dashboard          # launch the Streamlit dashboard on 127.0.0.1
+make lint test          # verify setup and run full unit/integration test suite
+make pipeline           # run preprocessing → features → detection → multi-agent diagnostic layer
+make dashboard          # launch the Streamlit interpretability dashboard on 127.0.0.1
 ```
 
 `make help` lists every target. On Windows without `make`, run the underlying
