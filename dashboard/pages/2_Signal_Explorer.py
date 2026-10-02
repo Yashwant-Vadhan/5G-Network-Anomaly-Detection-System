@@ -103,13 +103,18 @@ st.markdown(
     f"- {summarize_metric(df['ss_sinr'], 'SS-SINR', 'dB')}"
 )
 
-# Plotly Stacked Subplots (3 rows, 1 col, shared x axis)
+# Plotly Stacked Subplots (4 rows, 1 col, shared x axis)
 fig = make_subplots(
-    rows=3,
+    rows=4,
     cols=1,
     shared_xaxes=True,
-    vertical_spacing=0.06,
-    subplot_titles=("SS-RSRP (dBm)", "SS-RSRQ (dB)", "SS-SINR (dB)"),
+    vertical_spacing=0.05,
+    subplot_titles=(
+        "SS-RSRP (dBm)",
+        "SS-RSRQ (dB)",
+        "SS-SINR (dB)",
+        "Anomaly Score (Isolation Forest & Threshold)",
+    ),
 )
 
 # 1. RSRP
@@ -231,9 +236,71 @@ if not anom_df.empty and "ss_sinr" in anom_df.columns:
         col=1,
     )
 
+# 4. Anomaly Score (Isolation Forest & Threshold)
+if "if_score" in plot_df.columns:
+    # Custom hovertext showing score, baseline_flag, if_flag
+    hover_texts = []
+    for _, row in plot_df.iterrows():
+        b_flag = str(row.get("baseline_flag", False))
+        i_flag = str(row.get("if_flag", False))
+        score_val = f"{row['if_score']:.3f}" if pd.notna(row["if_score"]) else "Ineligible (NA)"
+        hover_texts.append(
+            f"Time: {row['timestamp']}<br>"
+            f"IF Score: {score_val}<br>"
+            f"Baseline Flag: {b_flag}<br>"
+            f"IF Flag: {i_flag}"
+        )
+
+    fig.add_trace(
+        go.Scatter(
+            x=plot_df["timestamp"],
+            y=plot_df["if_score"],
+            mode="lines",
+            name="IF Score",
+            connectgaps=False,  # Ineligible rows shown as gaps, not zeros
+            line=dict(color="#D97706", width=1.5),
+            text=hover_texts,
+            hovertemplate="%{text}<extra></extra>",
+        ),
+        row=4,
+        col=1,
+    )
+
+    # Threshold Line (y = 0.6) matching ml/anomaly_detection.py default
+    fig.add_trace(
+        go.Scatter(
+            x=[plot_df["timestamp"].min(), plot_df["timestamp"].max()],
+            y=[0.6, 0.6],
+            mode="lines",
+            name="Threshold (0.60)",
+            line=dict(color=CHART_ANOMALY_MARKER, width=1.2, dash="dash"),
+            hovertemplate="IF Threshold: 0.60<extra></extra>",
+        ),
+        row=4,
+        col=1,
+    )
+
+    # Flagged points on score chart
+    if not anom_df.empty and "if_score" in anom_df.columns:
+        anom_score_df = anom_df[anom_df["if_score"].notna()]
+        if not anom_score_df.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=anom_score_df["timestamp"],
+                    y=anom_score_df["if_score"],
+                    mode="markers",
+                    name="Score Flagged",
+                    marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, linewidth=2),
+                    showlegend=False,
+                    hovertemplate="Flagged Score: %{y:.3f}<extra></extra>",
+                ),
+                row=4,
+                col=1,
+            )
+
 # Apply Plotly layout defaults
 layout_defaults = get_plotly_layout_defaults()
-layout_defaults["height"] = 700
+layout_defaults["height"] = 900
 fig.update_layout(**layout_defaults)
 
 st.plotly_chart(fig, use_container_width=True)

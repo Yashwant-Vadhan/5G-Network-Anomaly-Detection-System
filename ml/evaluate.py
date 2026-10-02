@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -144,7 +145,8 @@ def evaluate_model_on_labels(
 
     target_sessions = labels_df["session_id"].unique()
     eval_scores = scores_df[
-        scores_df["eval_session"].isin(target_sessions) | scores_df["session_id"].isin(target_sessions)
+        scores_df["eval_session"].isin(target_sessions)
+        | scores_df["session_id"].isin(target_sessions)
     ].copy()
 
     # Build ground-truth vector initialized to False
@@ -157,7 +159,9 @@ def evaluate_model_on_labels(
         end_idx = int(row["end_idx"])
         lbl = str(row["label"])
 
-        sess_mask = (eval_scores["eval_session"] == sess_id) | (eval_scores["session_id"] == sess_id)
+        sess_mask = (eval_scores["eval_session"] == sess_id) | (
+            eval_scores["session_id"] == sess_id
+        )
 
         if lbl != "NORMAL_EVENT":
             mask = sess_mask & (eval_scores["sample_idx"].between(start_idx, end_idx))
@@ -183,7 +187,6 @@ def evaluate_model_on_labels(
     )
 
 
-
 def main() -> None:
     """CLI entrypoint for ml.evaluate module."""
     parser = argparse.ArgumentParser(description="5G-NADS Anomaly Detection Model Evaluator")
@@ -198,10 +201,11 @@ def main() -> None:
     print(f"Evaluating {args.scores} against {args.labels}...")
     baseline_res, if_res = evaluate_model_on_labels(args.scores, args.labels)
 
-    print_evaluation_report("Rolling Z-Score Baseline", baseline_res["metrics"], baseline_res["latency"])
+    print_evaluation_report(
+        "Rolling Z-Score Baseline", baseline_res["metrics"], baseline_res["latency"]
+    )
     print_evaluation_report("Isolation Forest (IF)", if_res["metrics"], if_res["latency"])
 
 
 if __name__ == "__main__":
     main()
-

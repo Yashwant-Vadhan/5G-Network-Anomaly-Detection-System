@@ -857,13 +857,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T6-006: Anomaly-score-over-time chart with threshold
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add `if_score` line with threshold line and shaded flagged regions to Screen 2; hover shows timestamp, score, baseline flag, IF flag.
 **Dependencies:** T6-004
 **Acceptance Criteria:**
-- [ ] Threshold matches `ml/config.py`
-- [ ] Hover tooltip content correct
-- [ ] Ineligible rows shown as gaps, not zeros
+- [x] Threshold matches `ml/config.py`
+- [x] Hover tooltip content correct
+- [x] Ineligible rows shown as gaps, not zeros
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Yashwant
