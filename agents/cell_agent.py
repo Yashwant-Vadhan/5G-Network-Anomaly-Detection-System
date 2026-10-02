@@ -48,7 +48,7 @@ def analyze(window: EventWindow) -> CellReport:
         )
 
     # Detect cell change / repeated change
-    if len(unique_pcis) >= 3 and pcis[0] == pcis[-1] and pcis[0] != pcis[1]:
+    if len(pcis) >= 3 and pcis[0] == pcis[-1] and pcis[0] != pcis[1]:
         event_type = "REPEATED_CELL_CHANGE"
         evidence.append(f"Repeated ping-pong cell change observed between PCIs {unique_pcis}.")
     else:

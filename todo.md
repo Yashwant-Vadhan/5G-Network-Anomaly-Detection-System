@@ -1006,13 +1006,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-006: Unit tests — agents and guardrails
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_agents.py`: per-agent tests (evidence content, missing data), G4 (UNKNOWN never becomes SA, parametrised), G9 (no sklearn import in `agents/`), G14 (agents don't import each other except Diagnosis→contracts), causal-language check, recommendation no first-person action claims, text renderer determinism.
 **Dependencies:** T5-006, T5-007
 **Acceptance Criteria:**
-- [ ] Every agent ≥ 3 tests
-- [ ] G4/G9/G14 automated
-- [ ] Coverage of `agents/` ≥ 85%
+- [x] Every agent ≥ 3 tests
+- [x] G4/G9/G14 automated
+- [x] Coverage of `agents/` ≥ 85%
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
