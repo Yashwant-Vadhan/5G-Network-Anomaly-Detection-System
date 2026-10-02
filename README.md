@@ -15,7 +15,7 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Anomaly detection (baseline z-score + Isolation Forest) | ✅ Implemented and verified |
 | Anomaly classification & severity | ✅ Implemented and verified |
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
-| Interpretability dashboard (Streamlit) | ⬜ Not started |
+| Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
 | End-to-end pipeline & tests | ⬜ Not started |
 | Evaluation (baseline vs. Isolation Forest) | ⬜ Not started |
 

@@ -797,13 +797,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: All MVP screens from DESIGN.md with empty/error/loading states*
 
 #### T6-001: Dashboard skeleton, pages and cached loaders
-**Status:** ⬜
+**Status:** ✅
 **Description:** `dashboard/app.py` + `dashboard/pages/` for the six screens (empty stubs with titles), `dashboard/data_loader.py` with `st.cache_data` loaders for `scores.csv`, `events_diagnosed.json`, model meta; validation via `ml/schema.py`. Run against `data/sample/` output if `data/processed/` is empty.
 **Dependencies:** T1-001, T4-015
 **Acceptance Criteria:**
-- [ ] `make dashboard` opens the app with six navigable pages
-- [ ] Missing files show the Empty state text from DESIGN.md
-- [ ] No business logic in dashboard modules
+- [x] `make dashboard` opens the app with six navigable pages
+- [x] Missing files show the Empty state text from DESIGN.md
+- [x] No business logic in dashboard modules
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
