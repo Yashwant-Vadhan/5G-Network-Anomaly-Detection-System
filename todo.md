@@ -809,49 +809,49 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T6-002: Apply design tokens and theme
-**Status:** ⬜
+**Status:** ✅
 **Description:** `dashboard/theme.py` (colour tokens from DESIGN.md) + `.streamlit/config.toml`. Run a contrast checker on text/background and chart-line colours; record results in `docs/planning/DESIGN.md` under Colors (replace the 'not measured' note).
 **Dependencies:** T6-001
 **Acceptance Criteria:**
-- [ ] Tokens match DESIGN.md hex values
-- [ ] Contrast results recorded
-- [ ] No hard-coded colours outside `theme.py`
+- [x] Tokens match DESIGN.md hex values
+- [x] Contrast results recorded
+- [x] No hard-coded colours outside `theme.py`
 **Estimated Effort:** 30 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
 
 #### T6-003: Overview screen — status banner, metric and network cards
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 1 per DESIGN.md: `NORMAL`/`ANOMALY DETECTED` banner with severity chip, metric cards (RSRP, RSRQ, SINR, PCI, NCI, NRARFCN), network-state card, score, event, diagnosis, evidence, recommendation. Missing values show `—` with 'missing (NA)' tooltip; `UNKNOWN` shown as 'Unknown (not exposed by this device)'.
 **Dependencies:** T6-001, T6-002
 **Acceptance Criteria:**
-- [ ] All fields from overview §31 displayed
-- [ ] `NA` never shown as 0
-- [ ] UNKNOWN never shown as SA
+- [x] All fields from overview §31 displayed
+- [x] `NA` never shown as 0
+- [x] UNKNOWN never shown as SA
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
 
 #### T6-004: Signal Explorer — RSRP/RSRQ/SINR charts with anomaly markers
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 2: three stacked Plotly time series (shared x), red × markers for flagged samples, toggle baseline/IF/both, text summary above each chart, 'Show data table' expander. Downsample for rendering only above ~5,000 points.
 **Dependencies:** T6-002
 **Acceptance Criteria:**
-- [ ] Markers match `scores.csv` flags
-- [ ] Toggle works
-- [ ] Text summary present
+- [x] Markers match `scores.csv` flags
+- [x] Toggle works
+- [x] Text summary present
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
 
 #### T6-005: Cells & Network screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 3: PCI step chart, NCI (categorical) chart, NRARFCN line, network-type strip, transitions table, neutral header note ('a cell change is normal network behaviour…').
 **Dependencies:** T6-001, T6-002
 **Acceptance Criteria:**
-- [ ] Charts render for sample data
-- [ ] Note text present
-- [ ] Empty state uses neutral wording
+- [x] Charts render for sample data
+- [x] Note text present
+- [x] Empty state uses neutral wording
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
@@ -869,37 +869,37 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T6-007: Events & Diagnosis screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 4: events table (id, start, end, duration, type, severity, max score), row select → three agent panels + diagnosis + recommendation + event-window chart; filter by type/severity; download event JSON.
 **Dependencies:** T6-001, T5-008
 **Acceptance Criteria:**
-- [ ] Selecting an event shows all five agents' outputs
-- [ ] Empty state text includes 'does not guarantee the network was healthy'
-- [ ] JSON download matches C5
+- [x] Selecting an event shows all five agents' outputs
+- [x] Empty state text includes 'does not guarantee the network was healthy'
+- [x] JSON download matches C5
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
 
 #### T6-008: Data Quality screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 5: missing counts per column/device, CSI availability, deployment-mode distribution with the UNKNOWN note, samples per device/operator/scenario, rows removed (from `preprocess_log.json`), synthetic-data banner if `is_synthetic` present.
 **Dependencies:** T6-001, T3-008
 **Acceptance Criteria:**
-- [ ] All five tables/plots present
-- [ ] UNKNOWN note text matches DESIGN.md
-- [ ] Synthetic banner appears for the synthetic fixture
+- [x] All five tables/plots present
+- [x] UNKNOWN note text matches DESIGN.md
+- [x] Synthetic banner appears for the synthetic fixture
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
 
 #### T6-009: Empty/error/loading states and CSV upload validation
-**Status:** ⬜
+**Status:** ✅
 **Description:** Apply the empty/error/loading text from DESIGN.md to every page. Uploaded CSVs: enforce ≤ 20 MB (proposed), `.csv` only, header validation via `ml/schema.py`; show `st.error` with cause + fix, never a traceback.
 **Dependencies:** T6-003, T6-004, T6-005, T6-007, T6-008
 **Acceptance Criteria:**
-- [ ] Malformed upload shows friendly error
-- [ ] Oversized upload rejected
-- [ ] Each page handles missing files
+- [x] Malformed upload shows friendly error
+- [x] Oversized upload rejected
+- [x] Each page handles missing files
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
@@ -917,13 +917,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T6-011: About & Limitations screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Screen 6: description, architecture image (from `docs/`), Non-Claims list from PRD, dataset summary, model metadata from `models/if_v1.meta.json` (graceful message if missing).
 **Dependencies:** T6-001, T4-008
 **Acceptance Criteria:**
-- [ ] Non-Claims list identical to PRD
-- [ ] Missing model meta handled
-- [ ] Links to README/docs work
+- [x] Non-Claims list identical to PRD
+- [x] Missing model meta handled
+- [x] Links to README/docs work
 **Estimated Effort:** 30 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Sushil
