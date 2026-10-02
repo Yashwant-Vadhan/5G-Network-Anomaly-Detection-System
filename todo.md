@@ -1030,13 +1030,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-008: E2E smoke test — dashboard renders on sample data
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_dashboard_smoke.py`: use Streamlit's app-testing utility if available in the pinned version (⚠️ verify in Streamlit docs) to load each page against pipeline output for the sample; assert no exceptions and that key strings appear (status banner, Non-Claims). If unavailable, document a manual checklist in `docs/testing.md` instead.
 **Dependencies:** T6-009, T7-001
 **Acceptance Criteria:**
-- [ ] All six pages load without exception
-- [ ] Key strings asserted
-- [ ] Fallback documented if tool unavailable
+- [x] All six pages load without exception
+- [x] Key strings asserted
+- [x] Fallback documented if tool unavailable
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
