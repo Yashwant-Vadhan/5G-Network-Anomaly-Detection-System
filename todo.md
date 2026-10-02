@@ -1126,13 +1126,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-016: Evaluate baseline vs Isolation Forest and detection latency
-**Status:** ⬜
+**Status:** ✅
 **Description:** Run T7-015 for `baseline_flag` and `if_flag` on `labels_final.csv`; produce comparison tables and figures in `docs/results.md`; discuss where each method fails. Do not tune on the evaluation labels; if any tuning happens, say so.
 **Dependencies:** T7-015, T4-010
 **Acceptance Criteria:**
-- [ ] Both methods evaluated on the same labels
-- [ ] Latency reported for both
-- [ ] Honest statement if IF does not beat baseline
+- [x] Both methods evaluated on the same labels
+- [x] Latency reported for both
+- [x] Honest statement if IF does not beat baseline
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
