@@ -1239,13 +1239,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-006: Write `docs/testing.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Test strategy, how to run, coverage, guardrail matrix link, security/N/A items, manual checklists (responsive/accessibility).
 **Dependencies:** T7-010
 **Acceptance Criteria:**
-- [ ] Commands verified
-- [ ] Links to guardrails checklist
-- [ ] Manual checklist included
+- [x] Commands verified
+- [x] Links to guardrails checklist
+- [x] Manual checklist included
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Yashwant

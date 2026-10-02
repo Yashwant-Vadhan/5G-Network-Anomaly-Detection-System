@@ -8,6 +8,8 @@ This document outlines the testing strategy, automated test coverage, and securi
 
 The automated test suite in `tests/` covers unit tests, integration tests, contract assertions, data preprocessing, feature engineering, classification rules, agent deterministic renderers, and security/privacy constraints.
 
+For complete mapping of Guardrails G1–G16 to automated test suites, see [`docs/guardrails_checklist.md`](docs/guardrails_checklist.md).
+
 | Test Module | Coverage / Focus | Guardrails Enforced |
 |---|---|---|
 | [`tests/test_preprocessing.py`](file:///d:/5G-Network-Anomaly-Detection-System/tests/test_preprocessing.py) | Raw CSV sanitisation, sentinel replacement, datetime parsing, idempotency | G7, G8 |
