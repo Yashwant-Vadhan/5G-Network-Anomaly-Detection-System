@@ -15,12 +15,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Python
         # The pinned wheels in requirements.txt resolve on Python 3.12-3.14
         # (numpy 2.5.3 has no cp311 wheel). 3.13 is the CI reference version.
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: pip
