@@ -1263,13 +1263,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-008: Prepare presentation material
-**Status:** ⬜
+**Status:** ✅
 **Description:** Slide outline + speaker notes (problem, real-data approach, pipeline, ML vs agents, results, limitations, demo plan) and a 3-minute demo script using `data/sample/`. Architecture figure exported as PNG/SVG. Only claims supported by `docs/results.md`.
 **Dependencies:** T8-002, T7-019
 **Acceptance Criteria:**
-- [ ] Outline and demo script exist
-- [ ] Figures exported
-- [ ] Every claim traceable to results or overview
+- [x] Outline and demo script exist
+- [x] Figures exported
+- [x] Every claim traceable to results or overview
 **Estimated Effort:** 90 min
 **Assigned To:** Docs
 **Owner:** Sushil
