@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from ml.anomaly_detection import if_scores
@@ -67,8 +66,8 @@ This report evaluates model generalisation across different smartphone hardware 
 
 | Training Device | Test Evaluation Device | Test Samples | Precision | Recall (TPR) | F1-Score | FPR |
 |---|---|---|---|---|---|---|
-| **Redmi 13 5G** | Samsung Galaxy A15 5G | {metrics_samsung['total_samples']} | {metrics_samsung['precision']:.4f} | {metrics_samsung['recall']:.4f} | {metrics_samsung['f1_score']:.4f} | {metrics_samsung['false_positive_rate']:.4f} |
-| **Samsung Galaxy A15 5G** | Redmi 13 5G | {metrics_redmi['total_samples']} | {metrics_redmi['precision']:.4f} | {metrics_redmi['recall']:.4f} | {metrics_redmi['f1_score']:.4f} | {metrics_redmi['false_positive_rate']:.4f} |
+| **Redmi 13 5G** | Samsung Galaxy A15 5G | {metrics_samsung["total_samples"]} | {metrics_samsung["precision"]:.4f} | {metrics_samsung["recall"]:.4f} | {metrics_samsung["f1_score"]:.4f} | {metrics_samsung["false_positive_rate"]:.4f} |
+| **Samsung Galaxy A15 5G** | Redmi 13 5G | {metrics_redmi["total_samples"]} | {metrics_redmi["precision"]:.4f} | {metrics_redmi["recall"]:.4f} | {metrics_redmi["f1_score"]:.4f} | {metrics_redmi["false_positive_rate"]:.4f} |
 
 ## Hardware & Modem Caveats
 
