@@ -40,20 +40,11 @@ jobs:
         run: ruff format --check .
 
       - name: Test (pytest with coverage)
-        # BOOTSTRAP: the coverage gate is 0 until the Phase 7 test tasks
-        # (T7-002 ... T7-010) land; pyproject.toml already records the 80%
-        # target. Flip --cov-fail-under to 80 with those tests.
-        #
-        # Exit code 5 means "no tests collected". todo.md T1-004 explicitly
-        # allows a zero-test bootstrap until the Phase 7 tasks exist, so it is
-        # reported as a notice rather than a failure. Any other non-zero exit
-        # (lint error in a test, failed assertion, coverage breach) still fails.
         run: |
           set +e
-          python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=0
+          python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=80
           status=$?
-          if [ "$status" -eq 5 ]; then
-            echo "::notice::No tests collected yet (bootstrap). Phase 7 tests are pending."
-          elif [ "$status" -ne 0 ]; then
+          if [ "$status" -ne 0 ]; then
             exit "$status"
           fi
+

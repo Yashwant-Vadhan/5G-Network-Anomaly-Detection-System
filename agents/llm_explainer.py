@@ -6,12 +6,11 @@ By default, NADS_USE_LLM is false, so deterministic template text is used.
 
 from __future__ import annotations
 
-import os
 import json
 import logging
-import urllib.request
+import os
 import urllib.error
-from typing import Any
+import urllib.request
 
 logger = logging.getLogger(__name__)
 
