@@ -789,7 +789,7 @@ The generic task template assumes a database, authentication and a web backend. 
 - [x] Runs on `data/sample/` output
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (Agents)
-**Owner:** Sushil
+**Owner:** Yashwant
 
 ---
 
@@ -806,7 +806,7 @@ The generic task template assumes a database, authentication and a web backend. 
 - [x] No business logic in dashboard modules
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
-**Owner:** Sushil
+**Owner:** Yashwant
 
 #### T6-002: Apply design tokens and theme
 **Status:** ⬜
