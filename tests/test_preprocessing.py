@@ -234,3 +234,70 @@ def test_preprocess_and_idempotency(tmp_path: Path):
     hash2 = hashlib.sha256(csv_file.read_bytes()).hexdigest()
 
     assert hash1 == hash2
+
+
+def test_load_raw_csv_not_found(tmp_path: Path):
+    """Test FileNotFoundError when CSV does not exist."""
+    with pytest.raises(FileNotFoundError):
+        load_raw_csv(tmp_path / "nonexistent.csv")
+
+
+def test_load_raw_dir_not_found(tmp_path: Path):
+    """Test FileNotFoundError when directory does not exist."""
+    with pytest.raises(FileNotFoundError):
+        load_raw_dir(tmp_path / "nonexistent_dir")
+
+
+def test_load_raw_dir_no_csvs(tmp_path: Path):
+    """Test DataQualityError when directory has no CSV files."""
+    empty_dir = tmp_path / "empty_dir"
+    empty_dir.mkdir()
+    with pytest.raises(DataQualityError):
+        load_raw_dir(empty_dir)
+
+
+def test_preprocessing_main_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Test CLI main() execution for ml.preprocessing."""
+    import sys
+    from ml.preprocessing import main
+
+    raw_dir = tmp_path / "raw"
+    out_dir = tmp_path / "processed"
+    raw_dir.mkdir()
+
+    header = ",".join(RAW_COLUMNS)
+    row = "2026-09-28T10:00:00Z,Redmi 13 5G,Xiaomi,16,Airtel,NR,SA,5G,true,-85,-11,18,-88,-12,15,336,13322280247,630000"
+    (raw_dir / "sample.csv").write_text(f"{header}\n{row}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys, "argv", ["preprocessing.py", "--input", str(raw_dir), "--output", str(out_dir)]
+    )
+    main()
+    assert (out_dir / "measurements_clean.csv").exists()
+
+
+def test_preprocessing_main_cli_error_handling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Test CLI main() error handling for schema and config errors."""
+    import sys
+    from ml.preprocessing import main
+
+    empty_dir = tmp_path / "raw_empty"
+    empty_dir.mkdir()
+
+    monkeypatch.setattr(
+        sys, "argv", ["preprocessing.py", "--input", str(empty_dir), "--output", str(tmp_path / "out")]
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 2
+
+    # ConfigError (output inside raw)
+    monkeypatch.setattr(
+        sys, "argv", ["preprocessing.py", "--input", str(empty_dir), "--output", str(empty_dir / "sub")]
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert exc_info.value.code == 1
+

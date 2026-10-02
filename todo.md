@@ -958,13 +958,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-002: Unit tests — preprocessing and schema
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_preprocessing.py`: one test per step using `edge_cases_synthetic.csv` (sentinels → missing, NA ≠ 0, sorting, duplicate timestamps, session gap, invalid ranges, `model_eligible`, `is_synthetic`, raw-write guard G7, idempotency G8).
 **Dependencies:** T3-008, T2-014
 **Acceptance Criteria:**
-- [ ] All listed cases have a test
-- [ ] Suite passes in CI
-- [ ] Coverage of `ml/preprocessing.py` ≥ 85%
+- [x] All listed cases have a test
+- [x] Suite passes in CI
+- [x] Coverage of `ml/preprocessing.py` ≥ 85%
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
