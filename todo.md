@@ -1042,13 +1042,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-009: Security and privacy checks
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add tests/CI steps: malformed/oversized/wrong-header CSV rejected (loader and dashboard), PII-column rejection, `git grep` secret patterns, `.gitignore` covers raw/processed/models/.env/keystores, dashboard script binds to 127.0.0.1, no `requests`/network calls in core pipeline (G13). Document N/A items (auth, rate limiting, HTTPS) in `docs/testing.md`.
 **Dependencies:** T6-009, T1-005
 **Acceptance Criteria:**
-- [ ] Each check automated or documented
-- [ ] CI fails on a planted fake secret
-- [ ] N/A items documented with reason
+- [x] Each check automated or documented
+- [x] CI fails on a planted fake secret
+- [x] N/A items documented with reason
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Yashwant
