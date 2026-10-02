@@ -1090,37 +1090,37 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-013: Label evaluation set — labeller 2 (Sushil), blind
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Label the **same sessions independently** without viewing Yashwant's labels or model outputs. Save `data/eval/labels_sushil.csv`.
 **Dependencies:** T7-011, T4-015
 **Acceptance Criteria:**
-- [ ] Same sessions covered
-- [ ] Made before viewing the other file (stated in commit message)
-- [ ] File matches the format
+- [x] Same sessions covered
+- [x] Made before viewing the other file (stated in commit message)
+- [x] File matches the format
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
 
 #### T7-014: Compute label agreement and adjudicate final labels
-**Status:** ⬜
+**Status:** ✅
 **Description:** Script `ml/label_agreement.py` computing event-overlap agreement and Cohen's kappa at sample level; discuss disagreements together; write `data/eval/labels_final.csv` and `docs/labelling_notes.md` (agreement numbers, disputed cases). Report the size of the labelled set honestly (small).
 **Dependencies:** T7-012, T7-013
 **Acceptance Criteria:**
-- [ ] Agreement metrics reported
-- [ ] Final labels file exists
-- [ ] Label counts per class stated
+- [x] Agreement metrics reported
+- [x] Final labels file exists
+- [x] Label counts per class stated
 **Estimated Effort:** 45 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
 
 #### T7-015: Implement `ml/evaluate.py` metrics
-**Status:** ⬜
+**Status:** ✅
 **Description:** Sample-level and event-level precision, recall, F1, false-positive rate, detection rate, anomaly-score distribution; detection latency (samples/seconds from event start to first flag). Handles zero positives without division errors and prints counts alongside every metric.
 **Dependencies:** T7-014, T4-015
 **Acceptance Criteria:**
-- [ ] Metrics verified on a tiny hand-made example
-- [ ] Zero-positive case handled
-- [ ] Counts printed with metrics
+- [x] Metrics verified on a tiny hand-made example
+- [x] Zero-positive case handled
+- [x] Counts printed with metrics
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Sushil
@@ -1138,13 +1138,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-017: Evaluate device generalisation and operator variation
-**Status:** ⬜
+**Status:** ✅
 **Description:** Train on one device's data, evaluate on another (both directions, if ≥2 devices with labels); compare Airtel vs Vodafone only if OnePlus data exists. Report as exploratory with sample sizes; no generalisation claims.
 **Dependencies:** T7-015
 **Acceptance Criteria:**
-- [ ] Cross-device table produced
-- [ ] Caveats about modem/API differences included
-- [ ] OnePlus/Vodafone section present or explicitly omitted
+- [x] Cross-device table produced
+- [x] Caveats about modem/API differences included
+- [x] OnePlus/Vodafone section present or explicitly omitted
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Sushil
@@ -1191,13 +1191,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-002: Write `docs/architecture.md` and data-flow diagrams
-**Status:** ⬜
+**Status:** ✅
 **Description:** Mermaid diagrams for system architecture (overview §33) and data flow (§34), contract table C1–C6, module responsibilities, ML-vs-agents separation (§30).
 **Dependencies:** T7-001
 **Acceptance Criteria:**
-- [ ] Diagrams render on GitHub
-- [ ] Contracts listed
-- [ ] Separation statement present
+- [x] Diagrams render on GitHub
+- [x] Contracts listed
+- [x] Separation statement present
 **Estimated Effort:** 45 min
 **Assigned To:** Docs
 **Owner:** Sushil
@@ -1215,13 +1215,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-004: Write `docs/ml_methodology.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Feature definitions, window choice, baseline, Isolation Forest rationale (§20–21, not claimed best), score normalisation, classification rules and precedence, severity thresholds and validation status, evaluation protocol.
 **Dependencies:** T7-016
 **Acceptance Criteria:**
-- [ ] Every feature documented
-- [ ] Thresholds' origin documented
-- [ ] Rationale does not claim IF is best
+- [x] Every feature documented
+- [x] Thresholds' origin documented
+- [x] Rationale does not claim IF is best
 **Estimated Effort:** 45 min
 **Assigned To:** Docs
 **Owner:** Sushil
