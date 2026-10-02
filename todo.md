@@ -1,6 +1,6 @@
 # todo.md — 5G-NADS (5G Network Anomaly Detection System)
 > Generated from: `PRD.md` · `DESIGN.md` · `TECH_RULES.md` · `ROADMAP.md` (in `docs/planning/`) and the source-of-truth `project-overview.md`
-> Target: MVP-first execution by **two developers** and their AI coding agents (Cursor, Claude Code, Codex, Gemini CLI, Windsurf)
+> Target: MVP-first execution by **two developers** and their AI coding agents
 > Last Updated: 2026-10-02
 
 ---
@@ -768,13 +768,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T5-007: Implement deterministic explanation text renderer
-**Status:** ⬜
+**Status:** ✅
 **Description:** `agents/text_renderer.py`: `render(diagnosis, recommendation) -> str` using fixed templates (Content & Copy Rules in DESIGN.md). Same input → same text. This is the default explanation path (LLM is optional Phase 9).
 **Dependencies:** T5-005, T5-006
 **Acceptance Criteria:**
-- [ ] Templates cover all 6 anomaly types + STATISTICAL_ONLY + NONE
-- [ ] Deterministic (same input twice → identical text)
-- [ ] Copy rules test (no forbidden phrases)
+- [x] Templates cover all 6 anomaly types + STATISTICAL_ONLY + NONE
+- [x] Deterministic (same input twice → identical text)
+- [x] Copy rules test (no forbidden phrases)
 **Estimated Effort:** 45 min
 **Assigned To:** Backend (Agents)
 **Owner:** Yashwant

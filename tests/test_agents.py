@@ -91,3 +91,44 @@ def test_orchestrator_run_agents():
     assert "network_report" in res
     assert "diagnosis" in res
     assert "recommendation" in res
+
+
+def test_text_renderer_all_types_and_determinism():
+    """Verify text renderer handles all anomaly types deterministically."""
+    from agents.contracts import Diagnosis, Recommendation
+    from agents.text_renderer import FORBIDDEN_WORDS, render
+
+    anomaly_types = [
+        "NORMAL",
+        "NONE",
+        "SIGNAL_DEGRADATION",
+        "SUDDEN_SIGNAL_DEGRADATION",
+        "CELL_TRANSITION",
+        "NETWORK_STATE_TRANSITION",
+        "PERSISTENT_POOR_QUALITY",
+        "COMBINED_ANOMALY",
+        "STATISTICAL_ONLY",
+    ]
+
+    rec = Recommendation(text="Continue monitoring.", kind="MONITORING")
+
+    for atype in anomaly_types:
+        diag = Diagnosis(
+            summary=f"Summary for {atype}",
+            evidence=["Evidence item 1", "Evidence item 2"],
+            confidence_note="Correlation note",
+            anomaly_type=atype,
+        )
+        rendered_1 = render(diag, rec)
+        rendered_2 = render(diag, rec)
+
+        assert rendered_1 == rendered_2
+        assert "Summary:" in rendered_1
+        assert "Evidence:" in rendered_1
+        assert "Recommendation" in rendered_1
+
+        # Check copy rules
+        lower_text = rendered_1.lower()
+        for forbidden in FORBIDDEN_WORDS:
+            assert forbidden not in lower_text
+
