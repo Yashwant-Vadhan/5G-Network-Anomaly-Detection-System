@@ -1150,13 +1150,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-018: False-positive investigation report
-**Status:** ⬜
+**Status:** ✅
 **Description:** For each false positive (and a sample of false negatives) inspect the window, the agent evidence, and likely reason (cell handover, device API quirk, sparse data). Write `docs/false_positive_analysis.md`; validate or adjust provisional severity thresholds (T4-014) and record the change.
 **Dependencies:** T7-016
 **Acceptance Criteria:**
-- [ ] Every FP listed with cause hypothesis
-- [ ] Severity thresholds confirmed or updated
-- [ ] Definition-of-Done item 'False positives investigated' satisfiable
+- [x] Every FP listed with cause hypothesis
+- [x] Severity thresholds confirmed or updated
+- [x] Definition-of-Done item 'False positives investigated' satisfiable
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
