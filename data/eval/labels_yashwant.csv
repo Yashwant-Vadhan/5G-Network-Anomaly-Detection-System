@@ -1,0 +1,14 @@
+session_id,start_idx,end_idx,label,confidence,notes
+5G_measurements_Redmi_Stable,0,100,NORMAL_EVENT,1.0,Stable coverage with high RSRP (> -90 dBm) and SINR (> 15 dB)
+5G_measurements_Redmi_Stable,150,165,SIGNAL_DEGRADATION,0.95,Sustained SINR drop from 12 dB to -5 dB with unchanged PCI
+5G_measurements_Redmi_Stable,320,330,NORMAL_EVENT,0.9,Benign cell handover (PCI 336 to 565) with stable signal quality
+5G_measurements_Redmi_Stable,500,520,SUDDEN_SIGNAL_DEGRADATION,0.95,Abrupt SINR cliff drop from 18 dB to -8 dB in two samples
+5G_measurements_Redmi_Travel,40,60,COMBINED_ANOMALY,0.9,Cell transition (PCI change) concurrent with SINR degradation to -7 dB
+5G_measurements_Redmi_Travel,120,145,PERSISTENT_POOR_QUALITY,0.95,Persistent poor SINR (< -2 dB) for over 20 consecutive samples
+5G_measurements_Redmi_Travel,200,220,NETWORK_STATE_TRANSITION,0.85,5G NR to LTE fallback accompanied by 10 dB RSRP loss
+5G_measurements_Samsung_Indoor-Movement,10,80,NORMAL_EVENT,1.0,Good indoor coverage with stable signal and fixed PCI
+5G_measurements_Samsung_Indoor-Movement,110,130,CELL_TRANSITION,0.9,Cell handover accompanied by > 12 dB RSRP drop
+5G_measurements_Samsung_Indoor-Movement,250,280,PERSISTENT_POOR_QUALITY,0.95,Sustained low SINR (< -4 dB) during indoor movement
+5G_measurements_Samsung_Travel,0,50,NORMAL_EVENT,1.0,Normal mobile travel telemetry with acceptable radio metrics
+5G_measurements_Samsung_Travel,80,95,SUDDEN_SIGNAL_DEGRADATION,0.9,Sudden SINR drop during travel session
+5G_measurements_Samsung_Travel,180,200,COMBINED_ANOMALY,0.95,Mobility handover accompanied by severe radio quality drop

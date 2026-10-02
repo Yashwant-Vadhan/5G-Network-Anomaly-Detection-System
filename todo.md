@@ -1078,13 +1078,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-012: Label evaluation set — labeller 1 (Yashwant)
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Label sessions from ≥2 devices using raw plots only (not model outputs). Save `data/eval/labels_yashwant.csv` (committed; derived annotations, no personal data). Include some `NORMAL_EVENT` labels for benign cell changes.
 **Dependencies:** T7-011, T4-015
 **Acceptance Criteria:**
-- [ ] Every labelled session has ≥1 row or an explicit 'no events' row
-- [ ] Labels made without model output (stated in commit message)
-- [ ] File matches the format
+- [x] Every labelled session has ≥1 row or an explicit 'no events' row
+- [x] Labels made without model output (stated in commit message)
+- [x] File matches the format
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
