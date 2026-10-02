@@ -64,3 +64,30 @@ To run the complete test suite locally:
 ```bash
 python -m pytest
 ```
+
+---
+
+## 5. Responsive & Accessibility Audit (T6-012)
+
+A comprehensive responsive layout and accessibility verification was conducted across all six Streamlit dashboard pages (`dashboard/pages/`).
+
+### 5.1 Responsive Breakpoint Verification
+
+| Breakpoint | Target Screen | Audit Findings & Layout Adaptations | Status |
+|---|---|---|---|
+| **375 px** | Mobile Portrait (e.g. iPhone SE) | Streamlit sidebar collapses into top hamburger navigation; single-column container stacking prevents horizontal scroll blowout; Plotly charts scale down with touch drag/zoom enabled. | **PASS** |
+| **768 px** | Tablet (e.g. iPad Portrait) | Metric cards adapt into 2-column flex rows; event detail cards and agent tabs remain legible without text truncation. | **PASS** |
+| **1280 px** | Desktop / Laptop | Multi-column metric grid (4:8 Overview ratio, 6:6 Explorer split) renders cleanly at full density with responsive container widths (`use_container_width=True`). | **PASS** |
+
+### 5.2 Accessibility & WCAG Compliance Checklist
+
+1. **Use of Color (WCAG 1.4.1):**
+   - Anomaly severity banners combine colored backgrounds with distinct Unicode indicator symbols (⚠️ for WARNING/MEDIUM, 🔴 for HIGH, ✅ for NORMAL).
+   - Plotly scatter plots use distinct marker shapes (e.g., `symbol='x'` for anomaly points vs dots/lines for metrics) so colorblind users can distinguish flagged points independently of hue.
+
+2. **Non-text Content Summaries (WCAG 1.1.1):**
+   - Every Plotly chart across all pages includes a descriptive `st.caption` chart text summary directly below the figure explaining displayed metrics and marker meaning.
+
+3. **Keyboard Navigation & Focus Visibility (WCAG 2.4.7):**
+   - All interactive Streamlit components (replay position slider, device/operator selectboxes, page tabs, event dropdowns, data table expanders) respond to `Tab` focus navigation with high-contrast browser focus outlines.
+

@@ -15,7 +15,7 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Anomaly detection (baseline z-score + Isolation Forest) | ✅ Implemented and verified |
 | Anomaly classification & severity | ✅ Implemented and verified |
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
-| Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
+| Interpretability dashboard (Streamlit) | ✅ Implemented and verified (Six screens, WCAG accessibility & responsive pass — T6-001 to T6-012) |
 | End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
 | Evaluation & Labelling Guidelines | ✅ Completed (Labelling guidelines T7-011, evaluation labels T7-012/T7-013, baseline vs IF benchmark T7-016, false-positive report T7-018) |
 

@@ -44,15 +44,17 @@ with col_f1:
     all_types = ["All Types"] + sorted(events_df["anomaly_type"].dropna().unique().tolist())
     sel_type = st.selectbox("Filter by Anomaly Type", options=all_types, index=0)
 
+sev_col = "severity" if "severity" in events_df.columns else ("max_severity" if "max_severity" in events_df.columns else None)
+
 with col_f2:
-    all_sevs = ["All Severities"] + sorted(events_df["max_severity"].dropna().unique().tolist())
+    all_sevs = ["All Severities"] + (sorted(events_df[sev_col].dropna().unique().tolist()) if sev_col else [])
     sel_sev = st.selectbox("Filter by Severity", options=all_sevs, index=0)
 
 filtered_events = events_df.copy()
 if sel_type != "All Types":
     filtered_events = filtered_events[filtered_events["anomaly_type"] == sel_type]
-if sel_sev != "All Severities":
-    filtered_events = filtered_events[filtered_events["max_severity"] == sel_sev]
+if sel_sev != "All Severities" and sev_col:
+    filtered_events = filtered_events[filtered_events[sev_col] == sel_sev]
 
 st.markdown(f"### Events List ({len(filtered_events)} matched)")
 
@@ -67,10 +69,13 @@ display_cols = [
         "event_id",
         "session_id",
         "device",
+        "start",
         "start_time",
+        "end",
         "end_time",
         "sample_count",
         "anomaly_type",
+        "severity",
         "max_severity",
     ]
     if c in filtered_events.columns

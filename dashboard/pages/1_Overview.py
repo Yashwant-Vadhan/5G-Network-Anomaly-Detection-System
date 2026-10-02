@@ -203,10 +203,12 @@ with r3_c2:
         # Load diagnosed events list if available
         events = load_events_diagnosed()
         matching_event = None
-        if events:
+        if events and current_sample.get("timestamp") is not None:
             curr_ts = str(current_sample.get("timestamp"))
             for evt in events:
-                if evt.get("start_time") <= curr_ts <= evt.get("end_time"):
+                start_ts = evt.get("start") or evt.get("start_time")
+                end_ts = evt.get("end") or evt.get("end_time")
+                if start_ts and end_ts and str(start_ts) <= curr_ts <= str(end_ts):
                     matching_event = evt
                     break
 

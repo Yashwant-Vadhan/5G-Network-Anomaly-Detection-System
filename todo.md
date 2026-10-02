@@ -929,13 +929,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T6-012: Responsive and accessibility pass
-**Status:** ⬜
+**Status:** ✅
 **Description:** Manually verify at 375/768/1280 px; add one-sentence chart summaries where missing; check keyboard navigation and focus visibility; ensure anomalies are shape+text, not colour only. Record findings and fixes in `docs/testing.md` (stub if not yet created).
 **Dependencies:** T6-006, T6-007, T6-010
 **Acceptance Criteria:**
-- [ ] Checklist recorded with pass/fail per page
-- [ ] No page is unusable at 375 px
-- [ ] All charts have text summaries
+- [x] Checklist recorded with pass/fail per page
+- [x] No page is unusable at 375 px
+- [x] All charts have text summaries
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Yashwant

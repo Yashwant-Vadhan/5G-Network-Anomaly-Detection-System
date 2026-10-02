@@ -149,7 +149,7 @@ if not anom_df.empty and "ss_rsrp" in anom_df.columns:
             y=anom_df["ss_rsrp"],
             mode="markers",
             name="Anomaly Flagged",
-            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, linewidth=2),
+            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, line=dict(width=2)),
             hovertemplate="Anomaly Flagged<br>Time: %{x}<br>RSRP: %{y:.1f} dBm<extra></extra>",
         ),
         row=1,
@@ -188,7 +188,7 @@ if not anom_df.empty and "ss_rsrq" in anom_df.columns:
             y=anom_df["ss_rsrq"],
             mode="markers",
             name="Anomaly Flagged",
-            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, linewidth=2),
+            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, line=dict(width=2)),
             showlegend=False,
             hovertemplate="Anomaly Flagged<br>Time: %{x}<br>RSRQ: %{y:.1f} dB<extra></extra>",
         ),
@@ -228,7 +228,7 @@ if not anom_df.empty and "ss_sinr" in anom_df.columns:
             y=anom_df["ss_sinr"],
             mode="markers",
             name="Anomaly Flagged",
-            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, linewidth=2),
+            marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, line=dict(width=2)),
             showlegend=False,
             hovertemplate="Anomaly Flagged<br>Time: %{x}<br>SINR: %{y:.1f} dB<extra></extra>",
         ),
@@ -290,7 +290,7 @@ if "if_score" in plot_df.columns:
                     y=anom_score_df["if_score"],
                     mode="markers",
                     name="Score Flagged",
-                    marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, linewidth=2),
+                    marker=dict(symbol="x", size=9, color=CHART_ANOMALY_MARKER, line=dict(width=2)),
                     showlegend=False,
                     hovertemplate="Flagged Score: %{y:.3f}<extra></extra>",
                 ),
@@ -304,6 +304,10 @@ layout_defaults["height"] = 900
 fig.update_layout(**layout_defaults)
 
 st.plotly_chart(fig, use_container_width=True)
+st.caption(
+    "Chart Summary: Displays RSRP (dBm), RSRQ (dB), and SINR (dB) time series alongside the Isolation Forest anomaly score. "
+    "Flagged anomalies are marked with distinct 'x' shape symbols and highlighted threshold regions."
+)
 
 # Data Table Expander
 with st.expander("📋 Show Data Table"):
