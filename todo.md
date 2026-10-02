@@ -982,13 +982,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-004: Unit tests — baseline and Isolation Forest
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_detection.py`: baseline flat/step cases; IF determinism with fixed seed; score range; ineligible rows unscored; metadata file completeness; synthetic-training guard (G11).
 **Dependencies:** T4-009, T4-007
 **Acceptance Criteria:**
-- [ ] Determinism test passes twice in a row
-- [ ] Score range asserted
-- [ ] Guard test present
+- [x] Determinism test passes twice in a row
+- [x] Score range asserted
+- [x] Guard test present
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil

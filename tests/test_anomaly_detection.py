@@ -81,3 +81,73 @@ def test_if_scores(tmp_path: Path):
     assert not scored_df.loc[5, "if_flag"]
     assert pd.isna(scored_df.loc[10, "if_score"])
     assert not scored_df.loc[10, "if_flag"]
+
+
+def test_if_scores_determinism(tmp_path: Path):
+    """Test that two runs of IsolationForest with fixed seed yield identical scores."""
+    from joblib import load
+
+    data = {col: np.random.RandomState(42).randn(30) * 5 + 50 for col in FEATURE_COLUMNS}
+    df = pd.DataFrame(data)
+    df["model_eligible"] = True
+    df["is_synthetic"] = False
+
+    dir1 = tmp_path / "run1"
+    dir2 = tmp_path / "run2"
+
+    model1, _, _ = train_iforest(df, out_dir=dir1)
+    scaler1 = load(dir1 / "scaler.joblib")
+    scored1 = if_scores(df, model=model1, scaler=scaler1, threshold=0.5)
+
+    model2, _, _ = train_iforest(df, out_dir=dir2)
+    scaler2 = load(dir2 / "scaler.joblib")
+    scored2 = if_scores(df, model=model2, scaler=scaler2, threshold=0.5)
+
+    pd.testing.assert_series_equal(scored1["if_score"], scored2["if_score"])
+    pd.testing.assert_series_equal(scored1["if_flag"], scored2["if_flag"])
+
+
+def test_if_v1_metadata_completeness(tmp_path: Path):
+    """Test that if_v1.meta.json contains all required provenance keys per contract C3."""
+    import json
+
+    data = {col: np.random.RandomState(42).randn(20) * 5 + 50 for col in FEATURE_COLUMNS}
+    df = pd.DataFrame(data)
+    df["model_eligible"] = True
+    df["is_synthetic"] = False
+
+    _, _, meta_path = train_iforest(df, out_dir=tmp_path)
+    assert meta_path.exists()
+
+    with open(meta_path, encoding="utf-8") as f:
+        meta = json.load(f)
+
+    required_keys = [
+        "model_name",
+        "feature_columns",
+        "random_state",
+        "n_estimators",
+        "contamination",
+        "sklearn_version",
+        "training_rows",
+        "training_data_sha256",
+        "created_at",
+    ]
+    for key in required_keys:
+        assert key in meta, f"Missing required metadata key: {key}"
+
+
+def test_guardrail_g11_synthetic_training_forbidden(tmp_path: Path):
+    """Test Guardrail G11: training IF on synthetic data raises ValueError unless allow_synthetic=True."""
+    data = {col: np.random.RandomState(42).randn(20) * 5 + 50 for col in FEATURE_COLUMNS}
+    df = pd.DataFrame(data)
+    df["model_eligible"] = True
+    df["is_synthetic"] = True  # Synthetic data
+
+    with pytest.raises(ValueError, match="Guardrail G11"):
+        train_iforest(df, out_dir=tmp_path)
+
+    # Allowed with explicit override
+    model, _, _ = train_iforest(df, out_dir=tmp_path, allow_synthetic=True)
+    assert model is not None
+
