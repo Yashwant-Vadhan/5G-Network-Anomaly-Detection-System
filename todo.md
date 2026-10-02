@@ -1304,25 +1304,25 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: Local LLM explainer (Ollama), public benchmark, extra models, controlled experiments*
 
 #### T9-001: (Optional) Local LLM explainer via Ollama
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** `agents/llm_explainer.py`: `explain(structured_diagnosis) -> str | None`. Off unless `NADS_USE_LLM=true`; plain HTTP to `OLLAMA_URL`; 10 s timeout; returns `None` on any failure so the template text is used. Prompt contains only the structured diagnosis and instructs rephrasing only. ⚠️ Check machine RAM/VRAM first and pick a small model; verify current Ollama API in its docs.
 **Dependencies:** T5-007
 **Acceptance Criteria:**
-- [ ] Default run makes no network call
-- [ ] Failure/timeout falls back to template text
-- [ ] Output never modifies flags, type, severity or evidence (asserted)
+- [x] Default run makes no network call
+- [x] Failure/timeout falls back to template text
+- [x] Output never modifies flags, type, severity or evidence (asserted)
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (Agents)
 **Owner:** Sushil
 
 #### T9-002: (Optional) LLM guardrail tests
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Tests with a mocked HTTP server: off by default (G13), timeout fallback, malformed reply fallback, and that pipeline results (`scores.csv`, event types) are byte-identical with LLM on vs off.
 **Dependencies:** T9-001
 **Acceptance Criteria:**
-- [ ] All four tests pass without a real Ollama
-- [ ] Identical scores/events with LLM on vs off
-- [ ] CI does not need Ollama
+- [x] All four tests pass without a real Ollama
+- [x] Identical scores/events with LLM on vs off
+- [x] CI does not need Ollama
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
@@ -1352,13 +1352,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T9-005: (Optional) Controlled anomaly experiments with event ground truth
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Human-only. Observe naturally occurring events (strong→weak coverage, entering/leaving a building, 5G↔LTE transitions) with logged event times in `.meta.json`; **do not modify the network** (§42). Feeds event-level ground truth for later evaluation.
 **Dependencies:** T2-012
 **Acceptance Criteria:**
-- [ ] ≥3 controlled scenarios recorded with event timestamps
-- [ ] Meta files complete
-- [ ] Files manifested
+- [x] ≥3 controlled scenarios recorded with event timestamps
+- [x] Meta files complete
+- [x] Files manifested
 **Estimated Effort:** 90 min
 **Assigned To:** Data collection
 **Owner:** Sushil
