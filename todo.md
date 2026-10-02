@@ -1203,13 +1203,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T8-003: Write `docs/dataset.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Dataset documentation: schema and field meanings (§11–12), missing-value policy (§13), devices/operators/scenarios collected (counts), NSA/SA/UNKNOWN policy (§8), privacy statement (§49), synthetic-data policy, labelling method and agreement.
 **Dependencies:** T7-014
 **Acceptance Criteria:**
-- [ ] Counts match `data/raw/MANIFEST.sha256` contents
-- [ ] UNKNOWN ≠ SA stated
-- [ ] Privacy statement present
+- [x] Counts match `data/raw/MANIFEST.sha256` contents
+- [x] UNKNOWN ≠ SA stated
+- [x] Privacy statement present
 **Estimated Effort:** 60 min
 **Assigned To:** Docs
 **Owner:** Yashwant
