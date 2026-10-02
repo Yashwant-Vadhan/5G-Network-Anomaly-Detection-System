@@ -106,6 +106,7 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
 | [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md) | False positive & negative investigation report with severity validation |
 | [`docs/limitations_and_future_scope.md`](docs/limitations_and_future_scope.md) | System limitations (§48) and explicitly un-implemented future scope (§55) |
+| [`docs/definition_of_done.md`](docs/definition_of_done.md) | Exhaustive 25-item Definition-of-Done audit matrix and v1.0.0 release verification |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims

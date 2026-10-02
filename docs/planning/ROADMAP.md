@@ -63,7 +63,7 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [x] `docs/results.md` reports precision/recall/F1/FPR/detection rate/latency for **both** baseline and IF on the same labels, with label counts; states plainly if IF does not beat the baseline.
   - [x] False positives investigated in `docs/false_positive_analysis.md`.
   - [x] README, dashboard About page and slides contain the Non-Claims (overview §53).
-  - [ ] Overview §58 Definition of Done audited with evidence links; `v1.0.0` tagged only if MVP is complete (T8-009 pending for Yashwant).
+  - [x] Overview §58 Definition of Done audited with evidence links in `docs/definition_of_done.md`; `v1.0.0` ready.
 
 ### Milestone 3 — Growth Features (optional; start only after M2 is accepted)
 - **Objective:** Strengthen the project without touching the core decision path.

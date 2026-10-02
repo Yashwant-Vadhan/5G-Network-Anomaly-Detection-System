@@ -1275,13 +1275,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T8-009: Definition-of-Done audit and v1.0.0 tag
-**Status:** ⬜
+**Status:** ✅
 **Description:** Walk the 25-item checklist in overview §58, tick each with a link to evidence in `docs/definition_of_done.md`; anything unmet is listed honestly. Tag `v1.0.0` only if the Must-Have list is complete.
 **Dependencies:** T8-001, T8-003, T8-004, T8-005, T8-006, T8-007, T8-008, T7-019, T7-010
 **Acceptance Criteria:**
-- [ ] Every §58 item has evidence or an honest 'not done'
-- [ ] Tag created only if MVP complete
-- [ ] README status table consistent
+- [x] Every §58 item has evidence or an honest 'not done'
+- [x] Tag created only if MVP complete
+- [x] README status table consistent
 **Estimated Effort:** 30 min
 **Assigned To:** QA
 **Owner:** Yashwant
