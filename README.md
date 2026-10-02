@@ -16,7 +16,7 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Anomaly classification & severity | ✅ Implemented and verified |
 | Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
 | Interpretability dashboard (Streamlit) | 🔄 In progress (skeleton and page loaders done — T6-001) |
-| End-to-end pipeline & tests | ⬜ Not started |
+| End-to-end pipeline & tests | 🔄 In progress (pipeline CLI implemented — T7-001) |
 | Evaluation (baseline vs. Isolation Forest) | ⬜ Not started |
 
 Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md).

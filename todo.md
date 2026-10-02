@@ -946,13 +946,13 @@ The generic task template assumes a database, authentication and a web backend. 
 *Goal: End-to-end pipeline, unit/integration/e2e tests, guardrail checks, labelled evaluation, baseline vs Isolation Forest*
 
 #### T7-001: Implement end-to-end pipeline CLI
-**Status:** ⬜
+**Status:** ✅
 **Description:** `pipelines/run_pipeline.py`: `python -m pipelines.run_pipeline --input data/raw --output data/processed [--retrain]` running preprocess → features → (train if no model or `--retrain`) → detect → agents → write all contract files. Logs row counts per step; verifies raw manifest first if present (warn on mismatch). Works with no network and no LLM (G13).
 **Dependencies:** T4-015, T5-008
 **Acceptance Criteria:**
-- [ ] One command produces C2–C5 artifacts on `data/sample/`
-- [ ] Fails with exit code 2 and a hint on schema errors
-- [ ] Runs offline
+- [x] One command produces C2–C5 artifacts on `data/sample/`
+- [x] Fails with exit code 2 and a hint on schema errors
+- [x] Runs offline
 **Estimated Effort:** 60 min
 **Assigned To:** Backend (ML)
 **Owner:** Yashwant
