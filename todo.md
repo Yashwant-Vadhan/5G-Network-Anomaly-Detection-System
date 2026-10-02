@@ -1251,13 +1251,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-007: Write `docs/limitations_and_future_scope.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Limitations (§48) with what we observed in our data; future scope (§55) explicitly labelled *not implemented*.
 **Dependencies:** T7-019
 **Acceptance Criteria:**
-- [ ] All §48 limitations present
-- [ ] Future scope labelled not implemented
-- [ ] Consistent with results.md caveats
+- [x] All §48 limitations present
+- [x] Future scope labelled not implemented
+- [x] Consistent with results.md caveats
 **Estimated Effort:** 30 min
 **Assigned To:** Docs
 **Owner:** Yashwant

@@ -102,6 +102,7 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/ios_collection_note.md`](docs/ios_collection_note.md) | Technical research note on iOS Telephony API constraints and comparative feasibility |
 | [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
 | [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md) | False positive & negative investigation report with severity validation |
+| [`docs/limitations_and_future_scope.md`](docs/limitations_and_future_scope.md) | System limitations (§48) and explicitly un-implemented future scope (§55) |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
 
 ## Non-Claims
