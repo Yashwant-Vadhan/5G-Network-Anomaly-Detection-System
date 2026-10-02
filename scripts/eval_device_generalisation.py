@@ -24,7 +24,6 @@ def run_device_generalisation_eval(
     """Run cross-device evaluation (Redmi model on Samsung data & vice versa)."""
     raw_df = pd.read_csv(clean_csv)
     df = build_features(raw_df)
-    labels_df = pd.read_csv(labels_csv)
 
     # Separate datasets by device
     redmi_df = df[df["device"].str.contains("Redmi|2406", case=False, na=False)].copy()
@@ -56,30 +55,56 @@ def run_device_generalisation_eval(
     y_pred_redmi = redmi_scored["if_flag"].fillna(False)
     metrics_redmi = compute_metrics(y_true_redmi, y_pred_redmi)
 
-    report_content = f"""# Device Generalisation and Cross-Device Evaluation Report (T7-017)
+    r_p = metrics_redmi["precision"]
+    r_r = metrics_redmi["recall"]
+    r_f1 = metrics_redmi["f1_score"]
+    r_fpr = metrics_redmi["false_positive_rate"]
 
-## Overview
+    s_p = metrics_samsung["precision"]
+    s_r = metrics_samsung["recall"]
+    s_f1 = metrics_samsung["f1_score"]
+    s_fpr = metrics_samsung["false_positive_rate"]
 
-This report evaluates model generalisation across different smartphone hardware modems (Xiaomi Redmi 13 5G vs. Samsung Galaxy A15 5G) per project specification §23 and Guardrail G11.
+    line1 = (
+        "1. **Android Telephony API Differences**: MediaTek/Qualcomm modems (Redmi) report "
+        "discrete RSRP step increments, whereas Exynos/MediaTek modems (Samsung) exhibit "
+        "different vendor-specific reporting thresholds for `csi_rsrp` and `deployment_mode`.\n"
+    )
+    line2 = (
+        "2. **Deployment Mode Exposure**: Samsung devices in the test suite report "
+        "`deployment_mode` as `UNKNOWN` due to vendor API restrictions, whereas Redmi "
+        "devices successfully expose `NSA`/`SA` status.\n"
+    )
+    line3 = (
+        "3. **No Generalisation Claims**: This evaluation is exploratory on a small "
+        "multi-device sample set. No claim is made that the trained Isolation Forest "
+        "generalizes to unseen carrier networks or un-tested modems without recalibration.\n\n"
+    )
 
-## Cross-Device Performance Matrix
-
-| Training Device | Test Evaluation Device | Test Samples | Precision | Recall (TPR) | F1-Score | FPR |
-|---|---|---|---|---|---|---|
-| **Redmi 13 5G** | Samsung Galaxy A15 5G | {metrics_samsung["total_samples"]} | {metrics_samsung["precision"]:.4f} | {metrics_samsung["recall"]:.4f} | {metrics_samsung["f1_score"]:.4f} | {metrics_samsung["false_positive_rate"]:.4f} |
-| **Samsung Galaxy A15 5G** | Redmi 13 5G | {metrics_redmi["total_samples"]} | {metrics_redmi["precision"]:.4f} | {metrics_redmi["recall"]:.4f} | {metrics_redmi["f1_score"]:.4f} | {metrics_redmi["false_positive_rate"]:.4f} |
-
-## Hardware & Modem Caveats
-
-1. **Android Telephony API Differences**: MediaTek/Qualcomm modems (Redmi) report discrete RSRP step increments, whereas Exynos/MediaTek modems (Samsung) exhibit different vendor-specific reporting thresholds for `csi_rsrp` and `deployment_mode`.
-2. **Deployment Mode Exposure**: Samsung devices in the test suite report `deployment_mode` as `UNKNOWN` due to vendor API restrictions, whereas Redmi devices successfully expose `NSA`/`SA` status.
-3. **No Generalisation Claims**: This evaluation is exploratory on a small multi-device sample set. No claim is made that the trained Isolation Forest generalizes to unseen carrier networks or un-tested modems without recalibration.
-
-## Operator Variation (Airtel vs Vodafone)
-
-- **Airtel 5G**: Covered extensively across Redmi and Samsung datasets ({len(df)} samples).
-- **Vodafone / OnePlus**: Omitted due to unavailability of hardware collector device for Vodafone 5G during data collection phase.
-"""
+    report_content = (
+        "# Device Generalisation and Cross-Device Evaluation Report (T7-017)\n\n"
+        "## Overview\n\n"
+        "This report evaluates model generalisation across different smartphone hardware "
+        "modems (Redmi 13 5G vs. Samsung Galaxy A15 5G) per project specification §23 "
+        "and Guardrail G11.\n\n"
+        "## Cross-Device Performance Matrix\n\n"
+        "| Training Device | Test Evaluation Device | Test Samples | Precision | Recall (TPR) | "
+        "F1-Score | FPR |\n"
+        "|---|---|---|---|---|---|---|\n"
+        f"| **Redmi 13 5G** | Samsung Galaxy A15 5G | {metrics_samsung['total_samples']} | "
+        f"{s_p:.4f} | {s_r:.4f} | {s_f1:.4f} | {s_fpr:.4f} |\n"
+        f"| **Samsung Galaxy A15 5G** | Redmi 13 5G | {metrics_redmi['total_samples']} | "
+        f"{r_p:.4f} | {r_r:.4f} | {r_f1:.4f} | {r_fpr:.4f} |\n\n"
+        "## Hardware & Modem Caveats\n\n"
+        + line1
+        + line2
+        + line3
+        + "## Operator Variation (Airtel vs Vodafone)\n\n"
+        f"- **Airtel 5G**: Covered extensively across Redmi and Samsung datasets "
+        f"({len(df)} samples).\n"
+        "- **Vodafone / OnePlus**: Omitted due to unavailability of hardware collector device "
+        "for Vodafone 5G during data collection phase.\n"
+    )
 
     Path(out_report).write_text(report_content, encoding="utf-8")
     return report_content

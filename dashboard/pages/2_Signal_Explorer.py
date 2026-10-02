@@ -58,8 +58,16 @@ with col_t2:
     show_rolling = st.checkbox("Show Rolling Mean Overlay", value=True)
 
 # Filter flagged samples based on selection
-base_series = df["baseline_flag"].fillna(False).astype(bool) if "baseline_flag" in df else pd.Series(False, index=df.index)
-if_series = df["if_flag"].fillna(False).astype(bool) if "if_flag" in df else pd.Series(False, index=df.index)
+base_series = (
+    df["baseline_flag"].fillna(False).astype(bool)
+    if "baseline_flag" in df
+    else pd.Series(False, index=df.index)
+)
+if_series = (
+    df["if_flag"].fillna(False).astype(bool)
+    if "if_flag" in df
+    else pd.Series(False, index=df.index)
+)
 
 if flag_toggle == "Both Flags (Baseline & IF)":
     anom_mask = base_series | if_series
