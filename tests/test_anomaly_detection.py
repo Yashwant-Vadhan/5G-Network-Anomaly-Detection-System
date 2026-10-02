@@ -150,4 +150,3 @@ def test_guardrail_g11_synthetic_training_forbidden(tmp_path: Path):
     # Allowed with explicit override
     model, _, _ = train_iforest(df, out_dir=tmp_path, allow_synthetic=True)
     assert model is not None
-

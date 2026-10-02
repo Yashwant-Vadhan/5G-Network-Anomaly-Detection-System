@@ -259,6 +259,7 @@ def test_load_raw_dir_no_csvs(tmp_path: Path):
 def test_preprocessing_main_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Test CLI main() execution for ml.preprocessing."""
     import sys
+
     from ml.preprocessing import main
 
     raw_dir = tmp_path / "raw"
@@ -276,18 +277,19 @@ def test_preprocessing_main_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert (out_dir / "measurements_clean.csv").exists()
 
 
-def test_preprocessing_main_cli_error_handling(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_preprocessing_main_cli_error_handling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Test CLI main() error handling for schema and config errors."""
     import sys
+
     from ml.preprocessing import main
 
     empty_dir = tmp_path / "raw_empty"
     empty_dir.mkdir()
 
     monkeypatch.setattr(
-        sys, "argv", ["preprocessing.py", "--input", str(empty_dir), "--output", str(tmp_path / "out")]
+        sys,
+        "argv",
+        ["preprocessing.py", "--input", str(empty_dir), "--output", str(tmp_path / "out")],
     )
     with pytest.raises(SystemExit) as exc_info:
         main()
@@ -295,9 +297,10 @@ def test_preprocessing_main_cli_error_handling(
 
     # ConfigError (output inside raw)
     monkeypatch.setattr(
-        sys, "argv", ["preprocessing.py", "--input", str(empty_dir), "--output", str(empty_dir / "sub")]
+        sys,
+        "argv",
+        ["preprocessing.py", "--input", str(empty_dir), "--output", str(empty_dir / "sub")],
     )
     with pytest.raises(SystemExit) as exc_info:
         main()
     assert exc_info.value.code == 1
-

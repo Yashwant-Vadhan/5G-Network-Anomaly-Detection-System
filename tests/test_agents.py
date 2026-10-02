@@ -205,13 +205,16 @@ def test_write_events_diagnosed_fails_on_missing_keys(tmp_path):
 # Per-Agent Tests (≥ 3 tests per agent)
 # ---------------------------------------------------------------------------
 
+
 # Signal Agent Tests
 def test_signal_agent_good_condition():
     """Test Signal Agent returns good condition when metrics are high."""
     from agents.signal_agent import analyze as analyze_signal
 
     df = pd.DataFrame({"ss_rsrp": [-75.0], "ss_rsrq": [-8.0], "ss_sinr": [25.0]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_signal(window)
     assert report.signal_condition in ["good", "fair"]
 
@@ -220,8 +223,12 @@ def test_signal_agent_degraded_condition():
     """Test Signal Agent returns degraded condition with evidence on low metrics."""
     from agents.signal_agent import analyze as analyze_signal
 
-    df = pd.DataFrame({"ss_rsrp": [-125.0, -130.0], "ss_rsrq": [-18.0, -19.0], "ss_sinr": [-8.0, -10.0]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    df = pd.DataFrame(
+        {"ss_rsrp": [-125.0, -130.0], "ss_rsrq": [-18.0, -19.0], "ss_sinr": [-8.0, -10.0]}
+    )
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_signal(window)
     assert report.signal_condition == "degraded"
     assert len(report.evidence) > 0
@@ -232,7 +239,9 @@ def test_signal_agent_all_missing():
     from agents.signal_agent import analyze as analyze_signal
 
     df = pd.DataFrame({"ss_rsrp": [None], "ss_rsrq": [None], "ss_sinr": [None]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_signal(window)
     assert report.signal_condition == "unknown"
 
@@ -243,7 +252,9 @@ def test_cell_agent_no_change():
     from agents.cell_agent import analyze as analyze_cell
 
     df = pd.DataFrame({"pci": [336, 336, 336]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_cell(window)
     assert report.cell_event == "NONE"
 
@@ -253,7 +264,9 @@ def test_cell_agent_single_change():
     from agents.cell_agent import analyze as analyze_cell
 
     df = pd.DataFrame({"pci": [336, 336, 565]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_cell(window)
     assert report.cell_event == "CELL_CHANGE"
     assert len(report.evidence) > 0
@@ -264,7 +277,9 @@ def test_cell_agent_repeated_ping_pong():
     from agents.cell_agent import analyze as analyze_cell
 
     df = pd.DataFrame({"pci": [336, 565, 336]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_cell(window)
     assert report.cell_event == "REPEATED_CELL_CHANGE"
 
@@ -274,7 +289,9 @@ def test_cell_agent_missing_pci():
     from agents.cell_agent import analyze as analyze_cell
 
     df = pd.DataFrame({"pci": [None, None]})
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_cell(window)
     assert report.cell_event == "NONE"
 
@@ -291,7 +308,9 @@ def test_network_agent_transition():
             "registered": [True, True],
         }
     )
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_network(window)
     assert report.network_state in ["TRANSITION", "STABLE", "CHANGING"] or len(report.evidence) > 0
 
@@ -307,7 +326,9 @@ def test_network_agent_unregistered():
             "registered": [True, False],
         }
     )
-    window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+    window = EventWindow(
+        df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+    )
     report = analyze_network(window)
     assert any("unregistered" in e.lower() or "registered" in e.lower() for e in report.evidence)
 
@@ -318,7 +339,9 @@ def test_network_agent_parametrised_g4():
 
     for mode in ["UNKNOWN"]:
         df = pd.DataFrame({"network_type": ["NR"], "deployment_mode": [mode], "registered": [True]})
-        window = EventWindow(df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={})
+        window = EventWindow(
+            df=df, event_id="e1", session_id="s1", start="t1", end="t2", context_before=0, ml={}
+        )
         report = analyze_network(window)
         assert report.deployment_mode == mode
 
@@ -326,27 +349,35 @@ def test_network_agent_parametrised_g4():
 # Diagnosis Agent Tests
 def test_diagnosis_agent_statistical_only():
     """Test Diagnosis Agent produces statistical-only explanation when rule evidence is absent."""
+    from agents.contracts import CellReport, NetworkReport, SignalReport
     from agents.diagnosis_agent import diagnose
-    from agents.contracts import SignalReport, CellReport, NetworkReport
 
     sig = SignalReport(signal_condition="good", evidence=[])
     cell = CellReport(cell_event="NONE", evidence=[])
     net = NetworkReport(network_state="STABLE", deployment_mode="SA", evidence=[])
 
-    diag = diagnose(sig, cell, net, ml={"anomaly_type": "STATISTICAL_ONLY"}, anomaly_type="STATISTICAL_ONLY")
-    assert "statistical" in diag.summary.lower() or "statistically" in diag.summary.lower() or "statistical_only" in diag.summary.lower()
+    diag = diagnose(
+        sig, cell, net, ml={"anomaly_type": "STATISTICAL_ONLY"}, anomaly_type="STATISTICAL_ONLY"
+    )
+    assert (
+        "statistical" in diag.summary.lower()
+        or "statistically" in diag.summary.lower()
+        or "statistical_only" in diag.summary.lower()
+    )
 
 
 def test_diagnosis_agent_no_causal_language():
     """Test Diagnosis Agent never uses forbidden causal words in output summary or confidence note."""
+    from agents.contracts import CellReport, NetworkReport, SignalReport
     from agents.diagnosis_agent import diagnose
-    from agents.contracts import SignalReport, CellReport, NetworkReport
 
     sig = SignalReport(signal_condition="degraded", evidence=["SINR drop"])
     cell = CellReport(cell_event="CELL_CHANGE", evidence=["PCI change"])
     net = NetworkReport(network_state="STABLE", deployment_mode="NSA", evidence=[])
 
-    diag = diagnose(sig, cell, net, ml={"anomaly_type": "COMBINED_ANOMALY"}, anomaly_type="COMBINED_ANOMALY")
+    diag = diagnose(
+        sig, cell, net, ml={"anomaly_type": "COMBINED_ANOMALY"}, anomaly_type="COMBINED_ANOMALY"
+    )
     forbidden = ["caused", "because of", "due to", "problem was caused"]
     combined_text = (diag.summary + " " + diag.confidence_note).lower()
     for word in forbidden:
@@ -356,30 +387,42 @@ def test_diagnosis_agent_no_causal_language():
 # Recommendation Agent Tests
 def test_recommendation_agent_low_severity_monitoring_only():
     """Test Recommendation Agent outputs MONITORING for NORMAL / CELL_TRANSITION."""
-    from agents.recommendation_agent import recommend
     from agents.contracts import Diagnosis
+    from agents.recommendation_agent import recommend
 
-    diag = Diagnosis(summary="Normal event", evidence=[], confidence_note="Note", anomaly_type="NORMAL")
+    diag = Diagnosis(
+        summary="Normal event", evidence=[], confidence_note="Note", anomaly_type="NORMAL"
+    )
     rec = recommend(diag)
     assert rec.kind == "MONITORING"
 
 
 def test_recommendation_agent_operator_action_suggestion():
     """Test Recommendation Agent outputs OPERATOR_ACTION for COMBINED_ANOMALY as suggestions only."""
-    from agents.recommendation_agent import recommend
     from agents.contracts import Diagnosis
+    from agents.recommendation_agent import recommend
 
-    diag = Diagnosis(summary="High degradation", evidence=["RSRP drop"], confidence_note="Note", anomaly_type="COMBINED_ANOMALY")
+    diag = Diagnosis(
+        summary="High degradation",
+        evidence=["RSRP drop"],
+        confidence_note="Note",
+        anomaly_type="COMBINED_ANOMALY",
+    )
     rec = recommend(diag)
     assert rec.kind == "OPERATOR_ACTION"
 
 
 def test_recommendation_agent_no_first_person():
     """Test Recommendation Agent output contains no first-person action claims ('I', 'We', 'My')."""
-    from agents.recommendation_agent import recommend
     from agents.contracts import Diagnosis
+    from agents.recommendation_agent import recommend
 
-    diag = Diagnosis(summary="Degradation", evidence=["RSRP drop"], confidence_note="Note", anomaly_type="SIGNAL_DEGRADATION")
+    diag = Diagnosis(
+        summary="Degradation",
+        evidence=["RSRP drop"],
+        confidence_note="Note",
+        anomaly_type="SIGNAL_DEGRADATION",
+    )
     rec = recommend(diag)
     words = rec.text.split()
     for first_person in ["I", "We", "my", "our", "us"]:
@@ -390,6 +433,7 @@ def test_recommendation_agent_no_first_person():
 # Guardrail Automation Tests (G9 & G14)
 # ---------------------------------------------------------------------------
 
+
 def test_guardrail_g9_no_sklearn_in_agents():
     """Guardrail G9: Verify no Python code in agents/ imports sklearn."""
     from pathlib import Path
@@ -399,8 +443,14 @@ def test_guardrail_g9_no_sklearn_in_agents():
         lines = py_file.read_text(encoding="utf-8").splitlines()
         for line in lines:
             stripped = line.strip()
-            if not stripped.startswith("#") and not stripped.startswith('"""') and not stripped.startswith("*"):
-                assert not stripped.startswith("import sklearn"), f"G9 violation in {py_file}: {line}"
+            if (
+                not stripped.startswith("#")
+                and not stripped.startswith('"""')
+                and not stripped.startswith("*")
+            ):
+                assert not stripped.startswith("import sklearn"), (
+                    f"G9 violation in {py_file}: {line}"
+                )
                 assert not stripped.startswith("from sklearn"), f"G9 violation in {py_file}: {line}"
 
 
@@ -418,5 +468,3 @@ def test_guardrail_g14_no_cross_agent_imports():
                 mod_name = other_name.replace(".py", "")
                 assert f"import {mod_name}" not in content, f"G14 violation in {f_name}"
                 assert f"from agents.{mod_name}" not in content, f"G14 violation in {f_name}"
-
-
