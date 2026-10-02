@@ -98,6 +98,7 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/guardrails_checklist.md`](docs/guardrails_checklist.md) | Complete audit mapping of G1–G16 guardrails to test suites and enforcement mechanisms |
 | [`docs/labelling_guidelines.md`](docs/labelling_guidelines.md) | Guidelines and blind labelling schema for human ground-truth evaluation |
 | [`docs/dataset.md`](docs/dataset.md) | Dataset documentation, schema details, missing-value policies, and MANIFEST verification |
+| [`docs/agent_architecture.md`](docs/agent_architecture.md) | Multi-agent diagnostic layer architecture, responsibilities, contracts, and execution flow |
 | [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
 | [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md) | False positive & negative investigation report with severity validation |
 | [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |

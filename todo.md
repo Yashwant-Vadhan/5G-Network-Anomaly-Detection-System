@@ -1227,13 +1227,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T8-005: Write `docs/agent_architecture.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Responsibilities and I/O for the five agents (§28–30), why deterministic (§37), ordering diagram, output schema, how to add an agent, the optional LLM path and its constraints.
 **Dependencies:** T5-008
 **Acceptance Criteria:**
-- [ ] Five agents documented with I/O
-- [ ] Deterministic rationale stated
-- [ ] LLM constraints stated
+- [x] Five agents documented with I/O
+- [x] Deterministic rationale stated
+- [x] LLM constraints stated
 **Estimated Effort:** 45 min
 **Assigned To:** Docs
 **Owner:** Yashwant
