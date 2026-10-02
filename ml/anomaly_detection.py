@@ -138,6 +138,9 @@ def if_scores(
         if "model_eligible" in df.columns
         else pd.Series(True, index=df.index)
     )
+    for col in feature_cols:
+        if col not in df.columns:
+            df[col] = np.nan
     feat_df = df[list(feature_cols)]
     valid_mask = eligible_mask & feat_df.notna().all(axis=1)
 

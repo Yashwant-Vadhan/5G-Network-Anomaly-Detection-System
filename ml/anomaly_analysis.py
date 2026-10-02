@@ -304,6 +304,8 @@ def detect(
     df["anomaly_type"] = anomaly_types
     df["severity"] = severities
 
+    df["event_id"] = None
+
     # Group contiguous events
     events = []
     event_id_counter = 1
@@ -326,19 +328,22 @@ def detect(
         in_event = False
         event_rows = []
 
-        for _, row in group.iterrows():
+        for row_idx, row in group.iterrows():
             if row["is_anom"]:
                 if not in_event:
                     in_event = True
-                    event_rows = [row]
+                    event_rows = [(row_idx, row)]
                 else:
-                    event_rows.append(row)
+                    event_rows.append((row_idx, row))
             else:
                 if in_event:
                     # Close event
-                    event_df = pd.DataFrame(event_rows)
+                    event_indices = [r[0] for r in event_rows]
+                    event_df = pd.DataFrame([r[1] for r in event_rows])
+                    evt_id = f"evt-{event_id_counter:03d}"
+                    df.loc[event_indices, "event_id"] = evt_id
                     evt = {
-                        "event_id": f"evt-{event_id_counter:03d}",
+                        "event_id": evt_id,
                         "session_id": session_id,
                         "device": str(event_df["device"].iloc[0]),
                         "start_time": str(event_df["timestamp"].iloc[0]),
@@ -357,9 +362,12 @@ def detect(
                     event_rows = []
 
         if in_event and event_rows:
-            event_df = pd.DataFrame(event_rows)
+            event_indices = [r[0] for r in event_rows]
+            event_df = pd.DataFrame([r[1] for r in event_rows])
+            evt_id = f"evt-{event_id_counter:03d}"
+            df.loc[event_indices, "event_id"] = evt_id
             evt = {
-                "event_id": f"evt-{event_id_counter:03d}",
+                "event_id": evt_id,
                 "session_id": session_id,
                 "device": str(event_df["device"].iloc[0]),
                 "start_time": str(event_df["timestamp"].iloc[0]),

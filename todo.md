@@ -994,13 +994,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-005: Unit tests — classification rules and precedence
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_classification.py`: negative cases first (low RSRP only, low SINR only, PCI change only, NCI change only, 5G→LTE only, UNKNOWN only → not anomalous: G5, G6), then each positive category and the precedence pairs.
 **Dependencies:** T4-013
 **Acceptance Criteria:**
-- [ ] All six negative cases assert not-anomalous
-- [ ] Each of 6 categories has a positive test
-- [ ] Precedence covered
+- [x] All six negative cases assert not-anomalous
+- [x] Each of 6 categories has a positive test
+- [x] Precedence covered
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
@@ -1018,13 +1018,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-007: Integration test — full pipeline on real sample
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_pipeline_integration.py`: run pipeline on `data/sample/` into a temp dir; assert contracts C2–C5 (columns, dtypes, no NaN in required output fields, events valid JSON), determinism (two runs identical), raw dir untouched.
 **Dependencies:** T7-001, T2-013
 **Acceptance Criteria:**
-- [ ] Test passes locally and in CI
-- [ ] Contracts asserted column by column
-- [ ] Raw sample file hash unchanged
+- [x] Test passes locally and in CI
+- [x] Contracts asserted column by column
+- [x] Raw sample file hash unchanged
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
