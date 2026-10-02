@@ -136,6 +136,7 @@ def test_text_renderer_all_types_and_determinism():
 def test_write_events_diagnosed_contract_c5(tmp_path):
     """T5-008: Verify write_events_diagnosed produces valid C5 JSON matching example keys."""
     import json
+
     from agents.orchestrator import write_events_diagnosed
 
     df = pd.DataFrame(
@@ -183,6 +184,7 @@ def test_write_events_diagnosed_contract_c5(tmp_path):
 def test_write_events_diagnosed_fails_on_missing_keys(tmp_path):
     """T5-008: Verify write_events_diagnosed raises ValueError and does not write file when keys are missing."""
     import pytest
+
     from agents.orchestrator import write_events_diagnosed
 
     incomplete_event = {
@@ -197,5 +199,3 @@ def test_write_events_diagnosed_fails_on_missing_keys(tmp_path):
         write_events_diagnosed([incomplete_event], out_file)
 
     assert not out_file.exists()
-
-

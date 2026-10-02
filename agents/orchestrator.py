@@ -9,6 +9,7 @@ Guardrail G9: Orchestrator MUST NOT import sklearn or load ML models directly.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -166,9 +167,8 @@ def validate_c5_record(record: dict[str, Any]) -> None:
     """Validate that an event record contains all required C5 contract keys."""
     missing = REQUIRED_C5_KEYS - set(record.keys())
     if missing:
-        raise ValueError(
-            f"Invalid C5 record '{record.get('event_id', 'unknown')}': missing required keys {sorted(missing)}"
-        )
+        evt_id = record.get("event_id", "unknown")
+        raise ValueError(f"Invalid C5 record '{evt_id}': missing required keys {sorted(missing)}")
 
 
 def run_all_events(
@@ -194,7 +194,10 @@ def run_all_events(
     return diagnosed_events
 
 
-def write_events_diagnosed(events: list[dict[str, Any]], path: Path | str) -> None:
+def write_events_diagnosed(
+    events: list[dict[str, Any]],
+    path: Path | str,
+) -> None:
     """Validate all event records against Contract C5 and write to JSON.
 
     Fails loudly without writing a partial file if any record is invalid.
@@ -204,7 +207,6 @@ def write_events_diagnosed(events: list[dict[str, Any]], path: Path | str) -> No
         path: Path to output JSON file.
     """
     import json
-    from pathlib import Path
 
     for record in events:
         validate_c5_record(record)
@@ -216,4 +218,3 @@ def write_events_diagnosed(events: list[dict[str, Any]], path: Path | str) -> No
         json.dump(events, f, indent=2)
 
     logger.info("Successfully wrote %d diagnosed events to %s", len(events), output_path)
-

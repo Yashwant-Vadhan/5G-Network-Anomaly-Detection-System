@@ -6,9 +6,9 @@ gitignore rules for sensitive data and models, and dashboard local binding rules
 
 from __future__ import annotations
 
-import io
 import re
 from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -62,7 +62,9 @@ def test_no_network_imports_in_core_pipeline():
             # Match import statements like 'import requests' or 'from requests import ...'
             pattern = rf"^\s*(import\s+{mod}|from\s+{mod}\s+import)"
             match = re.search(pattern, code, re.MULTILINE)
-            assert not match, f"Forbidden network module '{mod}' imported in offline module {py_file}"
+            assert not match, (
+                f"Forbidden network module '{mod}' imported in offline module {py_file}"
+            )
 
 
 def test_no_hardcoded_secrets_in_repo():
@@ -75,9 +77,13 @@ def test_no_hardcoded_secrets_in_repo():
         r"sk-[a-zA-Z0-9]{48}",
     ]
     tracked_files = [
-        p for p in Path(".").rglob("*")
-        if p.is_file() and not any(part.startswith(".") for part in p.parts)
-        and "data" not in p.parts and "models" not in p.parts and "__pycache__" not in p.parts
+        p
+        for p in Path(".").rglob("*")
+        if p.is_file()
+        and not any(part.startswith(".") for part in p.parts)
+        and "data" not in p.parts
+        and "models" not in p.parts
+        and "__pycache__" not in p.parts
         and p.name != "test_security_privacy.py"
     ]
 
@@ -87,7 +93,9 @@ def test_no_hardcoded_secrets_in_repo():
         except Exception:
             continue
         for pat in secret_patterns:
-            assert not re.search(pat, content), f"Potential secret pattern '{pat}' found in file {p}"
+            assert not re.search(pat, content), (
+                f"Potential secret pattern '{pat}' found in file {p}"
+            )
 
 
 def test_dashboard_binds_to_localhost_by_default():

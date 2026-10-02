@@ -958,13 +958,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-002: Unit tests — preprocessing and schema
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_preprocessing.py`: one test per step using `edge_cases_synthetic.csv` (sentinels → missing, NA ≠ 0, sorting, duplicate timestamps, session gap, invalid ranges, `model_eligible`, `is_synthetic`, raw-write guard G7, idempotency G8).
 **Dependencies:** T3-008, T2-014
 **Acceptance Criteria:**
-- [ ] All listed cases have a test
-- [ ] Suite passes in CI
-- [ ] Coverage of `ml/preprocessing.py` ≥ 85%
+- [x] All listed cases have a test
+- [x] Suite passes in CI
+- [x] Coverage of `ml/preprocessing.py` ≥ 85%
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
@@ -982,13 +982,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-004: Unit tests — baseline and Isolation Forest
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_detection.py`: baseline flat/step cases; IF determinism with fixed seed; score range; ineligible rows unscored; metadata file completeness; synthetic-training guard (G11).
 **Dependencies:** T4-009, T4-007
 **Acceptance Criteria:**
-- [ ] Determinism test passes twice in a row
-- [ ] Score range asserted
-- [ ] Guard test present
+- [x] Determinism test passes twice in a row
+- [x] Score range asserted
+- [x] Guard test present
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
@@ -1006,13 +1006,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-006: Unit tests — agents and guardrails
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_agents.py`: per-agent tests (evidence content, missing data), G4 (UNKNOWN never becomes SA, parametrised), G9 (no sklearn import in `agents/`), G14 (agents don't import each other except Diagnosis→contracts), causal-language check, recommendation no first-person action claims, text renderer determinism.
 **Dependencies:** T5-006, T5-007
 **Acceptance Criteria:**
-- [ ] Every agent ≥ 3 tests
-- [ ] G4/G9/G14 automated
-- [ ] Coverage of `agents/` ≥ 85%
+- [x] Every agent ≥ 3 tests
+- [x] G4/G9/G14 automated
+- [x] Coverage of `agents/` ≥ 85%
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
@@ -1030,13 +1030,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-008: E2E smoke test — dashboard renders on sample data
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/test_dashboard_smoke.py`: use Streamlit's app-testing utility if available in the pinned version (⚠️ verify in Streamlit docs) to load each page against pipeline output for the sample; assert no exceptions and that key strings appear (status banner, Non-Claims). If unavailable, document a manual checklist in `docs/testing.md` instead.
 **Dependencies:** T6-009, T7-001
 **Acceptance Criteria:**
-- [ ] All six pages load without exception
-- [ ] Key strings asserted
-- [ ] Fallback documented if tool unavailable
+- [x] All six pages load without exception
+- [x] Key strings asserted
+- [x] Fallback documented if tool unavailable
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil

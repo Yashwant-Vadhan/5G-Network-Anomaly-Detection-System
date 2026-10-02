@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from ml.feature_engineering import add_change_flags, add_deltas, add_persistence, add_rolling, build_features
+from ml.feature_engineering import (
+    add_deltas,
+    build_features,
+)
 
 
 def test_deltas_overview_sequence():

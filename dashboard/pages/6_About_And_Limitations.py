@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import streamlit as st
+
 from dashboard.data_loader import load_model_metadata
 
 st.set_page_config(page_title="6. About & Limitations - 5G-NADS", layout="wide")

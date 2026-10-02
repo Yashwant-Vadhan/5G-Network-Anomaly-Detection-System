@@ -7,8 +7,10 @@ with state persistence in st.session_state across all pages.
 from __future__ import annotations
 
 from typing import Any
+
 import pandas as pd
 import streamlit as st
+
 from dashboard.data_loader import load_scores_data
 
 
@@ -54,15 +56,28 @@ def render_sidebar() -> tuple[pd.DataFrame | None, dict[str, Any]]:
     # Operator filter
     operators = sorted(filtered_df["operator"].dropna().astype(str).unique().tolist())
     all_operators = ["All Operators"] + operators
-    selected_operator = st.sidebar.selectbox("Operator", options=all_operators, index=0, key="sel_operator")
+    selected_operator = st.sidebar.selectbox(
+        "Operator",
+        options=all_operators,
+        index=0,
+        key="sel_operator",
+    )
 
     if selected_operator != "All Operators":
         filtered_df = filtered_df[filtered_df["operator"].astype(str) == selected_operator]
 
     # Session filter
-    sessions = sorted(filtered_df["session_id"].dropna().astype(str).unique().tolist()) if "session_id" in filtered_df.columns else []
+    if "session_id" in filtered_df.columns:
+        sessions = sorted(filtered_df["session_id"].dropna().astype(str).unique().tolist())
+    else:
+        sessions = []
     all_sessions = ["All Sessions"] + sessions
-    selected_session = st.sidebar.selectbox("Session", options=all_sessions, index=0, key="sel_session")
+    selected_session = st.sidebar.selectbox(
+        "Session",
+        options=all_sessions,
+        index=0,
+        key="sel_session",
+    )
 
     if selected_session != "All Sessions" and "session_id" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["session_id"].astype(str) == selected_session]

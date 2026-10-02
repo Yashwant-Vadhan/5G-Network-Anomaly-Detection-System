@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import pytest
-import pandas as pd
 
-from pipelines.run_pipeline import run_pipeline, main
+import pandas as pd
+import pytest
+
 from ml.schema import ConfigError
+from pipelines.run_pipeline import main, run_pipeline
 
 
 def test_run_pipeline_on_sample_data(tmp_path):

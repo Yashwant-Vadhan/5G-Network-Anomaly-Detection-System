@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import pandas as pd
-from ml.anomaly_analysis import classify_sample
 
+from ml.anomaly_analysis import classify_sample
 
 # ---------------------------------------------------------------------------
 # Negative Cases (Guardrails G5 & G6: Not Anomaly Signals on Their Own)
 # ---------------------------------------------------------------------------
+
 
 def test_negative_1_low_rsrp_only():
     """1. Low RSRP alone (-95 dBm, above persistent threshold -110) with steady SINR is NOT an anomaly."""
@@ -110,13 +111,14 @@ def test_negative_6_unknown_deployment_mode_only():
 # Positive Cases (All 6 Anomaly Categories)
 # ---------------------------------------------------------------------------
 
+
 def test_positive_signal_degradation():
     """Positive test for SIGNAL_DEGRADATION (gradual drop over 4 samples)."""
     df = pd.DataFrame(
         {
             "ss_rsrp": [-80.0, -83.0, -86.0, -90.0],  # RSRP drop 10 dB
             "ss_rsrq": [-10.0, -11.0, -12.0, -13.0],
-            "ss_sinr": [15.0, 13.0, 11.0, 9.0],       # SINR drop 6 dB (< 10 dB sudden drop threshold)
+            "ss_sinr": [15.0, 13.0, 11.0, 9.0],  # SINR drop 6 dB (< 10 dB sudden drop threshold)
             "pci_changed": [0, 0, 0, 0],
             "network_changed": [0, 0, 0, 0],
         }
@@ -197,6 +199,7 @@ def test_positive_combined_anomaly():
 # Order: COMBINED > PERSISTENT > SUDDEN > DEGRADATION > NETWORK > CELL > NORMAL
 # ---------------------------------------------------------------------------
 
+
 def test_precedence_matrix_pairs():
     """Verify precedence order between adjacent priority categories."""
     # COMBINED beats PERSISTENT
@@ -216,7 +219,7 @@ def test_precedence_matrix_pairs():
         {
             "ss_rsrp": [-115.0, -115.0, -115.0],
             "ss_sinr": [10.0, 5.0, -10.0],  # sudden drop
-            "weak_rsrp_run": [1, 2, 3],     # persistent run
+            "weak_rsrp_run": [1, 2, 3],  # persistent run
             "pci_changed": [0, 0, 0],
             "network_changed": [0, 0, 0],
         }
@@ -228,7 +231,7 @@ def test_precedence_matrix_pairs():
         {
             "ss_rsrp": [-80.0, -85.0, -92.0],  # gradual RSRP drop
             "ss_rsrq": [-10.0, -12.0, -15.0],
-            "ss_sinr": [10.0, 8.0, -5.0],      # sudden SINR drop
+            "ss_sinr": [10.0, 8.0, -5.0],  # sudden SINR drop
             "pci_changed": [0, 0, 0],
             "network_changed": [0, 0, 0],
         }

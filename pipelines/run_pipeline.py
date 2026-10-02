@@ -72,7 +72,11 @@ def run_pipeline(
     features_df = build_features(clean_df)
     features_csv = out_path / "features.csv"
     features_df.to_csv(features_csv, index=False)
-    logger.info("Feature engineering complete: %d feature rows written to %s.", len(features_df), features_csv)
+    logger.info(
+        "Feature engineering complete: %d feature rows written to %s.",
+        len(features_df),
+        features_csv,
+    )
 
     # 4. Model Training (if retrain requested or model missing)
     model_file = Path(MODELS_DIR) / "if_v1.joblib"
@@ -88,7 +92,11 @@ def run_pipeline(
     # 5. Detection & Classification
     logger.info("Executing anomaly detection and rule classification...")
     scores_df, events = detect(features_df, out_dir=out_path)
-    logger.info("Detection complete: %d scored samples, %d candidate events.", len(scores_df), len(events))
+    logger.info(
+        "Detection complete: %d scored samples, %d candidate events.",
+        len(scores_df),
+        len(events),
+    )
 
     # 6. Multi-Agent Diagnostic Layer
     logger.info("Running multi-agent diagnostic layer on %d events...", len(events))

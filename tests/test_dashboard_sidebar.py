@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-import pandas as pd
 from unittest.mock import patch
+
+import pandas as pd
+
 from dashboard.sidebar import render_sidebar
 
 
@@ -21,7 +23,10 @@ def test_sidebar_rendering_with_data(tmp_path):
 
     with patch("dashboard.sidebar.load_scores_data", return_value=df):
         with patch("streamlit.sidebar.radio", return_value="Processed Dataset (data/processed)"):
-            with patch("streamlit.sidebar.selectbox", side_effect=["All Devices", "All Operators", "All Sessions"]):
+            with patch(
+                "streamlit.sidebar.selectbox",
+                side_effect=["All Devices", "All Operators", "All Sessions"],
+            ):
                 with patch("streamlit.sidebar.slider", return_value=0):
                     filtered_df, state = render_sidebar()
                     assert filtered_df is not None

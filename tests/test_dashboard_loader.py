@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+
 import pandas as pd
+
 from dashboard.data_loader import (
     load_events_diagnosed,
     load_model_metadata,

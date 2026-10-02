@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import streamlit as st
+
 from dashboard.data_loader import load_scores_data
 
 st.set_page_config(page_title="2. Signal Explorer - 5G-NADS", layout="wide")
