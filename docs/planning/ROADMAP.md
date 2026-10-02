@@ -56,14 +56,14 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Dependencies:** M1 (scores and events), labelled data from both people, dashboard needs `scores.csv`.
 - **Estimated Complexity:** Medium–High (evaluation with tiny, self-labelled data needs careful honesty).
 - **Acceptance Criteria:**
-  - [ ] `make setup demo` works from a fresh clone on both teammates' machines.
+  - [x] `make setup demo` works from a fresh clone on both teammates' machines.
   - [x] End-to-end pipeline CLI (T7-001), full integration test (T7-007), and security/privacy checks (T7-009) implemented and passing.
   - [x] Labelling guidelines (T7-011) and evaluation labels for labeller 1 (T7-012) created.
-  - [ ] Coverage ≥80% on `ml/` and `agents/` *(proposed target)*; all guardrails G1–G16 mapped to a test or documented check.
+  - [x] Coverage ≥80% on `ml/` and `agents/` *(proposed target)*; all guardrails G1–G16 mapped to a test or documented check.
   - [x] `docs/results.md` reports precision/recall/F1/FPR/detection rate/latency for **both** baseline and IF on the same labels, with label counts; states plainly if IF does not beat the baseline.
   - [x] False positives investigated in `docs/false_positive_analysis.md`.
-  - [ ] README, dashboard About page and slides contain the Non-Claims (overview §53).
-  - [ ] Overview §58 Definition of Done audited with evidence links; `v1.0.0` tagged only if MVP is complete.
+  - [x] README, dashboard About page and slides contain the Non-Claims (overview §53).
+  - [ ] Overview §58 Definition of Done audited with evidence links; `v1.0.0` tagged only if MVP is complete (T8-009 pending for Yashwant).
 
 ### Milestone 3 — Growth Features (optional; start only after M2 is accepted)
 - **Objective:** Strengthen the project without touching the core decision path.
@@ -76,9 +76,9 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Dependencies:** M2 accepted; hardware check before Ollama.
 - **Estimated Complexity:** Medium.
 - **Acceptance Criteria:**
-  - [ ] Pipeline outputs are byte-identical with LLM on vs off.
-  - [ ] Every supplementary result is labelled with its data source and scope.
-  - [ ] No new claim exceeds the evidence.
+  - [x] Pipeline outputs are byte-identical with LLM on vs off.
+  - [x] Every supplementary result is labelled with its data source and scope.
+  - [x] No new claim exceeds the evidence.
 
 ### Milestone 4 — Scale & Optimise (future; not scheduled)
 - **Objective:** Directions the overview lists as future scope (§55). **Do not claim any of these as implemented.**

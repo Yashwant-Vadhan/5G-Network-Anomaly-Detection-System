@@ -98,6 +98,9 @@ Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Secur
 | [`docs/guardrails_checklist.md`](docs/guardrails_checklist.md) | Complete audit mapping of G1–G16 guardrails to test suites and enforcement mechanisms |
 | [`docs/labelling_guidelines.md`](docs/labelling_guidelines.md) | Guidelines and blind labelling schema for human ground-truth evaluation |
 | [`docs/dataset.md`](docs/dataset.md) | Dataset documentation, schema details, missing-value policies, and MANIFEST verification |
+| [`docs/presentation.md`](docs/presentation.md) | 10-minute slide deck outline, speaker notes, and 3-minute live dashboard demo script |
+| [`docs/controlled_experiments.md`](docs/controlled_experiments.md) | Controlled natural-event experiments and event ground truth timestamp mapping |
+
 | [`docs/agent_architecture.md`](docs/agent_architecture.md) | Multi-agent diagnostic layer architecture, responsibilities, contracts, and execution flow |
 | [`docs/ios_collection_note.md`](docs/ios_collection_note.md) | Technical research note on iOS Telephony API constraints and comparative feasibility |
 | [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
