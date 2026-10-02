@@ -1,0 +1,14 @@
+session_id,start_idx,end_idx,label,confidence,notes
+5G_measurements_Redmi_Stable,0,110,NORMAL_EVENT,1.0,Consensus between Labeller 1 (NORMAL_EVENT) and Labeller 2 (NORMAL_EVENT).
+5G_measurements_Redmi_Stable,148,168,SIGNAL_DEGRADATION,0.95,Consensus between Labeller 1 (SIGNAL_DEGRADATION) and Labeller 2 (SIGNAL_DEGRADATION).
+5G_measurements_Redmi_Stable,315,335,NORMAL_EVENT,0.9,Consensus between Labeller 1 (NORMAL_EVENT) and Labeller 2 (NORMAL_EVENT).
+5G_measurements_Redmi_Stable,498,522,SUDDEN_SIGNAL_DEGRADATION,0.95,Consensus between Labeller 1 (SUDDEN_SIGNAL_DEGRADATION) and Labeller 2 (SUDDEN_SIGNAL_DEGRADATION).
+5G_measurements_Redmi_Travel,38,62,COMBINED_ANOMALY,0.9,Consensus between Labeller 1 (COMBINED_ANOMALY) and Labeller 2 (COMBINED_ANOMALY).
+5G_measurements_Redmi_Travel,118,148,PERSISTENT_POOR_QUALITY,0.95,Consensus between Labeller 1 (PERSISTENT_POOR_QUALITY) and Labeller 2 (PERSISTENT_POOR_QUALITY).
+5G_measurements_Redmi_Travel,198,222,NETWORK_STATE_TRANSITION,0.85,Consensus between Labeller 1 (NETWORK_STATE_TRANSITION) and Labeller 2 (NETWORK_STATE_TRANSITION).
+5G_measurements_Samsung_Indoor-Movement,5,80,NORMAL_EVENT,1.0,Consensus between Labeller 1 (NORMAL_EVENT) and Labeller 2 (NORMAL_EVENT).
+5G_measurements_Samsung_Indoor-Movement,108,132,CELL_TRANSITION,0.9,Consensus between Labeller 1 (CELL_TRANSITION) and Labeller 2 (CELL_TRANSITION).
+5G_measurements_Samsung_Indoor-Movement,248,282,PERSISTENT_POOR_QUALITY,0.95,Consensus between Labeller 1 (PERSISTENT_POOR_QUALITY) and Labeller 2 (PERSISTENT_POOR_QUALITY).
+5G_measurements_Samsung_Travel,0,50,NORMAL_EVENT,1.0,Consensus between Labeller 1 (NORMAL_EVENT) and Labeller 2 (NORMAL_EVENT).
+5G_measurements_Samsung_Travel,78,98,SUDDEN_SIGNAL_DEGRADATION,0.9,Consensus between Labeller 1 (SUDDEN_SIGNAL_DEGRADATION) and Labeller 2 (SUDDEN_SIGNAL_DEGRADATION).
+5G_measurements_Samsung_Travel,178,202,COMBINED_ANOMALY,0.95,Consensus between Labeller 1 (COMBINED_ANOMALY) and Labeller 2 (COMBINED_ANOMALY).
