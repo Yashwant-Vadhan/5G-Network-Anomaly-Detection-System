@@ -14,7 +14,7 @@ COV_FAIL_UNDER ?= 0
 PYTEST_NO_TESTS := 5
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test preprocess pipeline dashboard clean-processed
+.PHONY: help setup lint format test preprocess pipeline dashboard demo clean-processed
 
 help:
 	@echo "5G-NADS targets:"
@@ -25,6 +25,7 @@ help:
 	@echo "  preprocess        python -m ml.preprocessing --input $(RAW_DIR) --output $(PROCESSED_DIR)"
 	@echo "  pipeline          python -m pipelines.run_pipeline --input $(RAW_DIR) --output $(PROCESSED_DIR)"
 	@echo "  dashboard         streamlit run dashboard/app.py on 127.0.0.1"
+	@echo "  demo              runs pipeline on sample data then launches dashboard"
 	@echo "  clean-processed   delete generated files in $(PROCESSED_DIR)/ only"
 
 setup:
@@ -64,6 +65,12 @@ dashboard:
 	@echo "streamlit run dashboard/app.py --server.address 127.0.0.1"
 	$(PYTHON) -m streamlit run dashboard/app.py --server.address 127.0.0.1
 
+demo:
+	@echo "Running demo pipeline on sample dataset..."
+	$(PYTHON) -m pipelines.run_pipeline --input $(SAMPLE_DIR) --output $(PROCESSED_DIR)
+	@echo "Launching dashboard on 127.0.0.1..."
+	$(PYTHON) -m streamlit run dashboard/app.py --server.address 127.0.0.1
+
 # Guardrail G7: raw data is immutable. This recipe touches $(PROCESSED_DIR) and
 # nothing else; the guard below aborts if that path is empty or resolves inside
 # the raw tree.
@@ -71,3 +78,4 @@ clean-processed:
 	@case "$(PROCESSED_DIR)" in ""|$(RAW_DIR)|$(RAW_DIR)/*) echo "refusing to clean '$(PROCESSED_DIR)': never delete raw data"; exit 1;; esac
 	@echo "Deleting generated CSV/JSON under $(PROCESSED_DIR)/ (raw data is untouched)"
 	rm -f $(PROCESSED_DIR)/*.csv $(PROCESSED_DIR)/*.json
+

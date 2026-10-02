@@ -1287,13 +1287,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T8-010: One-command demo and fresh-clone verification
-**Status:** ⬜
+**Status:** ✅
 **Description:** `make demo`: runs the pipeline on `data/sample/` then launches the dashboard. Verify from a fresh clone on the *other* teammate's machine and record OS/Python versions and any fixes in `docs/testing.md`.
 **Dependencies:** T7-001, T1-011
 **Acceptance Criteria:**
-- [ ] Fresh clone + `make setup demo` works on both machines
-- [ ] Versions recorded
-- [ ] No manual steps beyond README
+- [x] Fresh clone + `make setup demo` works on both machines
+- [x] Versions recorded
+- [x] No manual steps beyond README
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Sushil
