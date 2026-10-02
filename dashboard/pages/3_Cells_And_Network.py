@@ -141,8 +141,9 @@ layout["height"] = 650
 fig.update_layout(**layout)
 st.plotly_chart(fig, use_container_width=True)
 st.caption(
-    "Chart Summary: Displays step-wise Physical Cell ID (PCI) handovers, 5G Cell ID (NCI) transitions, "
-    "and NRARFCN frequency channel changes over time across recorded sessions."
+    "Chart Summary: Displays step-wise Physical Cell ID (PCI) handovers, 5G Cell ID "
+    "(NCI) transitions, and NRARFCN frequency channel changes over time across "
+    "recorded sessions."
 )
 
 # Transition Events Table

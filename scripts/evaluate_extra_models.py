@@ -36,9 +36,9 @@ def run_extra_model_evaluation(
     train_df = scores_df[train_mask].copy()
 
     # Extract feature matrix X
-    X_train = train_df[FEATURE_COLUMNS].fillna(0.0).values
+    X_train = train_df[FEATURE_COLUMNS].fillna(0.0).values  # noqa: N806
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
+    X_train_scaled = scaler.fit_transform(X_train)  # noqa: N806
 
     # 1. Train One-Class SVM
     logger.info("Training One-Class SVM...")
@@ -46,8 +46,8 @@ def run_extra_model_evaluation(
     oc_svm.fit(X_train_scaled)
 
     # Predict on entire scores_df
-    X_all = scores_df[FEATURE_COLUMNS].fillna(0.0).values
-    X_all_scaled = scaler.transform(X_all)
+    X_all = scores_df[FEATURE_COLUMNS].fillna(0.0).values  # noqa: N806
+    X_all_scaled = scaler.transform(X_all)  # noqa: N806
     oc_svm_preds = oc_svm.predict(X_all_scaled)
     # sklearn OneClassSVM returns -1 for outlier/anomaly, +1 for inlier/normal
     scores_df["oc_svm_flag"] = (oc_svm_preds == -1) & scores_df["model_eligible"].fillna(False)
@@ -73,7 +73,9 @@ def run_extra_model_evaluation(
         start_idx = int(row["start_idx"])
         end_idx = int(row["end_idx"])
 
-        sess_mask = (eval_scores["eval_session"] == sess_name) | (eval_scores["session_id"] == sess_name)
+        sess_mask = (eval_scores["eval_session"] == sess_name) | (
+            eval_scores["session_id"] == sess_name
+        )
         sess_indices = eval_scores[sess_mask].index
 
         for idx in range(start_idx, end_idx + 1):

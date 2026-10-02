@@ -44,10 +44,16 @@ with col_f1:
     all_types = ["All Types"] + sorted(events_df["anomaly_type"].dropna().unique().tolist())
     sel_type = st.selectbox("Filter by Anomaly Type", options=all_types, index=0)
 
-sev_col = "severity" if "severity" in events_df.columns else ("max_severity" if "max_severity" in events_df.columns else None)
+sev_col = (
+    "severity"
+    if "severity" in events_df.columns
+    else ("max_severity" if "max_severity" in events_df.columns else None)
+)
 
 with col_f2:
-    all_sevs = ["All Severities"] + (sorted(events_df[sev_col].dropna().unique().tolist()) if sev_col else [])
+    all_sevs = ["All Severities"] + (
+        sorted(events_df[sev_col].dropna().unique().tolist()) if sev_col else []
+    )
     sel_sev = st.selectbox("Filter by Severity", options=all_sevs, index=0)
 
 filtered_events = events_df.copy()

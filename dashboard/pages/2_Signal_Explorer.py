@@ -305,8 +305,9 @@ fig.update_layout(**layout_defaults)
 
 st.plotly_chart(fig, use_container_width=True)
 st.caption(
-    "Chart Summary: Displays RSRP (dBm), RSRQ (dB), and SINR (dB) time series alongside the Isolation Forest anomaly score. "
-    "Flagged anomalies are marked with distinct 'x' shape symbols and highlighted threshold regions."
+    "Chart Summary: Displays RSRP (dBm), RSRQ (dB), and SINR (dB) time series "
+    "alongside the Isolation Forest anomaly score. Flagged anomalies are marked "
+    "with distinct 'x' shape symbols and highlighted threshold regions."
 )
 
 # Data Table Expander
