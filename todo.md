@@ -1162,13 +1162,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T7-019: Write `docs/results.md`
-**Status:** ⬜
+**Status:** ✅
 **Description:** Consolidate results: dataset summary, setup, metrics tables, figures, latency, cross-device, false positives, limitations pointers. Every number traceable to a command/notebook.
 **Dependencies:** T7-016, T7-017, T7-018
 **Acceptance Criteria:**
-- [ ] Every table cites its generating script
-- [ ] Small-sample caveat stated
-- [ ] No claim outside PRD Non-Claims boundaries
+- [x] Every table cites its generating script
+- [x] Small-sample caveat stated
+- [x] No claim outside PRD Non-Claims boundaries
 **Estimated Effort:** 60 min
 **Assigned To:** Docs
 **Owner:** Sushil
