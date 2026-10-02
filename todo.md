@@ -1066,13 +1066,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T7-011: Write labelling guidelines for the evaluation set
-**Status:** ⬜
+**Status:** ✅
 **Description:** `docs/labelling_guidelines.md`: what counts as a labelled event (start/end sample, type ∈ the 6 categories or `NORMAL_EVENT` for benign cell changes, `UNSURE`), rules from overview §18 (weak signal or cell change alone ≠ anomaly), labelling done from raw plots **without seeing model outputs**, file format `data/eval/labels_<name>.csv` (`session_id,start_idx,end_idx,label,confidence,notes`).
 **Dependencies:** T3-012
 **Acceptance Criteria:**
-- [ ] Guidelines cover all categories and the 'not anomalous alone' cases
-- [ ] Format specified
-- [ ] Blind-labelling rule stated
+- [x] Guidelines cover all categories and the 'not anomalous alone' cases
+- [x] Format specified
+- [x] Blind-labelling rule stated
 **Estimated Effort:** 30 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant
