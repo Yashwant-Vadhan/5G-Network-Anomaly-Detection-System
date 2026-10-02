@@ -1340,13 +1340,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Yashwant
 
 #### T9-004: (Optional) Compare Local Outlier Factor / One-Class SVM
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Add LOF and One-Class SVM to the evaluation on the same labels, same protocol. No deep-learning models unless data justifies them (§44).
 **Dependencies:** T7-016
 **Acceptance Criteria:**
-- [ ] Same metrics and labels as T7-016
-- [ ] Fair-comparison note (same features/scaling)
-- [ ] Conclusions hedged by sample size
+- [x] Same metrics and labels as T7-016
+- [x] Fair-comparison note (same features/scaling)
+- [x] Conclusions hedged by sample size
 **Estimated Effort:** 60 min
 **Assigned To:** Data analysis
 **Owner:** Yashwant

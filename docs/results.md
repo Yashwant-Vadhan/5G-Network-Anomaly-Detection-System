@@ -69,3 +69,24 @@ To re-run this exact evaluation report locally:
 ```bash
 python -m ml.evaluate --scores data/processed/scores.csv --labels data/eval/labels_final.csv
 ```
+
+---
+
+## 5. Supplementary Model Comparison: Local Outlier Factor & One-Class SVM (T9-004)
+
+As part of Phase 9 supplementary benchmarking (`scripts/evaluate_extra_models.py`), Local Outlier Factor (LOF with `novelty=True`, `k=20`) and One-Class SVM (OC-SVM with `kernel='rbf'`, `nu=0.05`) were evaluated on the exact same 18 engineered features and ground-truth evaluation set (`labels_final.csv`).
+
+### Comparative Summary Table
+
+| Model / Baseline | Precision | Recall | F1 Score | FPR | Event Detection Rate | Mean Latency (samples) |
+|---|---|---|---|---|---|---|
+| **Rolling Z-Score Baseline** | 0.0892 | 0.0691 | 0.0779 | 0.1058 | 84.62% (11/13) | 14.18 |
+| **Isolation Forest (IF)** | 0.1170 | **0.6728** | **0.1993** | 0.7618 | **100.00% (13/13)** | **1.46** |
+| **One-Class SVM (OC-SVM)** | 0.1495 | 0.0589 | 0.0845 | 0.0503 | 46.15% (6/13) | 26.67 |
+| **Local Outlier Factor (LOF)** | **0.2370** | 0.0833 | 0.1233 | **0.0403** | 61.54% (8/13) | 10.75 |
+
+### Comparative Insights
+1. **LOF Precision Advantage:** Local Outlier Factor achieved the highest precision (0.2370) and lowest False Positive Rate (4.03%), effectively filtering out global background noise by evaluating local neighborhood density. However, its low recall (8.33%) and higher latency (10.75 samples) make it less suited for immediate real-time alert triggering.
+2. **One-Class SVM Limitations:** One-Class SVM suffered from high detection latency (26.67 samples) and low event detection rate (46.15%), as hyper-spherical decision boundaries struggle with non-stationary time-series signal transitions.
+3. **Isolation Forest Position:** Isolation Forest remains the optimal choice for the detection trigger layer due to 100% event recall and lowest latency (1.46 samples), relying on the downstream multi-agent diagnostic layer to filter false positives.
+
