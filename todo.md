@@ -905,13 +905,13 @@ The generic task template assumes a database, authentication and a web backend. 
 **Owner:** Sushil
 
 #### T6-010: Sidebar filters and replay slider
-**Status:** ⬜
+**Status:** ✅
 **Description:** Global sidebar: dataset selector/upload, device, operator, session, replay position slider (moves the 'current' sample on Overview). State kept in `st.session_state`; filters apply to all pages.
 **Dependencies:** T6-001
 **Acceptance Criteria:**
-- [ ] Changing device updates every page
-- [ ] Slider updates Overview cards
-- [ ] Filters persist when switching pages
+- [x] Changing device updates every page
+- [x] Slider updates Overview cards
+- [x] Filters persist when switching pages
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend (Dashboard)
 **Owner:** Yashwant
