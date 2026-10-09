@@ -1,4 +1,6 @@
-# ROADMAP — 5G-NADS
+# ROADMAP — 5G-NADS (v1 complete · v2 real-time added)
+
+> **v2 update (2026-10-09):** adds Milestones M5–M8 (todo_v2 Phases 10–15) for real-time streaming, alerting and optional edge inference. M0–M3 text below is unchanged v1 history; M4 is amended to show which items moved into v2. v2 effort figures come from `todo_v2.md` (planning estimates, not measurements); no calendar dates or deadline were provided.
 
 > Effort figures come from `todo.md` (planning estimates, not measurements). No calendar dates or deadline were provided, so milestones are ordered by dependency and sized in hours per person. Add dates once the team's deadline is known.
 > Team: Yashwant Vadhan M (repo/CI, Redmi + OnePlus-coordination data, preprocessing/feature core, model training and scoring, signal-side classification, Signal/Cell/Diagnosis agents) · M A Sushil Kumar (schema/contracts, Samsung data, sessions/missing-value handling, baseline, cell/network classification and severity, Network/Recommendation agents, most of the dashboard) — MVP totals 38.8 h / 40.2 h, within ~4%.
@@ -16,6 +18,11 @@ Delivery is phased so that **a complete but minimal pipeline exists before anyth
 | M2 | MVP Complete & Polish (dashboard, tests, evaluation, docs, v1.0.0) | 6–8 | 14.9 h | 20.8 h |
 | M3 | Growth (optional) | 9 | 3.0 h | 3.2 h |
 | M4 | Scale & Optimise (future, not planned in detail) | — | — | — |
+| M5 | v2 Foundation & Streaming Core (contracts, ingest server, engine, live API) | 10–11 | 15.75 h | 19.25 h |
+| M6 | v2 Clients, Live Dashboard & Alerts (Android streaming, edge *gated*, Live pages, alert engine) | 12–13 | 27.25 h | 18.50 h |
+| M7 | v2 Hardening, Evaluation & Release (`v2.0.0`) | 14 | 9.75 h | 11.75 h |
+| M8 | v2 Extras & Research Notes (optional) | 15 | 2.50 h | 3.25 h |
+| **v2 MVP total (M5–M7)** | | 10–14 | **52.75 h** | **49.50 h** |
 | **MVP total (M0–M2)** | | 1–8 | **38.8 h** | **40.2 h** |
 
 Yashwant's hours front-load into M0–M1 (repo/CI, all data collection, preprocessing, training); Sushil's back-load into M2 (the dashboard is mostly his). Both can start immediately once the Phase 1 contracts are merged — see `todo.md`'s Parallelizable Tasks list.
@@ -81,6 +88,7 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [x] No new claim exceeds the evidence.
 
 ### Milestone 4 — Scale & Optimise (future; not scheduled)
+> **v2 amendment:** four items listed below moved into scheduled v2 work — *live streaming from the phone to the dashboard* (M5–M6), *edge inference* (M6, **gated** by a go/no-go spike), *automated alerting* (M6) — and the *iOS collector* and *O-RAN integration* are **not** built in v2 (research notes only, M8). Everything else in this list remains unscheduled. Do not claim any of it as implemented until `todo_v2.md` tasks are ✅ with passing tests.
 - **Objective:** Directions the overview lists as future scope (§55). **Do not claim any of these as implemented.**
 - **Features:** larger multi-device/operator/location dataset; mobility-aware detection; supervised classification once enough labels exist; LSTM/Transformer time-series models (only if data size justifies); edge inference; federated learning; O-RAN integration; network-side KPIs and 5G core metrics; automated alerting; live streaming from the phone to the dashboard; richer visualisation; integration with operator systems; iOS collector.
 - **Dependencies:** M2/M3 results; substantially more labelled data.
@@ -88,6 +96,71 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 - **Acceptance Criteria:** defined per feature when (and if) one is adopted.
 
 ---
+
+---
+
+# v2 — Real-Time Extension (Milestones M5–M8)
+
+> Inputs: `PRD_v2.md`, `DESIGN_v2.md`, `TECH_RULES_v2.md`, `todo_v2.md` (Phases 10–15). Starts only after v1 M2 is accepted (it is: M0–M2 criteria are ticked above).
+> **Gate before any work:** `T10-001` — amend `project-overview.md` (A1–A3) with both authors' approval. v2 contradicts three v1 statements; do not work around them silently.
+> **Principle:** the live path must equal the batch path (G17). A stream–batch parity test is the first thing to pass in M5 and the last thing to break in M7.
+
+## Milestone 5 — v2 Foundation & Streaming Core
+- **Objective:** A phone-independent live path: replay a CSV through a local server and get the same scores, events and agent diagnoses as batch, via a live API.
+- **Tasks/Features:** overview amendments and decision log; contracts C7–C9 with golden examples and drift check; guardrail test stubs G17–G26; config constants; CI/secret-scan updates; `streaming/` package (session buffer, shared-code coercion, engine, event tracker with PROVISIONAL/FINAL, agent invocation unchanged, live capture store); FastAPI ingest WebSocket with auth, acks, resume, rate limits; live API (WebSocket + REST); replay tool; latency/stream-quality metrics; stale/skew handling; link check on both phones (todo Phases 10–11).
+- **Dependencies:** v1 accepted; both authors' approval of contracts; model metadata gains `model_version`/`feature_hash` (T10-013).
+- **Estimated Complexity:** Medium–High (parity and idempotent ingest are the hard parts, not the framework code).
+- **Acceptance Criteria:**
+  - [ ] Overview amendments A1–A3 merged and `docs/decisions.md` extended (T10-001); v1 network-import check re-scoped to `ml/` and `agents/` (T10-014); sentinel per-column behaviour confirmed (T10-015).
+  - [ ] C7–C9 schemas, golden examples committed; drift check green in CI.
+  - [ ] **G17 parity test passes** on `data/sample/` and all synthetic fixtures (flags identical, scores within 1e-6).
+  - [ ] Replay → server → live subscriber integration test passes; batch-on-capture equals live results.
+  - [ ] Agents unchanged (`git diff` under `agents/` empty); ML flags identical with agents stubbed.
+  - [ ] Non-loopback bind without a token refuses to start; wrong token rejected.
+  - [ ] No claim of "implemented" in README for anything without a passing test (G16).
+
+## Milestone 6 — v2 Clients, Live Dashboard & Alerts
+- **Objective:** A real phone streams reliably, the Live dashboard shows honest connection/freshness state, and alerts fire rarely and only with rule evidence.
+- **Tasks/Features:** Android streaming client (settings, WebSocket, persistent queue, reconnect/resume, foreground service, status strip, CSV-independence proof, phone notifications); streaming-perturbation experiment; real-device session; **optional edge inference** (spike → export → Kotlin scorer/features → golden-vector parity → advisory UI, all dropped cleanly on no-go); alert policy, cooldown/escalation, dispatcher, in-app / webhook / email / phone channels, acknowledgement; policy replay evaluation; Live dashboard (mode switch + connection chip, Overview, Signals, Cells & Network, Events & Alerts, Stream Health, About update, accessibility, smoke tests) (todo Phases 12–13).
+- **Dependencies:** M5 (ingest, live API, replay tool); alert policy needs the event tracker; Android needs ingest protocol (T11-011). The Android track and the dashboard/alerting track run in parallel.
+- **Estimated Complexity:** High (Android background limits and OEM behaviour are device-specific; Streamlit live refresh needs verification).
+- **Acceptance Criteria:**
+  - [ ] 20-min real-phone session: phone CSV and live capture match except documented drops (T12-010).
+  - [ ] Killing the server mid-session leaves a complete phone CSV (G18).
+  - [ ] Alert policy negative cases pass (ML-only, low RSRP/SINR alone, UNKNOWN alone, cell/network change alone → no alert) (G21).
+  - [ ] Every Live page shows connection chip and sample age; all six connection states testable with mocked state; provisional vs final visibly different.
+  - [ ] No Live chart interpolates across gaps or NA.
+  - [ ] Edge inference: **either** golden-vector parity passes **or** it is recorded as no-go with reasons; never shipped with a loosened tolerance (G25).
+  - [ ] `docs/streaming_perturbation.md` states honestly what the data does and does not show.
+
+## Milestone 7 — v2 Hardening, Evaluation & Release
+- **Objective:** Measured, attacked, documented, tagged.
+- **Tasks/Features:** auth/abuse/fuzz tests; bind-policy tests; security and privacy audits; guardrail tests G17–G26 implemented; soak (2 h at 1× and 20×); latency benchmark; recovery matrix; live-vs-batch equivalence on real data; streaming detection-latency evaluation (baseline vs IF); alert precision/volume evaluation; protocol and architecture docs; README live quickstart; limitations update; `docs/results_v2.md`; v2 Definition-of-Done audit; fresh-clone check; slides/demo script with replay fallback; tag `v2.0.0` (todo Phase 14).
+- **Dependencies:** M6 (real sessions, alert engine, Live pages).
+- **Estimated Complexity:** Medium (mostly measurement and honesty).
+- **Acceptance Criteria:**
+  - [ ] G17–G26 each mapped to an automated test or a documented manual check.
+  - [ ] `docs/results_v2.md` reports setups, counts and caveats for latency, soak, alert quality and detection latency; states plainly any KPI that was missed, and whether IF beats the baseline in the streaming setting.
+  - [ ] No document claims guaranteed latency or "real-time" without the no-guarantee wording (G24).
+  - [ ] Non-claims (PRD_v2 list) appear in README, dashboard About page and slides.
+  - [ ] `docs/definition_of_done_v2.md` has an evidence link or an explicit ❌ for every Must Have; both authors sign off.
+  - [ ] `make setup demo-live` works from a fresh clone on both machines; `v2.0.0` tagged.
+
+## Milestone 8 — v2 Extras & Research Notes (optional; after `v2.0.0`)
+- **Objective:** Optional refinements and honest documentation of what was *not* built.
+- **Features:** HTTP batch-ingest fallback; separate ingest/view tokens; test that the optional LLM has no effect on the live path; O-RAN feasibility note and refreshed iOS note (**no code**) (todo Phase 15).
+- **Dependencies:** M7 accepted.
+- **Estimated Complexity:** Low–Medium.
+- **Acceptance Criteria:**
+  - [ ] Research notes say **NOT IMPLEMENTED** and cite verified sources or mark statements unverified.
+  - [ ] Any new capability has tests before it is marked ✅.
+
+## v2 Critical Path
+Longest dependency chain to the release tag is about **20.0 h** of sequential work: amendments → config → C7 schema → session buffer → sessionisation → engine → event tracker → agents → live API → live client → mode switch/chip → Stream Health → latency benchmark → results doc → DoD audit → tag (see `todo_v2.md` Appendix). Real elapsed time will be longer (reviews, phone logistics).
+
+## v2 Effort Notes
+- MVP (M5–M7): Yashwant 52.75 h, Sushil 49.5 h, including 9.25 h / 0.75 h of **optional edge inference**. If edge is a no-go, totals become 43.5 h / 48.75 h and ~2.5 h of Phase 14 work should move from Sushil to Yashwant.
+- These are task-sum estimates in the same style as v1 (38.8 h / 40.2 h); v1 actuals were not provided, so I cannot calibrate v2 against them. Treat v2 as likely *less* certain than v1 because of Android device behaviour and Streamlit live-refresh uncertainty.
 
 ## Risk Register
 
@@ -105,3 +178,11 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 | Streamlit theming/accessibility/testing limitations | Low | Low | Accept and document; manual checklist fallback |
 | Raw data loss or accidental commit of data/secrets | Low–Medium | High | Manifest + verify, pre-commit block, `.gitignore`, shared private backup, secret scan |
 | Local LLM too heavy for laptops | Medium | Low | Optional; check RAM first; template text default |
+| **v2:** Stream path diverges from batch results | Medium | High | One implementation (`ml/*` reused); G17 parity test in CI |
+| **v2:** Android OEM background limits stop streaming/logging | High | Medium | Foreground service, per-device manual tests, documented behaviour, replay fallback for demos |
+| **v2:** Streaming perturbs the measured radio | Medium (unverified hypothesis) | Medium | Prefer USB/Wi-Fi link; experiment T12-009; no cellular streaming |
+| **v2:** Alert fatigue from high false-positive rate of global IF threshold | High | High | Evidence-gated policy, persistence/severity gates, cooldown, ML-only never alerts |
+| **v2:** Streamlit cannot meet live-latency KPI | Medium | Medium | REST-polling fallback; revisit front end only if T14-008 fails |
+| **v2:** Edge Isolation Forest parity unreachable | Medium | Low | Time-boxed spike; clean no-go; nothing depends on it |
+| **v2:** Ingest endpoint exposed on LAN | Medium | High | Loopback default; token + limits; abuse tests; optional TLS docs |
+| **v2:** Over-claiming "real-time" or implementing O-RAN/iOS/SMS | Medium | High | G24, non-claims, scope table; research notes only |
