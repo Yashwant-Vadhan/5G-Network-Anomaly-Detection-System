@@ -156,7 +156,7 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [ ] Any new capability has tests before it is marked ✅.
 
 ## v2 Critical Path
-Longest dependency chain to the release tag is about **20.0 h** of sequential work: amendments → config → C7 schema → session buffer → sessionisation → engine → event tracker → agents → live API → live client → mode switch/chip → Stream Health → latency benchmark → results doc → DoD audit → tag (see `todo_v2.md` Appendix). Real elapsed time will be longer (reviews, phone logistics).
+Longest dependency chain to the v2.0.0 tag (T14-019) is about **18.5 h** (1,110 min) of sequential work: amendments (45m) → config (45m) → C7 schema (60m) → session buffer (60m) → sessionisation (45m) → engine (90m) → event tracker (60m) → agents (60m) → live API (60m) → live client (60m) → mode switch/chip (60m) → Stream Health (45m) → latency benchmark (60m) → results doc (45m) → DoD audit (45m) → tag T14-019 (30m). Real elapsed time will be longer (reviews, phone logistics).
 
 ## v2 Effort Notes
 - MVP (M5–M7): Yashwant 52.75 h, Sushil 49.5 h, including 9.25 h / 0.75 h of **optional edge inference**. If edge is a no-go, totals become 43.5 h / 48.75 h and ~2.5 h of Phase 14 work should move from Sushil to Yashwant.

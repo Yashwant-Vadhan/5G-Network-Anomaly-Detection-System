@@ -84,8 +84,8 @@ All targets are *(proposed)* unless noted; revise after the first measurement.
 | **Guardrails** | G1–G16 (v1, G1 amended) + G17–G26 (new) each mapped to a test or documented check: 100%. |
 
 ### Context the targets must respect (from v1, verify in `docs/results.md`)
-- `limitations_and_future_scope.md` §1.1: **5,532 samples** (3,760 Redmi 13 5G, 1,772 Samsung), single operator (Airtel, NSA). `docs/eda_findings.md` lists 3,756 Redmi samples (153 sessions) and 1,772 Samsung (3 sessions) — a small mismatch to reconcile in the docs.
-- §1.4: Isolation Forest at the global threshold `0.60` has a high false-positive rate (**73.55%** in `docs/results.md`, **76.18%** in `limitations_and_future_scope.md`) on normal mobility variance. Consequence for v2: **an alert must never fire on a raw IF flag**. See FR-17.
+- `limitations_and_future_scope.md` §1.1: **5,532 raw samples** (3,760 raw / 3,756 valid Redmi 13 5G [4 dropped per `preprocess_log.json`], 1,772 Samsung), single operator (Airtel, NSA). `docs/eda_findings.md` lists 3,756 Redmi samples (153 sessions) and 1,772 Samsung (3 sessions).
+- §1.4: Isolation Forest at the global threshold `0.60` has a high false-positive rate (**73.55%** in `docs/results.md` and `limitations_and_future_scope.md`) on normal mobility variance. Consequence for v2: **an alert must never fire on a raw IF flag**. See FR-17.
 
 ---
 

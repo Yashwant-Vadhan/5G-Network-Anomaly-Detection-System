@@ -35,6 +35,7 @@ timestamp,device,manufacturer,android,operator,network_type,deployment_mode,disp
   - `99`: Returned for unknown RSSI/signal strength.
   - `999`: Returned for unknown ARFCN/EARFCN/NRARFCN.
 - **Resolution:** `NA_TOKENS = ["NA"]` and `SENTINEL_INTS = [2147483647, -1, 99, 999]` configured in `ml/config.py`. Numeric coercion (`ml/preprocessing.py` `coerce_numeric()`) maps all these sentinels to NaN/null, ensuring missing values are never treated as 0 (Guardrail G3).
+- **Empirical Impact of Sentinel `-1` in v1 Coercion:** Applying `-1` as a global integer sentinel in `coerce_numeric()` erases **221** rows where `ss_sinr = -1` (Redmi: 185 rows across `Indoor-Movement` [79], `Stable` [70], `Travel` [36]; Samsung: 36 rows across `Indoor-Movement` [16], `Stable` [7], `Travel` [13]). Neighboring SINR analysis (±5 dB window, valid RSRP/RSRQ/PCI/NCI) indicated 204 of these 221 rows (92.3%) have smooth neighbor transitions, while 17 rows (7.7%) exhibit larger SINR jumps (>5 dB) relative to neighbors. However, a >5 dB neighbor jump in mobile radio measurements is not evidence of a sentinel value; since -1 dB is well within the valid 3GPP TS 38.133 SINR range (-23 dB to +40 dB), all 221 rows are probable real SINR values incorrectly erased by global sentinel replacement. v1 retains global sentinel replacement per Guardrails G3/G17; v2 plans check per-column scope in T10-015.
 
 ### Open Question 3: Session Gap Threshold (`SESSION_GAP_SECONDS`)
 - **Observed Interval Distribution:** Median sample interval is 3.0 s, with >95% of samples falling between 2.8 s and 3.2 s (`SAMPLING_SECONDS = 3`).
@@ -53,7 +54,7 @@ timestamp,device,manufacturer,android,operator,network_type,deployment_mode,disp
   4. Change flags: `pci_changed`, `nci_changed`, `network_changed` (binary indicators for handover and RAT changes).
   5. Rolling statistics (10-sample window): `rolling_mean_rsrp`, `rolling_mean_rsrq`, `rolling_mean_sinr`, `rolling_std_rsrp`, `rolling_std_rsrq`, `rolling_std_sinr`.
   6. Persistence runs: `weak_rsrp_run`, `poor_rsrq_run`, `poor_sinr_run`.
-- **Exclusion Rationale (`csi_*` metrics):** CSI metrics (`csi_rsrp`, `csi_rsrq`, `csi_sinr`) are excluded from model features because CSI report availability depends on chipset/vendor implementation (e.g. MediaTek on Redmi returns `NA`, 100% NA on Samsung). Including CSI in model features would render non-CSI hardware ineligible for anomaly detection (Guardrails G2, G3, G48.5).
+- **Exclusion Rationale (`csi_*` metrics):** CSI metrics (`csi_rsrp`, `csi_rsrq`, `csi_sinr`) are excluded from model features because CSI report availability depends on chipset/vendor implementation (returns `NA` / 0% available on Redmi, 100% NA / 0% available on Samsung). Including CSI in model features would render non-CSI hardware ineligible for anomaly detection (Guardrails G2, G3, G48.5).
 
 ### Open Question 5: External Contributor Data (OnePlus / Vodafone)
 - **Status:** External data from Yaashwanth SKP (OnePlus Nord CE4 / Vodafone) is pending/optional.
@@ -68,7 +69,7 @@ timestamp,device,manufacturer,android,operator,network_type,deployment_mode,disp
 
 | Device | Total Samples | Sessions | Mean RSRP (dBm) | CSI Available (%) | Unique PCIs |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Redmi 13 5G** | 3,756 | 153 | -92.4 | 100% | 12 |
+| **Redmi 13 5G** | 3,760 raw / 3,756 valid (4 dropped per `preprocess_log.json`) | 153 | -92.4 | 0% | 12 |
 | **Samsung SM-A156E/DS** | 1,772 | 3 | -96.1 | 0% | 4 |
 
 **Hardware HAL Caveat (Guardrail G48.5):**

@@ -24,7 +24,7 @@ The following limitations represent observed properties of the collected dataset
 - **Missing Value Handling:** Unreported readings (`NA` or Android max-int sentinels `2147483647`) are preserved as missing (`NaN`) and never imputed as zero (Guardrails G2, G3).
 
 ### 1.4 Model Threshold Sensitivity & False Positives
-- **Global Threshold Sensitivity:** As documented in [`docs/results.md`](docs/results.md) and [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md), unsupervised Isolation Forest global thresholding (`0.60`) yields a high False Positive Rate (76.18%) on normal mobility variance.
+- **Global Threshold Sensitivity:** As documented in [`docs/results.md`](docs/results.md) and [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md), unsupervised Isolation Forest global thresholding (`0.60`) yields a high False Positive Rate (73.55%) on normal mobility variance.
 - **Mitigation:** The system relies on the downstream multi-agent diagnostic layer to filter statistical noise from genuine network anomalies.
 
 ---

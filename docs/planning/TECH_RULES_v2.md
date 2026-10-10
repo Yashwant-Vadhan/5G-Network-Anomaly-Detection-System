@@ -224,7 +224,7 @@ Android collector ──(C7 over WebSocket)──► streaming/server.py (FastAP
 
 ### C8 — Live API (server ⇄ dashboard)
 
-**Loopback-only by default.** All endpoints need the token (`Authorization: Bearer …` or, for browsers/WebSocket clients that cannot set headers, a short-lived `?ticket=` obtained from `POST /api/v1/live/ticket` — ⚠️ design intent; the Streamlit process is server-side, so header auth works there and the ticket path can be dropped if unused).
+**Loopback-only by default.** All HTTP and WebSocket endpoints require token authentication via standard `Authorization: Bearer <token>` headers. (The experimental `?ticket=` query param path is dropped to minimize authentication attack surface, as Streamlit runs server-side and supports standard headers).
 
 `WS /api/v1/live` — server → dashboard events, each with `type`, `schema_version`, `server_time`, `session_id`:
 
