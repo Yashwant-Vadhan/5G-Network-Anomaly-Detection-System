@@ -473,7 +473,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 *Goal: Phone streams reliably without ever harming CSV logging; optional advisory edge scoring only if it passes parity.*
 
 #### T12-001: Add streaming settings to the Android app
-**Status:** ⬜
+**Status:** ⛔ superseded by T19-008
 **Description:** Add host, port, pairing-token fields (masked, stored with Keystore-backed encrypted storage — verify the current AndroidX/Keystore approach), a stream on/off switch and a 'Test connection' button reporting unreachable / unauthorised / version mismatch / OK. Show the privacy warning for `session_label`.
 **Dependencies:** T10-005
 **Acceptance Criteria:**
@@ -487,7 +487,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T12-002: Implement StreamClient (WebSocket, hello/sample/ack)
 **Status:** ⬜
 **Description:** Package `...streaming`: OkHttp WebSocket (verify current version), serialise the existing measurement object to C7 `sample` (null for NA, sentinels sent as-is), generate and persist a random UUID `client_id`, send `hello` with `resume_from_seq`, handle `hello_ack`, `ack`, `error`, `alert`. All I/O off the main thread.
-**Dependencies:** T12-001, T11-011
+**Dependencies:** T19-008, T11-011
 **Acceptance Criteria:**
 - [ ] Serialisation equals the golden C7 example byte-for-byte after canonicalisation
 - [ ] No hardware identifiers in any message
@@ -521,7 +521,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-005: Keep logging and streaming alive in a foreground service
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ⛔ superseded by T19-009
 **Description:** Run collection+streaming in a foreground service with the notification and service type required by current Android versions (verify), request battery-optimisation guidance with the one-time dialog from DESIGN_v2, and test screen-off behaviour on the Redmi 13 5G (Android 16 per `eda_findings.md`) and the Samsung SM-A156E. ⚠️ UNCLEAR: OEM background restrictions; 🧑 Human-only (needs the phones).
 **Dependencies:** T12-002
 **Acceptance Criteria:**
@@ -533,7 +533,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-006: Add the streaming status strip
-**Status:** ⬜
+**Status:** ⛔ superseded by T19-006
 **Description:** Show `Streaming: Connected | Reconnecting (queue n) | Off`, last ack time and dropped counter on the logging screen with icon + text (DESIGN_v2 Android section); touch targets ≥48 dp.
 **Dependencies:** T12-004
 **Acceptance Criteria:**
@@ -581,7 +581,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T12-010: Real-device live session test
 **Status:** ⬜ · 🧑 Human-only
 **Description:** Run a 20-minute walking session on the Redmi streaming to the server (USB or Wi-Fi) with two forced disconnects; verify seq continuity, live capture CSV vs phone CSV row match, and dashboard events.
-**Dependencies:** T12-005, T12-006, T11-014
+**Dependencies:** T19-009, T19-006, T11-014
 **Acceptance Criteria:**
 - [ ] Phone CSV and live capture match except documented drops
 - [ ] All gaps reported in Stream Health data
@@ -676,7 +676,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T12-018: Show the advisory edge score on the phone
 **Status:** ⬜ · ➕ Optional
 **Description:** Display 'Edge score (advisory): x.xx' as a secondary line only when the edge module is enabled; never display 'anomaly detected' or a diagnosis; add `edge` block to `sample` messages.
-**Dependencies:** T12-016, T12-006
+**Dependencies:** T12-016, T19-006
 **Acceptance Criteria:**
 - [ ] Edge off by default
 - [ ] Wording per DESIGN_v2
@@ -810,7 +810,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-010: Build the live client and connection state machine
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-001
 **Description:** `dashboard/live_client.py`: background consumer of `WS /api/v1/live` with REST resync on `dropped`/reconnect, thread-safe snapshot, dashboard-side DISCONNECTED detection; falls back to 1 s REST polling if the WebSocket thread is unstable (note in decisions.md). ⚠️ Verify Streamlit threading behaviour in the current docs.
 **Dependencies:** T11-014
 **Acceptance Criteria:**
@@ -822,7 +822,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-011: Add the Mode switch and connection chip
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-002, T17-010
 **Description:** Extend the v1 sidebar (`dashboard/app.py`, T6-010) with a Live/Replay switch; connection chip with state, icon, text and sample age (states and colours per DESIGN_v2); Replay mode untouched. Yashwant owns the v1 sidebar code, so he takes this task to keep one owner per module.
 **Dependencies:** T13-010
 **Acceptance Criteria:**
@@ -834,7 +834,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T13-012: Build Live Overview (L1)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-003
 **Description:** Status banner with PROVISIONAL badge, ML-only line, metric cards with deltas, network-state card (Unknown never shown as SA), score block (baseline and IF separate, edge secondary), event/status, diagnosis/evidence/recommendation, sparkline, Pause toggle, WAITING/DISCONNECTED states.
 **Dependencies:** T13-011
 **Acceptance Criteria:**
@@ -846,7 +846,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-013: Build Live Signals (L2)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-004
 **Description:** Three stacked Plotly time series over a 5/15/60 min window, anomaly × markers, cell-change lines, score chart with threshold, baseline/IF toggle, gap bands, text summary above each chart, data-table expander; render-only downsampling above ~5,000 points.
 **Dependencies:** T13-011
 **Acceptance Criteria:**
@@ -858,7 +858,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-014: Build Live Cells & Network (L3)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-005
 **Description:** PCI/NCI/NRARFCN step charts, network-type strip, transitions table, markers linking to events; v1 copy rule about cell changes shown.
 **Dependencies:** T13-011
 **Acceptance Criteria:**
@@ -869,7 +869,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-015: Build the events panel (L4, events half)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-006
 **Description:** Events table with status and 'alerted? (reason)' columns, row-select detail with Signal/Cell/Network/Diagnosis/Recommendation, window chart, download event JSON; PROVISIONAL diagnoses prefixed 'Provisional —'.
 **Dependencies:** T13-011, T11-008
 **Acceptance Criteria:**
@@ -881,7 +881,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-016: Build the alerts panel and banner (L4, alerts half)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-006
 **Description:** Alert banner on L1/L4 with severity chip, Acknowledge button calling the ack API, alerts history table, per-channel status rows (red only for failures), toast once per alert id.
 **Dependencies:** T13-015, T13-007
 **Acceptance Criteria:**
@@ -893,7 +893,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-017: Build Stream Health (L5)
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-007
 **Description:** Show connection timeline, latency p50/p95/max with the 'no latency guarantee' footnote, completeness counters, gap ranges, phone queue depth, subscriber drops, clock skew warning, model version/hash, edge divergence (only if enabled).
 **Dependencies:** T13-011, T11-018
 **Acceptance Criteria:**
@@ -905,7 +905,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-018: Update About & Limitations for v2
-**Status:** ⬜
+**Status:** ⛔ superseded by T16-015
 **Description:** Add the v2 non-claims (PRD_v2 list), the provisional-vs-final explanation, what does *not* alert, and 'O-RAN, iOS, SMS: not implemented'.
 **Dependencies:** T13-011
 **Acceptance Criteria:**
@@ -916,7 +916,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-019: Accessibility pass on Live pages
-**Status:** ⬜
+**Status:** ⛔ superseded by T16-016
 **Description:** Verify: icon+word on every state/severity, chart text summaries, Pause toggle, keyboard order and focus, contrast tokens from DESIGN_v2; record Streamlit limitations (no live regions) in docs.
 **Dependencies:** T13-012, T13-013, T13-014, T13-015, T13-016
 **Acceptance Criteria:**
@@ -927,7 +927,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-020: Dashboard smoke tests with mocked live state
-**Status:** ⬜
+**Status:** ⛔ superseded by T17-009
 **Description:** Using Streamlit's app-testing utility if it supports the pinned version (verify), otherwise test the snapshot→view-model functions directly: each connection state, provisional vs final, alert banner, stale view; plus a no-'caused'/'fixed' text assertion.
 **Dependencies:** T13-019
 **Acceptance Criteria:**
@@ -1022,7 +1022,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T14-008: Latency benchmark
 **Status:** ⬜
 **Description:** Measure sample→published and, via the dashboard client, sample→visible at 1× replay on LAN/loopback; report p50/p95/max with machine, Python/Streamlit versions and refresh interval. Compare to the proposed 2 s p95 and state pass/fail honestly.
-**Dependencies:** T13-017, T11-018
+**Dependencies:** T17-007, T11-018
 **Acceptance Criteria:**
 - [ ] Setup fully described (G24)
 - [ ] If the KPI fails, the 'revisit Streamlit' entry in docs/decisions.md is opened
@@ -1133,7 +1133,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T14-018: Definition-of-Done v2 audit
 **Status:** ⬜
 **Description:** `docs/definition_of_done_v2.md`: each PRD_v2 Must Have, KPI and G17–G26 with an evidence link (test, doc, or measurement) or an honest ❌.
-**Dependencies:** T14-006, T14-017, T14-015, T14-016
+**Dependencies:** T14-006, T14-017, T14-015, T14-016, T16-019, T17-009, T18-014, T19-014
 **Acceptance Criteria:**
 - [ ] No item without evidence or an explicit gap
 - [ ] Both authors sign off in the PR
@@ -1181,7 +1181,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T15-002: Per-role tokens (ingest vs read)
-**Status:** ⬜ · ➕ Optional
+**Status:** ⛔ superseded by T18-002
 **Description:** Separate `NADS_INGEST_TOKEN` and `NADS_VIEW_TOKEN`; update docs and tests; document that revocation is still manual.
 **Dependencies:** T14-019
 **Acceptance Criteria:**

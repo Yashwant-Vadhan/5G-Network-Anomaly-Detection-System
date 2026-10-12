@@ -16,7 +16,7 @@
 | **Problem statement** | v1 is a *batch/replay* system: a CSV is collected, copied to a laptop, processed, and replayed in the dashboard. A tester walking through a handover cannot see, while it happens, that their radio quality is degrading or what kind of event it is. `limitations_and_future_scope.md` §2.2–§2.4 lists live streaming, on-device inference, and alerting as unimplemented. |
 | **Solution overview** | The Android collector additionally **streams each ~3 s measurement** over a WebSocket to a local Python server. The server runs the **same** preprocessing/feature/scoring code as v1 incrementally, tracks events as they open and close, runs the unchanged five deterministic agents, and pushes results to a **live dashboard** and to an **alert engine** (in-app, phone notification, webhook, email). An **optional, gated** on-device Isolation Forest scorer gives an advisory score on the phone. |
 | **Target audience** | Same as v1 (the two authors, evaluators, technically curious testers) plus a *live-demo presenter*. Still a research prototype, **not** operator-grade monitoring. |
-| **Platform** | Android collector (Kotlin) + local Python server (FastAPI/WebSocket) + Streamlit dashboard. Single-machine, local network. |
+| **Platform** | Android collector (Kotlin) + Python server (FastAPI/WebSocket) + React SPA dashboard (Vite + TypeScript). Supported across static hosted, containerized hosted, and local network modes; v1 Streamlit frozen for replay baseline. |
 
 **Core v2 objective:** reduce the delay between "radio behaviour happens" and "user sees an evidence-backed, hedged explanation" from *minutes–hours (manual CSV copy)* to *seconds*, **without** weakening any v1 guardrail (no fabricated values, `UNKNOWN` ≠ SA, correlation ≠ causation, ML decides before agents explain).
 
@@ -40,15 +40,22 @@
 
 ---
 
+> **Research Prototype Notice:** 5G-NADS is an academic research prototype and educational demonstration system for UE-side 5G NR telemetry anomaly exploration, NOT a real-world, commercial, or carrier-grade network fault detector.
+
+---
+
 ## Required Amendments to `project-overview.md`
 
-v2 contradicts three statements in v1. Do **not** silently work around them; amend the overview first (`T10-001`).
+v2/v2.1 contradicts statements in v1. Do **not** silently work around them; amend the overview first (`T10-001`).
 
 | # | v1 statement | Conflict | Proposed amendment |
 |---|---|---|---|
 | A1 | Overview §9 / PRD v1 "Hard boundary": the Android app does **not** run ML. Guardrail G1: collector ≠ ML pipeline. | Optional edge inference puts a scorer on the phone. | Keep the **measurement/CSV path ML-free**. Edge scoring lives in a **separate Gradle module** (`edge-inference`), is **off by default**, is **advisory only**, and never alters what is logged. G1 is reworded accordingly (see TECH_RULES_v2). |
 | A2 | Overview §53 non-claim: "real-time operator-network control". PRD v1 lists "live streaming" as a future enhancement. | v2 adds real-time *monitoring*. | Keep "no operator-network control". Add: "near-real-time *monitoring and alerting of UE-side measurements*, with no latency guarantee". |
-| A3 | PRD v1 Security and `docs/decisions.md` entry (6): "Authentication, rate limiting and HTTPS are N/A by design (local single-user tool)." Also v1 `T7-009`'s "no network calls in the core pipeline" check. | The phone must connect to a server over a network, so an ingest endpoint is now reachable by other devices; and `streaming/` legitimately imports a web framework. | Authentication (pairing token), message/rate limits and optional TLS become **required** for any non-loopback binding; amend decisions entry (6) and `docs/testing.md`; re-scope the network-import check to `ml/` and `agents/` only (`T10-014`). |
+| A3 | PRD v1 Security and `docs/decisions.md` entry (6): "Authentication, rate limiting and HTTPS are N/A by design (local single-user tool)." Also v1 `T7-009`'s "no network calls in the core pipeline" check. | The phone must connect to a server over a network, so an ingest endpoint is now reachable by other devices; and `streaming/` legitimately imports a web framework. | Authentication, message/rate limits and optional TLS become **required** for any non-loopback binding; amend decisions entry (6) and `docs/testing.md`; re-scope the network-import check to `ml/` and `agents/` only (`T10-014`). |
+| A4 | Overview names Streamlit as the dashboard. | v2.1 frontend is React SPA. | v1 dashboard = Streamlit (frozen benchmark result, maintained for bug fixes only). v2 dashboard = React single-page app (Vite + TypeScript) deployable to static hosts or paired to live server. |
+| A5 | "Local single-user tool"; local-first. | Target product allows web service pairing. | v2 may run as a **hosted web service** where a user pairs their own phone. Public hosting is permitted **only** with: user consent (G28), ephemeral memory-only sessions (G29), per-session tokens (C10), and cell-ID protection in logs. |
+| A6 | A3 (v2) specified one shared pairing token. | Multi-user / hosted web pairing. | Replaced by **per-session ingest and viewer tokens** (Contract C10) generated via ephemeral pairing codes/QRs. |
 
 ---
 
@@ -131,10 +138,17 @@ Personas P1–P4 are unchanged from PRD v1. New/updated:
 ### Live Dashboard
 - As a tester, I want a connection indicator (LIVE / STALE / DISCONNECTED) and "last sample N s ago" so that I never mistake old data for current data.
 - As a tester, I want live charts with anomaly markers and a stream-health page so that I can see latency, gaps and queue depth.
+- As a public visitor, I want a zero-backend Static Demo running from an anonymised bundle on GitHub Pages/Vercel (Mode 1) so I can explore the system immediately.
+
+### Hosted Pairing & Privacy
+- As a phone user, I want to pair my phone to the web service using an ephemeral 8-character pairing code or QR code (Contract C10) without entering long credentials or configuring servers.
+- As a phone user, I want an explicit consent screen detailing exactly what telemetry is transmitted and what is excluded (no GPS/PII) before streaming can be activated (G28).
+- As a user, I want live sessions to be ephemeral and held only in memory, automatically deleted when I disconnect (G29).
+- As a public visitor, I want demo bundles to hash cellular identifiers (PCI/NCI) by default so private cell tower locations are protected (G27).
 
 ### Platform & Security
-- As an author, I want the ingest endpoint to reject unauthenticated or malformed clients so that exposing it on a LAN does not expose the laptop.
-- As an author, I want secrets (token, SMTP, webhook URL) only in environment variables.
+- As an author, I want the ingest endpoint to reject unauthenticated or malformed clients so that exposing it on a LAN or cloud does not expose the host.
+- As an author, I want secrets (tokens, SMTP, webhook URL) only in environment variables.
 
 ---
 
@@ -165,14 +179,14 @@ Numbering continues from PRD v1 (FR-1 … FR-11 remain in force).
 - **Edge cases:** first samples of a session (warm-up, shorter than window); gap > `SESSION_GAP_SECONDS` starts a new session; session buffer cap reached (rollover to a new session, logged); event closes after `EVENT_CLOSE_GAP_SAMPLES` normal samples; classification of a provisional event changes as more samples arrive (e.g., becomes `PERSISTENT_POOR_QUALITY`).
 
 ### FR-15 — Live API ⬜
-- **Description:** read-side API for the dashboard and tools: `WS /api/v1/live` (push) and REST (`/api/v1/sessions`, `…/samples?since_seq=`, `/events`, `/alerts`, `/model`, `/metrics`).
-- **Validation rules:** read endpoints are loopback-only unless `NADS_ALLOW_REMOTE_VIEW=true`; token still required; bounded per-subscriber queues (slow consumers lose oldest, are told so).
+- **Description:** read-side API for the dashboard and tools: `WS /api/v1/live` (push) and REST (`/api/v1/sessions`, `…/samples?since_seq=`, `/events`, `/alerts`, `/model`, `/metrics`, pairing and ticket endpoints per C10).
+- **Validation rules:** read endpoints are loopback-only unless `NADS_ALLOW_REMOTE_VIEW=true` or in hosted mode with origin allow-list; per-session tokens required; bounded per-subscriber queues (slow consumers lose oldest, are told so).
 - **Edge cases:** dashboard starts before any session exists; server restart (dashboard must reconnect and re-sync via REST); thousands of samples requested at once (pagination cap).
 
-### FR-16 — Live Dashboard ⬜
-- **Description:** Streamlit gains a **Live** mode alongside v1's **Replay** mode. Details in `DESIGN_v2.md`.
-- **Must show:** connection state, sample age, current metrics/network state, status banner, score (baseline and IF shown separately), provisional/final event with agent evidence, alerts, stream health.
-- **Validation rules:** the dashboard never recomputes scores or diagnoses (v1 rule); stale data is labelled stale; `UNKNOWN` and `NA` display rules from v1 DESIGN apply unchanged.
+### FR-16 — React Dashboard (Static Demo & Live Modes) ⬜
+- **Description:** A modern React SPA (Vite + TypeScript) replaces Streamlit for all v2.1 interfaces across 3 deployment modes: (1) Static Demo on GitHub Pages/Vercel (precomputed C11 demo-bundle), (2) Local Live, and (3) Hosted Live with phone pairing. The v1 Streamlit dashboard is frozen as a historical v1 baseline. Details in `DESIGN_v2.md`.
+- **Must show:** connection state, sample age, current metrics/network state, status banner, score (baseline and IF shown separately), provisional/final event with agent evidence, alerts, stream health, pairing modal.
+- **Validation rules:** the frontend never computes scores, flags, transitions, or diagnoses (G30); stale data is labelled stale; `UNKNOWN` and `NA` display rules from v1 DESIGN apply unchanged; public bundles use hashed cell IDs (G27).
 - **Edge cases:** no data yet; connection lost mid-event; multiple concurrent sessions (select one); browser refresh.
 
 ### FR-17 — Alert Engine ⬜
@@ -215,7 +229,7 @@ Numbering continues from PRD v1 (FR-1 … FR-11 remain in force).
 | **Performance** | Per-sample server processing is cheap at ~1 sample/3 s (a session buffer is at most `SESSION_MAX_ROWS`); target p95 end-to-end < 2 s *(proposed)*. Replay at 20× must not fall behind unboundedly (bounded queues, drop-oldest with a visible counter). |
 | **Scalability** | One phone, one server, one or a few dashboard viewers. Multi-phone is allowed (sessions are keyed by `client_id`) but not load-tested. No distributed infrastructure. |
 | **Security & Privacy** | See FR-20 and TECH_RULES_v2 §Security. No PII; data stays on the local network by default; webhook/email are explicit opt-ins that send **only** the minimal alert payload. |
-| **Accessibility** | WCAG 2.1 AA target for the parts Streamlit exposes; alerts use text + icon + shape, not colour only; live regions are limited by Streamlit — documented. |
+| **Accessibility** | WCAG 2.1 AA target for the React SPA; alerts use text + icon + shape, not colour only; native ARIA live regions (`aria-live="polite"`). |
 | **Reliability** | Idempotent ingest, bounded queues, explicit stale/disconnected states, graceful degradation: if the server is down the phone still logs CSV; if an alert channel fails the dashboard still works. |
 | **Maintainability** | Same standards as v1 (type hints, `ruff`, Conventional Commits). Wire schemas live in one place (`streaming/schema.py`) with golden examples. |
 | **Reproducibility** | Replay of a CSV through the live path is deterministic (same seed, same model) and compared to batch in CI. |
@@ -240,7 +254,7 @@ Numbering continues from PRD v1 (FR-1 … FR-11 remain in force).
 1. Approve amendments A1–A3 to `project-overview.md`?
 2. Streaming link for the demo: venue Wi-Fi, laptop hotspot, or USB `adb reverse`?
 3. Does a foreground service keep logging alive on the Redmi and the Samsung with screen off? (device-specific)
-4. Is Streamlit auto-refresh/fragment polling fast and stable enough for the latency KPI, or must the live page move to a different front end? (Decision: stay on Streamlit; revisit only if `T14-008` fails.)
+4. ~~Is Streamlit auto-refresh/fragment polling fast and stable enough for the latency KPI~~ — **resolved in v2.1:** Replaced with a React SPA (Vite + TS) consuming WebSocket events directly with native client-side state.
 5. Edge inference: custom tree-JSON vs ONNX — result of spike `T12-011`.
 6. Which alert channels does the team actually want ON in the demo? (Proposal: in-app + phone notification; webhook/email optional.)
 7. ~~Timestamp format of live samples~~ — **resolved by v1 EDA (Open Question 1):** `dd-MM-yy HH:mm:ss` in device-local time with no offset (ISO-8601 also seen). The app sends the collector's exact CSV string; the separate `sent_at` field (ISO-8601 **with** offset) is used for latency and skew, because the CSV timestamp has no timezone.
@@ -294,3 +308,4 @@ Must appear in README, the dashboard About page, and slides.
 10. **New:** The system has no visibility into the operator's RAN or core; it cannot tell whether an anomaly is a network fault.
 11. **New:** Live results are provisional until an event closes.
 12. **New:** O-RAN integration, iOS collection, and SMS alerting are **not implemented**.
+13. **New:** 5G-NADS is an exploratory academic research prototype, **not** a real-world, commercial, or operational network detector.

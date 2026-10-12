@@ -1,9 +1,9 @@
-# DESIGN v2 — 5G-NADS Live Dashboard (live charts, alerts, stream-connection indicators)
+# DESIGN v2.1 — 5G-NADS React Dashboard (Static Demo, Live Charts, Alerts, Pairing)
 
-> **Builds on:** `docs/planning/DESIGN.md` (v1). Everything in v1 DESIGN — philosophy, copy rules, tokens, typography, spacing, component conventions, accessibility — **still applies** unless overridden here. This document adds the **Live mode**, **alerts**, and **connection/stream-health indicators**, and the Android-side status UI.
-> **Requirements:** `PRD_v2.md` FR-12, FR-16, FR-17, FR-18.
-> No external design reference was provided; style is derived from v1's rule "avoid excessive UI decoration; prioritise technical interpretability".
-> **Tooling caveat:** Streamlit is a rerun-based framework with limited push/real-time support. The Live mode is built on **periodic refresh of a fragment** reading state that a background thread keeps up to date. **Verify the exact Streamlit APIs for fragments/auto-refresh, session state and app testing against the current Streamlit docs when implementing** — they change between versions. Where this document asks for something Streamlit cannot do (true push, ARIA live regions, sub-second smooth chart updates), the fallback is stated.
+> **Builds on:** `docs/planning/DESIGN.md` (v1) and `docs/planning/V2_1_DELTA.md`. Everything in v1 DESIGN — philosophy, copy rules, tokens, typography, spacing, component conventions, accessibility — **still applies** unless overridden here.
+> **Frontend Architecture:** Replaces Streamlit with a modern **React SPA (Vite + TypeScript)** across three deployment modes (1: Static Demo on GitHub Pages/Vercel, 2: Local Live, 3: Hosted Live). The v1 Streamlit dashboard is frozen as a historical baseline.
+> **Requirements:** `PRD_v2.md` FR-12, FR-15, FR-16, FR-17, FR-18; Contracts C8, C9, C10, C11.
+> **Accessibility & Performance:** Unlike Streamlit, React provides real client-side state management, native `aria-live="polite"` regions, zero-rerun sub-second chart updates via Canvas/SVG, and full responsive layout control.
 
 ---
 
@@ -11,10 +11,12 @@
 
 ### Visual Style
 - Unchanged: utilitarian, data-first, low chrome; one accent colour; semantic colours only for status.
-- Live additions: **no flashing, no sound, no animation** beyond Streamlit's default spinner. "Live" is communicated by a **state label and a sample-age counter**, not by motion.
+- Live additions: **no flashing, no sound, no animation** beyond subtle UI spinners. "Live" is communicated by a **state label and a sample-age counter**, not by distracting motion.
 
-### Branding Direction
-- Unchanged name/subtitle. Live mode adds a mode label: **"5G-NADS · Live"** vs **"5G-NADS · Replay"** in the page header so a user can never confuse recorded and live data.
+### Branding Direction & Shell
+- Single unified brand header (fixes the v1 duplicated sidebar branding).
+- Mode label: **"5G-NADS · Static Demo"**, **"5G-NADS · Local Live"**, or **"5G-NADS · Hosted Live"** so users are never confused about data origin.
+- Replay player: unified play / pause / speed (1×, 5×, 20×) / scrubber driving the overview. Replay and Live use the **exact same UI components** (only data source differs: bundle vs WebSocket).
 
 ### UX Goals (v1 goals retained; v2 adds)
 1. *(v1)* Answer in 5 seconds: is the current sample normal? If not, what kind of event and why?
@@ -102,69 +104,60 @@ Rules:
 
 ## Screen Specifications
 
-### Screen L1 — Live Overview
+## Screen Specifications
+
+### Screen L1 — Live / Replay Overview
 - **Purpose:** the 5-second answer for *right now*, plus trust signals.
 - **Components:**
-  - **Connection chip** + sample age (top, full width).
+  - **Connection chip** + sample age (top, full width): LIVE / STALE / RECONNECTING / DISCONNECTED / WAITING / REPLAY.
   - **Alert banner** (only when an unacknowledged alert exists): severity chip, one-line hedged summary, **Acknowledge** button, link to Events & Alerts.
-  - **Status banner:** `NORMAL` (green) / `ANOMALY DETECTED` (red) with severity chip, plus a **Provisional** badge if the current event is open. ML-only flag without rule evidence shows as a separate amber-bordered line: "Statistically unusual — no rule-based evidence (no alert)".
-  - **Metric cards:** RSRP, RSRQ, SINR, PCI, NCI, NRARFCN (v1), each with delta from previous sample and a tiny age indicator when STALE.
-  - **Network-state card:** Network type, Deployment mode (Unknown shown as "Unknown (not exposed by this device)"), Registered, Operator, Device, **Source** (Phone live / Replay).
+  - **Status banner:** `NORMAL` (green) / `ANOMALY DETECTED` (red) with severity chip, plus a **Provisional** badge if the current event is open. ML-only flag without rule evidence shows as a distinct **ML-only (`STATISTICAL_ONLY`)** amber-bordered line: "Statistically unusual — no rule-based evidence (no alert)".
+  - **Metric cards:** RSRP, RSRQ, SINR, PCI, NCI, NRARFCN. Values **never truncate** (cards wrap or shrink, tooltip displays full precision). Tiny age indicator when STALE.
+  - **Network-state card:** Network type, Deployment mode (Unknown shown as "Unknown (not exposed by this device)"), Registered, Operator, Device, **Source** (Phone live / Replay). Caption explicitly omits "Real-time" (G24).
   - **Score block:** baseline z (flag) and IF score (flag) shown separately; **edge score** (advisory) shown as a third, visually secondary line only when edge inference is enabled.
-  - **Detected event** label (v1 categories, `NORMAL`, or `STATISTICAL_ONLY` for ML-only flags) + status (**Provisional / Final**) + start time + duration so far.
+  - **Detected event** label (v1 categories, `NORMAL`, or `STATISTICAL_ONLY` for ML-only flags) + status (**Provisional / Final**) + start time + duration so far. Times explicitly labelled **"device local time (no timezone recorded)"**, never `+00:00`.
   - **Diagnosis, Evidence, Recommendation** from agents (v1), prefixed "Provisional —" while the event is open.
   - **Sparkline:** last 60 samples of RSRP and SINR with anomaly markers.
 - **Layout (12-col):** R0 chip (12) · R1 alert banner (12, conditional) · R2 status banner (12) · R3 network-state (4) + 6 metric cards 2×3 (8) · R4 score (4) + event/severity/status (8) · R5 diagnosis (8) + recommendation (4) · R6 sparkline (12, optional).
-- **Interactions:** Pause/Resume auto-refresh toggle (freezes the view for reading; chip says "PAUSED — new data still arriving"); Acknowledge alert; hover on card shows delta. No replay slider in Live mode.
-- **Empty state:** WAITING state text with `host:port` and the pairing-token hint (token itself is **never** displayed).
-- **Error state:** DISCONNECTED text with fix instruction; schema/contract mismatch → "Server and dashboard speak different message versions (server v2.x, dashboard v2.y). Update one of them." No tracebacks.
-- **Loading state:** `st.spinner("Connecting to server…")` only for the first connect; thereafter the chip communicates state.
+- **Interactions:** Replay scrubber (in Replay / Demo mode) or Pause/Resume live stream toggle; Acknowledge alert; hover on card shows delta.
+- **Empty state:** WAITING state text with pairing code / QR modal launcher.
+- **Error state:** DISCONNECTED text with troubleshooting steps; schema mismatch alert. No raw tracebacks.
+- **Loading state:** Minimal skeleton placeholder during initial bundle fetch or WebSocket connection.
 - **Responsive:** cards 2-col on tablet, 1-col on phone; chip + alert banner always on top.
 
-### Screen L2 — Live Signals
-- **Purpose:** RSRP/RSRQ/SINR over the selected rolling window with anomaly markers (v1 Screen 2 semantics).
-- **Components:** three stacked time-series (shared x-axis, ~260 px each); anomaly markers (× red, with text in tooltip); cell-change markers (grey vertical lines); score-over-time chart with the threshold line; toggle baseline / IF / both; **one-sentence text summary above each chart** (e.g. "SINR fell from +3 dB to −7 dB at 12:04:21; event open").
-- **Data windowing:** show last N minutes (5 / 15 / 60). **Downsample for rendering only above ~5,000 points** (v1 performance rule; never for scoring).
-- **Interactions:** zoom/pan are preserved across refreshes where Streamlit allows ⚠️ (verify: a full rerender may reset zoom — fallback: a "Freeze view" toggle and an explicit "Reset zoom"). Hover shows timestamp, all three values, flag state, edge score if present.
-- **Gaps:** when samples are missing (seq gap or time gap > `SESSION_GAP_SECONDS`) the line is **broken**, never interpolated (G2/G18). A grey band labelled "no data (n samples missing)" marks the gap. `NA` values leave gaps too.
-- **Empty/Error/Loading:** v1 wording plus "No samples in the last N minutes."
-- **Accessibility:** "Show data table" expander under each chart (latest 200 rows).
+### Screen L2 — Signal Explorer
+- **Purpose:** RSRP/RSRQ/SINR over selected time window with anomaly markers (v1 Screen 2 semantics).
+- **Session Presentation (Fixes F5):** **One session at a time** (session tabs + prev/next controls) with a thin all-sessions timeline strip. Prevents multi-session vertical clustering.
+- **Components:** four stacked time-series panels (RSRP, RSRQ, SINR, IF score with 0.60 threshold line; shared x-axis, ~240 px each); anomaly markers (× red, with tooltip details); cell-change markers (grey vertical lines); flag overlay radio (both / baseline / IF / hide); rolling-mean toggle; one-sentence text summary above each chart.
+- **Gap & NA Handling (Fixes F5):** Lines **strictly break at gaps and `NA` values**; lines never bridge gaps. A subtle grey band ("no data — n samples missing") marks gaps > `SESSION_GAP_SECONDS`.
+- **Interactions:** Shared zoom/pan across all 4 panels; hover tooltip shows timestamp, metrics, flag state, edge score.
+- **Accessibility:** Expandable data table view below charts (virtualised table).
 
-### Screen L3 — Live Cells & Network
-- **Purpose:** PCI/NCI changes and network-type transitions in the live window without implying anomaly (v1 Screen 3).
-- **Components:** PCI step line; NCI as categorical step line; NRARFCN line; network-type strip; transitions table (time, from → to); markers linking to open/closed anomaly events.
-- **Copy rule (v1, retained):** "A cell change is normal network behaviour. It is highlighted here as an *event*, not as an anomaly."
-- **States:** as L2.
-
-### Screen L4 — Live Events & Alerts
-- **Purpose:** list events (open and closed) and alerts; show agent evidence per event.
+### Screen L3 — Cells & Network
+- **Purpose:** PCI/NCI changes and network-type transitions without implying anomaly (v1 Screen 3).
 - **Components:**
-  - **Events table:** id, start, end (or "open"), duration, type, severity, max score, **status (PROVISIONAL/FINAL)**, **alerted? (yes / no — reason)**. Reason values are fixed strings: `ML-only (no rule evidence)` (event type `STATISTICAL_ONLY`), `cell/network change only`, `below persistence/severity threshold`, `cooldown`, `alerted`.
-  - **Event detail** (v1 layout): Signal / Cell / Network agent columns, Diagnosis, Recommendation, window chart, "Download event JSON".
-  - **Alerts panel:** table of alerts (time, event, severity, channel(s) and delivery status, acknowledged by/at). Filter by severity/channel/ack.
-  - **Alert channel status:** one row per channel (In-app, Phone, Webhook, Email) with `enabled / disabled` and last delivery result. A failed channel shows red text + icon + message ("Webhook timed out after 5 s") — red is appropriate here because it is a failure of the system's own output.
-- **Interactions:** row select; Acknowledge; filter; download JSON.
-- **Empty state:** "No events in this session yet. This does not guarantee the network is healthy." (v1 wording retained.)
-- **Error state:** "Cannot load events from the server (HTTP 5xx / timeout). The live view of samples may still work — check Stream Health."
-- **Responsive:** agent columns stack; alert table scrolls horizontally.
+  - Transitions table: precomputed transitions loaded directly from bundle/engine (Contract C11; fixes F4 view-computation defect).
+  - Categorical step charts: PCI and NCI plotted as **discrete categorical/hashed step lines** (Fixes F5 linear 10-billion scale issue).
+  - NRARFCN frequency channel line and network type status strip.
+- **Copy rule (v1 retained):** "A cell change is normal network behaviour. It is highlighted here as an *event*, not as an anomaly."
+- **Per-session View:** Scoped to the currently active session tab.
+
+### Screen L4 — Events & Diagnosis
+- **Purpose:** List events (open and closed) and alerts; show multi-agent evidence per event.
+- **Components:**
+  - **Events table:** Virtualised table (handling all 365+ events smoothly); columns: id, start, end, duration, type, severity, max score, **status (PROVISIONAL / FINAL)**, alerted reason. Times displayed as device-local (no timezone offset).
+  - **Selected event detail cards:** Signal, Cell, Network agent columns, Synthesis Diagnosis, Action Recommendation, event-window mini chart, JSON download button.
+  - **Alerts panel:** Table of alerts (timestamp, event, severity, delivery channel, acknowledged status).
+  - **Channel health:** In-app, Phone, Webhook, Email status chips.
 
 ### Screen L5 — Stream Health
-- **Purpose:** make the pipeline's own limitations visible (v1 Data Quality principle applied to the transport).
-- **Components (all numbers computed by the server and shown as received):**
-  - Connection timeline (state changes over the session).
-  - **Latency:** p50 / p95 / max for *phone→server* (device timestamp vs server receipt; **caveat shown: depends on clock agreement**) and *server receipt→published*; sparkline.
-  - **Completeness:** samples received, duplicates ignored, **sequence gaps** (count and ranges), samples re-sent after reconnect, samples dropped by the phone's queue (reported by the phone in `hello`/`ping`).
-  - **Queue depth** on the phone (last reported) and dashboard subscriber queue drops.
-  - **Clock skew** estimate with a warning if > `CLOCK_SKEW_WARN_SECONDS`.
-  - **Model:** `model_version`, feature-order hash, whether edge model hash matches.
-  - **Edge divergence** (if edge enabled): count of samples where |edge − server| > tolerance.
-  - Session source (phone/replay), link type if reported.
-- **Copy rule:** latency figures carry the footnote "Measured in this setup. No latency guarantee."
-- **States:** as L2.
+- **Purpose:** Transparent transport and pipeline telemetry.
+- **Components:** Connection timeline, latency percentiles (p50/p95/max with "Measured in this setup" footnote), message completeness (gaps, resends, queue drops), clock skew estimate, model version and hash verification.
 
 ### Screens L6–L7 — Data Quality, About & Limitations
-- Reused from v1. Additions to **About**: the full v2 non-claims list (PRD_v2 §Explicit Non-Claims), the "what is provisional" explanation, alert policy summary (what does *not* alert), and the statement that O-RAN integration, iOS collection and SMS alerts are **not implemented**.
-- Data Quality note: "Live samples are saved as a C1 CSV; this page reads that file."
+- Reused from v1 with F5/F6 corrections:
+  - Data Quality: Shows raw (3,760) vs processed (3,756) row counts with 4 validation drops; CSI availability reported as 0% for both devices.
+  - About: Displays 13 explicit non-claims, "Research prototype — not a real-world detector" notice, privacy architecture note, and confirmation that O-RAN, iOS, and SMS are not implemented.
 
 ---
 
@@ -182,12 +175,12 @@ Rules:
 Rules:
 - Wording passes the v1 hedged-language tests ("possible", "associated with"; never "caused", never "fixed").
 - Alerts are **never** colour-only: icon + severity word + colour.
-- No sound/vibration pattern is defined by the dashboard; the phone's local notification uses the platform default channel with **normal** importance. (A high-importance heads-up channel is a deliberate non-default.)
+- Notification push uses default notification priority; no alarming audio sirens.
 - **Acknowledge** stops re-display, not logging.
 - **Suppression is visible:** Events table always states why an event did not alert.
 
 ### Alert severity presentation
-LOW = info-blue chip, MEDIUM = amber chip, HIGH = red chip; each chip contains the word. LOW severity does **not** push to phone/webhook/email by default (configurable) *(proposed)*.
+LOW = info-blue chip, MEDIUM = amber chip, HIGH = red chip; each chip contains the word. LOW severity does **not** push to phone/webhook/email by default (configurable).
 
 ---
 
@@ -195,67 +188,35 @@ LOW = info-blue chip, MEDIUM = amber chip, HIGH = red chip; each chip contains t
 
 The collector's existing screens are out of scope except for these additions:
 
-- **Streaming settings** (new section): Server host, Port, Pairing token (masked, paste/QR optional ⬜), Stream toggle, "Test connection" button (result inline: "Connected · model if_v1" or the specific failure: unreachable / unauthorised / version mismatch).
+- **Streaming settings** (new section): Server host, Port, Pairing token (masked, paste/QR optional), Stream toggle, "Test connection" button (result inline: "Connected · model if_v1" or the specific failure: unreachable / unauthorised / version mismatch).
 - **Status strip** on the logging screen: `Streaming: Connected | Reconnecting (queue 37) | Off`, last ack time, dropped-from-queue counter. Uses text + icon.
 - **Edge score (only if edge module enabled):** small secondary line "Edge score (advisory): 0.69". Never labelled "anomaly detected".
 - **Alert notifications:** standard Android local notification, title/body as in *Alert anatomy*; tapping opens the app's status screen.
 - **Battery/background guidance:** a one-time dialog explaining that some manufacturers stop background apps and linking to the system battery settings; no dark patterns.
-- **Touch targets:** ≥ 48 dp (Android guideline; v1 used 44 px for custom web controls).
-- **Out of scope:** redesigning the existing collector UI.
+- **Touch targets:** ≥ 48 dp (Android guideline).
 
 ---
 
-## Design System (v1 tokens reused; additions)
+## Design System & Component Specifications
 
-### Colours
-v1 tokens are reused unchanged. New *semantic aliases* only (no new hues):
+### Colours & Tokens
+v1 tokens are reused unchanged via CSS variables (`--color-normal: #15803D`, `--color-warning: #B45309`, `--color-info: #0369A1`, `--color-neutral-700: #334155`). Light and dark theme palettes defined in CSS tokens.
 
-| Role | Token | Hex | Used for |
-|---|---|---|---|
-| State · LIVE | Normal | `#15803D` | LIVE chip |
-| State · STALE / RECONNECTING | Warning | `#B45309` | STALE chip, ML-only line |
-| State · WAITING / REPLAY | Info | `#0369A1` | WAITING, REPLAY-SOURCE |
-| State · DISCONNECTED | Neutral 700 | `#334155` | Server unreachable |
-| Badge · PROVISIONAL | Warning text on tint | `#B45309` on `#FFFBEB` | Event status badge |
-| Badge · FINAL | Neutral text on tint | `#334155` on `#F1F5F9` | Event status badge |
-| Chart · gap band | Slate 200 | `#E2E8F0` | "no data" band |
-| Chart · edge score line | Slate 500, dashed | `#64748B` | Advisory edge score |
-
-**Contrast check (WCAG 2.x relative-luminance formula, computed while writing this document):**
-
-| Pair | Ratio | AA text (4.5) |
-|---|---|---|
-| `#0F172A` on white | 17.85 | pass |
-| `#334155` on white | 10.35 | pass |
-| `#64748B` on white | 4.76 | pass (just) |
-| `#2563EB` on white | 5.17 | pass |
-| `#15803D` on white | 5.02 | pass |
-| `#B91C1C` on white | 6.47 | pass |
-| `#B45309` on white | 5.02 | pass |
-| `#0369A1` on white | 5.93 | pass |
-| `#B45309` on `#FFFBEB` | 4.84 | pass |
-| `#334155` on `#F1F5F9` | 9.45 | pass |
-| `#64748B` on `#F8FAFC` (muted text on page bg) | 4.55 | pass (very narrow margin) |
-
-> Note: several ratios printed in v1 DESIGN differ from these (e.g. v1 lists `#0F172A` as 15.6:1; the standard formula gives 17.85). All v1 tokens still pass AA, so nothing is invalidated — but **use the numbers above**, and re-check them with a contrast tool before relying on them, since the tint hex values (`#FFFBEB`, `#F1F5F9`) are Tailwind-palette values I used from memory. Muted text (`#64748B`) on the `#F8FAFC` page background has almost no margin; prefer `#475569` for important small text.
-
-### Typography / Spacing / Grid
-Unchanged from v1. Live numbers (age counters, latency) use the monospace stack so digits do not jitter horizontally.
-
-### Component Library additions (Streamlit-native wherever possible)
-- **Connection chip:** `st.markdown` with inline-styled span (icon + label + age); the *only* custom HTML. ⚠️ Verify `unsafe_allow_html` behaviour/security guidance in current Streamlit docs; fallback: `st.caption` with emoji icon and text.
-- **Alert banner:** `st.container(border=True)` with 4 px left border in severity colour (v1 status-card pattern), plus `st.button("Acknowledge")`.
-- **Badges:** text spans styled as small chips; fallback `st.caption("[PROVISIONAL]")`.
-- **Auto-refresh region:** a Streamlit fragment with a run interval; everything inside re-reads shared live state. Static content (sidebar, About) lives outside it. ⚠️ Verify fragment API.
-- **Toasts:** `st.toast` for "Phone connected", "Session saved to data/live/…", "Alert acknowledged". Persistent issues use `st.warning`/`st.error` with cause + fix.
-- **Tables:** `st.dataframe`; IDs in monospace; null shown as `—` with tooltip "missing (NA)".
+### Component Implementation (React + CSS Tokens)
+- **Connection chip:** Dedicated React component rendering icon + state label + age counter; bound to client WebSocket connection state.
+- **Alert banner:** Accessible container with 4px severity accent border and `aria-live="polite"` region.
+- **Charts:** Canvas/SVG charting library (selected via spike T16-001) supporting broken lines across gaps/NAs, zoom syncing across panels, and red × marker overlays.
+- **Tables:** Virtualised table rendering for 365+ diagnosed events.
+- **Modals:** Accessible pairing modal (displaying 8-character pairing code and QR code) and Consent dialog.
 
 ---
 
-## Accessibility Requirements (v1 retained; additions)
+## Accessibility Requirements (WCAG 2.1 AA)
 
-- **WCAG target:** 2.1 AA for what Streamlit lets us control.
-- **Live updates and screen readers:** Streamlit does not offer ARIA live-region control for auto-refreshing content ⚠️ (verify). Fallbacks: (a) a **Pause auto-refresh** toggle so assistive-tech users can read a stable page; (b) alerts and state changes also use `st.toast`/banners with text; (c) the Events and Alerts tables contain the same information as the charts.
+- **Native ARIA live regions:** Critical connection changes and alerts announce via `aria-live="polite"` to screen readers.
+- **Keyboard Navigation:** All interactive elements, tabs, filters, and modal dialogs are fully keyboard-navigable with visible focus rings.
+- **No Colour-Only Signalling:** All status indicators combine text labels, distinct icons, and colour tokens.
+- **Motion:** Respects `prefers-reduced-motion` media queries; zero unrequested motion.
 - **No colour-only signalling:** connection states and alert severities each carry an icon and a word.
 - **Motion:** none; no auto-playing content; no flashing.
 - **Keyboard:** all controls (Mode switch, Pause, Acknowledge, filters) Tab-reachable with visible focus; no keyboard traps.
@@ -265,20 +226,20 @@ Unchanged from v1. Live numbers (age counters, latency) use the monospace stack 
 ---
 
 ## Micro-interactions
-- **Hover:** Plotly tooltip with timestamp, metrics, flag state; table row highlight.
-- **State transitions:** connection chip text changes; no animation. Optional single `st.toast` on LIVE→STALE and STALE→LIVE (debounced, max one per 30 s) so a flapping link does not spam.
-- **New alert:** banner appears at the top of the page and a toast fires once per alert id.
-- **Loading:** spinner on first connect only.
-- **Success:** `st.toast("Phone connected")`, `st.toast("Session saved")`.
-- **Error:** inline `st.error` with cause + fix; never tracebacks.
+- **Hover:** Interactive tooltip with timestamp, metrics, flag state; table row highlight.
+- **State transitions:** connection chip text changes; smooth transition. Optional notification toast on LIVE→STALE and STALE→LIVE (debounced, max one per 30 s) so a flapping link does not spam.
+- **New alert:** banner appears at the top of the page and an alert toast fires once per alert id.
+- **Loading:** skeleton placeholder or spinner on initial bundle/stream connect only.
+- **Success:** toast notification ("Phone connected", "Session saved").
+- **Error:** accessible inline alert banner with cause + fix; never raw tracebacks.
 
 ---
 
-## Mobile Responsiveness Strategy (Streamlit dashboard)
-- Breakpoints 1200 / 768 as in v1; verify manually at 375, 768, 1280 px.
+## Mobile Responsiveness Strategy
+- Breakpoints 1200 / 768 px as in v1; verified at 375, 768, 1280 px.
 - Live Overview on a phone browser is a **supported but secondary** use (viewing from the same private network requires `NADS_ALLOW_REMOTE_VIEW`; default is laptop-only).
-- Charts ~260 px high, legends below, scroll-zoom disabled on touch.
-- Priority: laptop/desktop is primary (project demo); mobile must remain *usable*.
+- Responsive chart heights (~260 px), legends below, touch-friendly zoom controls.
+- Priority: laptop/desktop is primary (project demo); mobile remains responsive and usable.
 
 ---
 

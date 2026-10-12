@@ -2,7 +2,7 @@
 
 > **Builds on:** `docs/planning/TECH_RULES.md` (v1). All v1 rules remain binding unless this document amends them. Binding for humans **and** AI coding agents.
 > **Requirements:** `PRD_v2.md`. **Design:** `DESIGN_v2.md`. **Agent contracts:** `agent_architecture.md` (C6 — **unchanged**).
-> Version pins, library behaviours and Android/Streamlit API details below are *design intent*. **Verify exact versions and APIs against current official docs at implementation time.** Where I am unsure of an API, the text says so.
+> Version pins, library behaviours and Android/React/FastAPI API details below are *design intent*. **Verify exact versions and APIs against current official docs at implementation time.** Where I am unsure of an API, the text says so.
 
 ---
 
@@ -26,10 +26,11 @@ Overview amendments A1–A3 (PRD_v2) must be merged before Phase 11 starts.
 ## Architecture Overview
 
 ### Frontend Architecture
-- **Streamlit** multipage app. v1 pages unchanged (Replay mode). New Live pages (DESIGN_v2 L1–L5) consume the server's **Live API** through a small client module (`dashboard/live_client.py`) that maintains a thread-safe snapshot; Streamlit pages only read that snapshot inside an auto-refreshing fragment.
-- **Rule (carried over):** the dashboard never recomputes scores or diagnoses.
-- **Rule (new):** the dashboard never opens the ingest endpoint and never holds the pairing token of a phone.
-- ⚠️ Verify against current Streamlit docs: fragment auto-refresh API, behaviour of background threads with session state, app-testing utilities.
+- **React SPA (Vite + TypeScript)** with Tailwind/vanilla CSS tokens matching `DESIGN_v2`. Replaces Streamlit for all v2.1 interfaces; v1 Streamlit remains frozen as a batch baseline record.
+- **Shared code for Replay and Live:** Overview, Signal Explorer, Cells & Network, Events & Diagnosis, and Data Quality use identical visualization components; only the data adapter differs (bundle vs WebSocket).
+- **Rule (carried over, G30):** The frontend contains **no ML, threshold, or diagnostic logic**. All scores, flags, groupings, and diagnoses are computed server-side or precomputed in the demo bundle.
+- **Rule (carried over):** The dashboard never opens the ingest endpoint and never holds the phone's ingest token; it accesses telemetry via viewer tickets and cookies (C10).
+- **Accessibility:** Native ARIA live regions (`aria-live="polite"`) for alerts and status changes; WCAG 2.1 AA compliant semantic HTML and keyboard navigation.
 
 ### Backend Architecture
 ```
@@ -51,7 +52,7 @@ Android collector ──(C7 over WebSocket)──► streaming/server.py (FastAP
         streaming/hub.py (pub/sub)   streaming/alerts/ (policy,   streaming/store.py
         → WS /api/v1/live + REST       dispatch, channels)         data/live/*.csv, alerts.jsonl
                       ▼
-              Streamlit dashboard (Live mode)
+              React SPA dashboard (Live mode)
 ```
 - The server is **one process, one event loop**. CPU-bound scoring is tiny at ~1 sample/3 s; if profiling ever shows blocking, run the engine call in a thread executor — do **not** add a message broker.
 - **Agents remain plain deterministic Python.** No agent framework, no LLM in the core path (v1 Decision Record stands).
@@ -82,8 +83,8 @@ Android collector ──(C7 over WebSocket)──► streaming/server.py (FastAP
 | Fallback when WebSocket is blocked | `POST /api/v1/ingest/batch` (same C7 `sample` objects, array body) | none | Lets the phone flush its queue over plain HTTPS/HTTP if a network blocks upgrades; same validation path. *(Should Have.)* |
 | Server framework | **FastAPI + uvicorn** | Starlette only; Flask-SocketIO; aiohttp | Native async WebSocket + pydantic validation for wire schemas; widely used. *(Verify current versions.)* |
 | Wire schema library | **pydantic models at the boundary**, internal `dataclasses` (C6 unchanged) | dataclasses only; JSON Schema by hand | Validation errors are explicit and testable; JSON Schema can be exported for golden-file contract tests. |
-| Dashboard live updates | **Stay on Streamlit** with fragment refresh reading a live snapshot | Dash; FastAPI + JS front end; Grafana | Keeps v1 investment and the Python-only constraint. Risk: rerun model limits smoothness. Revisit only if `T14-008` misses the latency KPI. |
-| Server→dashboard push | `WS /api/v1/live` consumed by a background thread in the Streamlit process; REST for initial sync/backfill | Poll REST only | Push keeps latency low; REST gives a deterministic resync after any reconnect. If the background-thread approach proves fragile in Streamlit, **fall back to REST polling at 1 s** (documented, acceptable for the KPI). |
+| Dashboard live updates | **React SPA (Vite + TS)** (v2.1) | Stay on Streamlit; Dash; Grafana | Native client state and direct WebSocket handling; v1 Streamlit preserved frozen for batch replay. |
+| Server→dashboard push | `WS /api/v1/live` consumed natively by browser WebSocket client; REST for initial sync/backfill | Long polling REST only | Push keeps latency low; REST gives a deterministic resync after any reconnect. |
 | Edge model format | **Decided by spike `T12-011`**: (a) export trees + scaler params to JSON and implement path-length traversal in Kotlin, or (b) ONNX | TFLite (not applicable to sklearn trees) | (a) has no runtime dependency but needs custom code and a parity test; (b) may be less code if the converter supports `IsolationForest` — **I have not verified this; check the current `skl2onnx` supported-operators list.** |
 | Online learning / retraining | **No** | Incremental IF, periodic retrain | Model is pinned (`if_v1`); retraining would break parity and evaluation validity. |
 
@@ -224,7 +225,8 @@ Android collector ──(C7 over WebSocket)──► streaming/server.py (FastAP
 
 ### C8 — Live API (server ⇄ dashboard)
 
-**Loopback-only by default.** All HTTP and WebSocket endpoints require token authentication via standard `Authorization: Bearer <token>` headers. (The experimental `?ticket=` query param path is dropped to minimize authentication attack surface, as Streamlit runs server-side and supports standard headers).
+**Loopback-only by default; configurable via CORS/Origin allow-lists in hosted mode.**
+Authentication is enforced per-session (Contract C10). REST endpoints require either `Authorization: Bearer <token>` or the session `HttpOnly` viewer cookie. Because browser WebSocket clients cannot set custom headers, `WS /api/v1/live` authenticates via a first-frame message `{"type": "auth", "ticket": "…"}` sent within 5 seconds of connection. The ticket is obtained via `POST /api/v1/live-sessions/{id}/ticket` (single-use, 30 s TTL); **tickets are never passed as query parameters in URLs**, preventing leakage into access/proxy logs.
 
 `WS /api/v1/live` — server → dashboard events, each with `type`, `schema_version`, `server_time`, `session_id`:
 
@@ -273,6 +275,59 @@ Status codes: `200`, `400` (bad parameter), `401`, `404`, `409` (conflict), `429
 ```
 - `body`/`title`/`evidence`/`recommendation` come from the **deterministic template renderer** (v1 `agents.text_renderer`) — never from an LLM on the alert path.
 - The **webhook/email body is a subset**: `title`, `body`, `severity`, `anomaly_type`, `event_status`, `created_at`. It excludes raw measurements, cell IDs and device identifiers by default (`NADS_ALERT_INCLUDE_EVIDENCE=false`).
+
+### C10 — Hosted Pairing & Ephemeral Session Lifecycle API
+
+Replaces single shared token with per-session ephemeral credentials:
+
+1. **Browser Initiates:** `POST /api/v1/live-sessions` → returns `{session_id, pairing_code, expires_at}`. The pairing code is an 8-character string from an unambiguous alphabet (no `0/O`, `1/I`), single-use, TTL 10 minutes, also renderable as a QR code. The server sets an `HttpOnly` viewer cookie scoped to `session_id`.
+2. **Phone Pairs:** User reviews consent screen (G28) and enters/scans the code → `POST /api/v1/pair` with `{pairing_code, client_id, app_version, schema_version}` → returns `{session_id, ingest_token, ws_url, limits}`.
+3. **Phone Ingest:** Connects to `wss://…/api/v1/ingest` with `Authorization: Bearer <ingest_token>` via OkHttp header. The ingest token is valid strictly for that session.
+4. **Browser Live WebSocket:** Connects to `wss://…/api/v1/live` and authenticates via initial frame `{"type": "auth", "ticket": "<ticket>"}` where ticket is obtained via `POST /api/v1/live-sessions/{id}/ticket` (single-use, 30 s).
+5. **Session Teardown:** Ends upon explicit `bye`, 15-minute inactivity timeout, or when user clicks **End Session**. In-memory data is purged immediately (G29).
+6. **Endpoints:**
+   - `POST /api/v1/live-sessions` → `{session_id, pairing_code, expires_at}`
+   - `POST /api/v1/pair` → `{session_id, ingest_token, ws_url, limits}`
+   - `POST /api/v1/live-sessions/{id}/ticket` → `{ticket, expires_at}`
+   - `GET /api/v1/live-sessions/{id}/export.csv` → in-memory telemetry in C1 CSV format
+
+### C11 — Demo Data Bundle Schema (`demo-bundle.json`)
+
+Generated deterministically by `scripts/build_demo_bundle.py` from processed artifacts, served gzipped for the static React demo (Mode 1):
+
+```json
+{
+  "bundle_version": 1,
+  "generated_at": "2026-10-12T10:00:00Z",
+  "model_version": "1.0.0",
+  "source": "processed",
+  "privacy": {
+    "cell_ids": "hashed",
+    "time": "device-local, no timezone"
+  },
+  "sessions": [
+    { "session_id": "redmi-1", "device": "2406ERN9CI", "operator": "Airtel", "n": 24, "start": "09-10-26 14:16:56", "end": "09-10-26 14:18:05" }
+  ],
+  "samples": {
+    "columns": ["timestamp", "device", "ss_rsrp", "ss_rsrq", "ss_sinr", "pci", "nci", "nrarfcn", "if_score", "baseline_flag", "if_flag", "anomaly_type", "severity"],
+    "rows": [
+      ["09-10-26 14:16:56", "2406ERN9CI", -98, -11, 15, "Cell-A", "Cell-A-Sec1", 629952, 0.42, false, false, "NORMAL", "NONE"]
+    ]
+  },
+  "transitions": [
+    { "ts": "09-10-26 14:17:15", "session_id": "redmi-1", "type": "PCI", "from": "Cell-A", "to": "Cell-B" }
+  ],
+  "events": [ /* C5-compatible records matching events_diagnosed.json */ ],
+  "quality": {
+    "missing": { "ss_rsrp": 0, "ss_sinr": 185 },
+    "csi_available": { "Redmi 13 5G": false, "Samsung SM-A156E": false },
+    "deployment_modes": { "UNKNOWN": 3756, "NSA": 1772 },
+    "preprocess_log": { "total_raw": 5532, "dropped": 4, "clean_rows": 5528 }
+  },
+  "model_meta": { /* contents of if_v1.meta.json */ }
+}
+```
+- **Privacy Rule (G27):** Public demo bundles **must hash cell IDs (`nci`, `pci`)** using a stable per-bundle salt, preserving `pci_changed`/`nci_changed` flags and replacing raw numbers with labels like "Cell A". Raw cell IDs are strictly permitted only for private offline analysis (`--raw-cell-ids`).
 
 ---
 
@@ -363,15 +418,58 @@ Status codes: `200`, `400` (bad parameter), `401`, `404`, `409` (conflict), `429
 | **G24** | **Honest latency.** Latency is measured with recorded timestamps and reported with its setup and caveats; no code, doc, or UI states a guaranteed latency. | Docs lint for forbidden phrases ("guaranteed", "instant", "zero latency"); `results_v2.md` must contain a setup description |
 | **G25** | **Edge is advisory and parity-gated.** Edge scores never override server results and never ship without passing the golden-vector parity test. | Parity test; server stores both scores; dashboard test that edge is shown secondary |
 | **G26** | **Secrets and payload minimisation.** Token, SMTP, webhook URL only via env vars; `.env` ignored; external-channel payloads exclude raw measurements, IDs and PII by default; no precise location anywhere. | Secret scan in CI; payload-shape test on webhook/email bodies |
+| **G27** | **Public demo data are anonymised by default.** Cell IDs (`nci`, `pci`) hashed; bundle builder refuses `--raw-cell-ids` with `--public`. | CI test asserting absence of raw cell IDs in public bundle |
+| **G28** | **Explicit consent before streaming.** Phone app cannot transmit telemetry before consent screen accepted; website shows identical notice and cell-location disclaimer. | Android UI unit test: zero network packets before consent |
+| **G29** | **Ephemeral live sessions on public server.** Live telemetry held in memory only, destroyed on session end; no disk persistence unless `NADS_RETAIN_SESSIONS=true`. | Test: disk scan after live session teardown asserts no data persisted |
+| **G30** | **No logic in frontend.** Scores, flags, events, transitions, diagnoses and data quality are computed in Python (bundle builder / FastAPI server). Frontend strictly renders. | Automated frontend AST/lint check for anomaly calculation formulas |
+| **G31** | **Mandatory research prototype notices.** Public web deployments always display the research-prototype notice and non-claims list. | E2E visual assertion verifying footer and About screen notices |
+| **G32** | **Android CSV byte-identical regression.** Collector CSV output for fixed inputs is byte-identical before and after UI refactor; 18-column C1 header unchanged. | JVM golden unit test comparing extracted `buildCsvRow()` output |
 
-Each G17–G26 must map to an automated test in `tests/test_guardrails_v2.py` (or a documented manual check where automation is impractical, e.g., OEM background behaviour).
+Each G17–G32 must map to an automated test in `tests/test_guardrails_v2.py`, frontend tests, or documented manual checks.
+
+---
+
+## Android Collector Refactor Architecture (DELTA §6)
+
+**Guiding Principle:** The telemetry sampling and CSV logging path remains functionally identical and decoupled from UI operations (Guardrails G18, G32).
+
+1. **Source of Truth:** The repository project `android-collector/5GNetworkTester` is opened and built directly in Android Studio, eliminating divergence from external copies.
+2. **Pure CSV Row Builder:** Extract pure function `buildCsvRow(sample): String` from `processNrCell()`, verified by golden unit tests (G32) for `NA` and `dd-MM-yy HH:mm:ss` timestamp formatting across all 18 C1 columns.
+3. **UI State Decoupling (Fixes F9):** Telephony callbacks publish an immutable `UiState` data class rather than mutating Android Views directly inside `processNrCell()`.
+4. **Declarative Jetpack Compose UI:** Modern Material3 UI (`Color.kt`, `Theme.kt`, `Type.kt` matching project tokens) providing Home, Pairing, Consent, and Export screens.
+5. **Incremental Persistence:** Append each sample to file as it is collected to prevent data loss on background termination (Fixes F10).
+6. **Foreground Service:** Move 3 s sampling loop into a Foreground Service with ongoing notification for screen-off execution.
+   - *Android 15+ / targetSdk 37 Rule:* `foregroundServiceType="dataSync"` has a 6-hour runtime timeout per 24 hours (`Service.onTimeout()` must immediately call `stopSelf()`); requires `FOREGROUND_SERVICE_DATA_SYNC` permission.
+7. **Streaming & Networking:** Add `INTERNET` permission. OkHttp client with WebSocket streaming hooked after row save (failures never impact collection). Debug builds allow `ws://localhost` for `adb reverse`; release builds enforce TLS (`wss://`).
+
+---
+
+## Deployment Modes & Rules (Three Modes, One Codebase)
+
+```
+(1) STATIC DEMO  — public link, no backend, no phone data
+    GitHub Pages / Vercel / Azure Static Web Apps
+      └─ React SPA + bundled demo data (demo-bundle.json.gz, hashed cell IDs)
+
+(2) LOCAL LIVE   — real use on your laptop (private)
+    Phone ──USB adb-reverse / Wi-Fi──► FastAPI (one container or make serve)
+      └─ serves the built React app + ingest + live API; nothing leaves the machine
+
+(3) HOSTED LIVE  — user pairs their own phone to the website
+    Phone ──wss──► Azure Container Apps (FastAPI, min 1 replica) ◄──wss── Browser (React SPA)
+      └─ SPA served from container or Vercel/Pages (with CORS allow-list)
+```
+
+- **Mode 1 (Static Demo):** First shippable milestone (M6a). Zero backend costs. Hosted on GitHub Pages (`base: '/5G-Network-Anomaly-Detection-System/'` with HashRouter) or Vercel. Soft bandwidth limit 100 GB/month.
+- **Mode 2 (Local Live):** Private loopback or local Wi-Fi. Single FastAPI process (`make serve`) or local Docker container.
+- **Mode 3 (Hosted Live):** Hosted on Azure Container Apps with Consumption plan. Requires continuous 15 s WebSocket pings to avoid ingress proxy idle timeouts. Minimum 1 replica required for WebSocket availability (note: always-on 0.25 vCPU exceeds the 180,000 vCPU-second monthly free grant and accrues idle vCPU billing). Ephemeral session storage only (G29).
 
 ---
 
 ## Security Rules (amends v1 Security Rules)
 
-- **Authentication:** shared **pairing token** (random, ≥ 32 bytes from a CSPRNG, generated by `make token`), supplied by env `NADS_INGEST_TOKEN`; sent as `Authorization: Bearer`. Compare with `hmac.compare_digest`. Rotate by regenerating and re-entering on the phone.
-- **Authorization:** two roles by endpoint — *ingest* (phone) and *read/ack* (dashboard). Read endpoints are loopback-only unless `NADS_ALLOW_REMOTE_VIEW=true`. (Single shared token in v2; per-role tokens are a Should-Have refinement. State this limitation in `docs/streaming_security.md`.)
+- **Authentication:** Per-session tokens via pairing codes (Contract C10). Shared global tokens are superseded. Ingest tokens scoped strictly to write one session; viewer tickets scoped strictly to read one session.
+- **Authorization:** Two roles per session — *ingest* (phone) and *viewer* (browser). Read endpoints in local mode default to loopback; hosted mode enforces strict CORS origin allow-lists.
 - **Bind policy:** default `127.0.0.1`. Binding any other address requires `--allow-lan` **and** a non-empty token, otherwise the process exits with code 2.
 - **Input validation:** pydantic at the boundary + `ml.schema` for C1 content; size cap; per-client token bucket; reject unknown `type`; cap string lengths; cap `seq` jump magnitude (proposed 100,000) to avoid memory/metrics abuse.
 - **Transport security:** plain `ws://` is acceptable **only** on loopback/USB-reverse or a private network the authors control. For anything else, terminate TLS (`wss`) at a reverse proxy or use the server's TLS options (⚠️ verify uvicorn SSL options). The phone app must reject cleartext when the host is not loopback/private unless the user explicitly allows it. (Android's cleartext-traffic policy is stricter on recent versions — **verify** current `networkSecurityConfig` requirements for `ws://` to a LAN host.)
@@ -398,9 +496,7 @@ Each G17–G26 must map to an automated test in `tests/test_guardrails_v2.py` (o
 - **Replay e2e:** `scripts/replay_stream.py` → server → capture CSV → run batch pipeline on the capture → compare to live results (**live-vs-batch-on-capture** equivalence).
 - **Recovery matrix:** server restart mid-session, phone reconnect with `resume_from_seq`, dashboard restart, slow subscriber, channel timeout.
 - **Soak:** 2 h replay at 1× and 20×; assert bounded memory and no unbounded queue growth *(thresholds set after a first baseline run)*.
-- **Security:** see abuse cases above; token-in-logs scan.
-- **Dashboard smoke:** Streamlit app-testing utility against a **mocked live state** for each connection state (LIVE/STALE/RECONNECTING/DISCONNECTED/WAITING/REPLAY) and for provisional vs final events — ⚠️ verify the utility supports fragments/auto-refresh in the pinned Streamlit version; otherwise test the snapshot-to-view functions directly and keep a manual checklist.
-- **Android:** JVM unit tests for serialisation (golden C7 JSON), queue behaviour, backoff; instrumented/manual tests for service lifetime on each physical device (**manual checklist** — not automatable in CI).
+- **Frontend tests:** Component unit tests (Vitest) for state rendering, bundle parsing, and ARIA announcements; integration tests against mocked WebSocket and golden bundle for each connection state (LIVE/STALE/RECONNECTING/DISCONNECTED/WAITING/REPLAY) and for provisional vs final events.
 - **Edge:** golden-vector parity (G25).
 - **Coverage:** ≥80% on `ml/`, `agents/`, `streaming/` *(proposed)*.
 - **Flaky-test rule:** a test that depends on wall-clock timing must use an injectable clock; no `sleep`-based assertions in CI.

@@ -119,27 +119,28 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
   - [ ] Non-loopback bind without a token refuses to start; wrong token rejected.
   - [ ] No claim of "implemented" in README for anything without a passing test (G16).
 
-## Milestone 6 — v2 Clients, Live Dashboard & Alerts
-- **Objective:** A real phone streams reliably, the Live dashboard shows honest connection/freshness state, and alerts fire rarely and only with rule evidence.
-- **Tasks/Features:** Android streaming client (settings, WebSocket, persistent queue, reconnect/resume, foreground service, status strip, CSV-independence proof, phone notifications); streaming-perturbation experiment; real-device session; **optional edge inference** (spike → export → Kotlin scorer/features → golden-vector parity → advisory UI, all dropped cleanly on no-go); alert policy, cooldown/escalation, dispatcher, in-app / webhook / email / phone channels, acknowledgement; policy replay evaluation; Live dashboard (mode switch + connection chip, Overview, Signals, Cells & Network, Events & Alerts, Stream Health, About update, accessibility, smoke tests) (todo Phases 12–13).
-- **Dependencies:** M5 (ingest, live API, replay tool); alert policy needs the event tracker; Android needs ingest protocol (T11-011). The Android track and the dashboard/alerting track run in parallel.
-- **Estimated Complexity:** High (Android background limits and OEM behaviour are device-specific; Streamlit live refresh needs verification).
-- **Acceptance Criteria:**
-  - [ ] 20-min real-phone session: phone CSV and live capture match except documented drops (T12-010).
-  - [ ] Killing the server mid-session leaves a complete phone CSV (G18).
-  - [ ] Alert policy negative cases pass (ML-only, low RSRP/SINR alone, UNKNOWN alone, cell/network change alone → no alert) (G21).
-  - [ ] Every Live page shows connection chip and sample age; all six connection states testable with mocked state; provisional vs final visibly different.
-  - [ ] No Live chart interpolates across gaps or NA.
-  - [ ] Edge inference: **either** golden-vector parity passes **or** it is recorded as no-go with reasons; never shipped with a loosened tolerance (G25).
-  - [ ] `docs/streaming_perturbation.md` states honestly what the data does and does not show.
+## Milestone 6a — Public Demo (Static React SPA)
+- **Objective:** First shippable v2.1 outcome: zero-backend React dashboard running from an anonymised, precomputed data bundle (Contract C11) on GitHub Pages / Vercel. Can be built and deployed early in parallel with streaming core.
+- **Tasks/Features:** Chart spike (T16-001), Vite+React shell (T16-002), tokens & CSS, bundle builder (`scripts/build_demo_bundle.py`), six React pages with F5 fixes (no linear 10B NCI, no bridging lines across gaps, per-session tabs, no value clipping), static deployment workflow.
+- **Phases:** Phase 16 + T18-009/T18-010.
+
+## Milestone 6b — Phone & Live UI
+- **Objective:** Android collector refreshed with Compose and foreground service streaming via OkHttp; React live mode subscribing to live WebSocket events.
+- **Tasks/Features:** Android pure CSV row builder (T19-002, G32), Compose UI with Material3 theme, pairing screen (T19-008), consent screen (T19-007, G28), foreground service (T19-009), streaming client (T12-002..004), alert engine (T13-001..009), React live client and connection chip (Phase 17).
+- **Phases:** Phase 12 (active tasks), Phase 17, Phase 19, Phase 13 (alert engine).
+
+## Milestone 6c — Hosted Live & Pairing
+- **Objective:** Phone pairs to website via ephemeral 8-character pairing codes (Contract C10); containerized FastAPI backend on Azure Container Apps; privacy and abuse controls.
+- **Tasks/Features:** Ephemeral session lifecycle, pairing endpoints, viewer tickets, abuse limiter (T18-004), in-memory session retention only (G29), privacy documentation (`docs/privacy.md`), containerization, Azure deployment (T18-011).
+- **Phases:** Phase 18.
 
 ## Milestone 7 — v2 Hardening, Evaluation & Release
 - **Objective:** Measured, attacked, documented, tagged.
-- **Tasks/Features:** auth/abuse/fuzz tests; bind-policy tests; security and privacy audits; guardrail tests G17–G26 implemented; soak (2 h at 1× and 20×); latency benchmark; recovery matrix; live-vs-batch equivalence on real data; streaming detection-latency evaluation (baseline vs IF); alert precision/volume evaluation; protocol and architecture docs; README live quickstart; limitations update; `docs/results_v2.md`; v2 Definition-of-Done audit; fresh-clone check; slides/demo script with replay fallback; tag `v2.0.0` (todo Phase 14).
-- **Dependencies:** M6 (real sessions, alert engine, Live pages).
+- **Tasks/Features:** auth/abuse/fuzz tests; bind-policy tests; security and privacy audits; guardrail tests G17–G32 implemented; soak (2 h at 1× and 20×); latency benchmark; recovery matrix; live-vs-batch equivalence on real data; streaming detection-latency evaluation (baseline vs IF); alert precision/volume evaluation; protocol and architecture docs; README live quickstart; limitations update; `docs/results_v2.md`; v2 Definition-of-Done audit; fresh-clone check; slides/demo script with replay fallback; tag `v2.0.0` (todo Phase 14).
+- **Dependencies:** M6a, M6b, M6c (`T14-018` depends on T16-019, T17-009, T18-014, T19-014).
 - **Estimated Complexity:** Medium (mostly measurement and honesty).
 - **Acceptance Criteria:**
-  - [ ] G17–G26 each mapped to an automated test or a documented manual check.
+  - [ ] G17–G32 each mapped to an automated test or a documented manual check.
   - [ ] `docs/results_v2.md` reports setups, counts and caveats for latency, soak, alert quality and detection latency; states plainly any KPI that was missed, and whether IF beats the baseline in the streaming setting.
   - [ ] No document claims guaranteed latency or "real-time" without the no-guarantee wording (G24).
   - [ ] Non-claims (PRD_v2 list) appear in README, dashboard About page and slides.
@@ -148,19 +149,21 @@ Note: the generic template puts "Should Have" in M2. Here the dashboard and the 
 
 ## Milestone 8 — v2 Extras & Research Notes (optional; after `v2.0.0`)
 - **Objective:** Optional refinements and honest documentation of what was *not* built.
-- **Features:** HTTP batch-ingest fallback; separate ingest/view tokens; test that the optional LLM has no effect on the live path; O-RAN feasibility note and refreshed iOS note (**no code**) (todo Phase 15).
+- **Features:** HTTP batch-ingest fallback; test that the optional LLM has no effect on the live path; O-RAN feasibility note and refreshed iOS note (**no code**) (todo Phase 15; T15-002 superseded by C10).
 - **Dependencies:** M7 accepted.
 - **Estimated Complexity:** Low–Medium.
 - **Acceptance Criteria:**
   - [ ] Research notes say **NOT IMPLEMENTED** and cite verified sources or mark statements unverified.
   - [ ] Any new capability has tests before it is marked ✅.
 
-## v2 Critical Path
-Longest dependency chain to the v2.0.0 tag (T14-019) is about **18.5 h** (1,110 min) of sequential work: amendments (45m) → config (45m) → C7 schema (60m) → session buffer (60m) → sessionisation (45m) → engine (90m) → event tracker (60m) → agents (60m) → live API (60m) → live client (60m) → mode switch/chip (60m) → Stream Health (45m) → latency benchmark (60m) → results doc (45m) → DoD audit (45m) → tag T14-019 (30m). Real elapsed time will be longer (reviews, phone logistics).
+## v2.1 Critical Path (Merged Graph)
+Longest dependency chain to the `v2.0.0` tag (T14-019) is about **20.75 h** (1,245 min) of sequential work:
+T10-001 (45m) → T10-004 (45m) → T10-005 (60m) → T11-002 (45m) → T11-004 (90m) → T11-005 (45m) → T11-011 (60m) → T18-002 (90m) → T19-008 (90m) → T12-002 (60m) → T12-003 (60m) → T12-004 (60m) → T14-009 (60m) → T14-013 (45m) → T14-015 (45m) → T14-018 (45m) → T14-019 (30m).
 
-## v2 Effort Notes
-- MVP (M5–M7): Yashwant 52.75 h, Sushil 49.5 h, including 9.25 h / 0.75 h of **optional edge inference**. If edge is a no-go, totals become 43.5 h / 48.75 h and ~2.5 h of Phase 14 work should move from Sushil to Yashwant.
-- These are task-sum estimates in the same style as v1 (38.8 h / 40.2 h); v1 actuals were not provided, so I cannot calibrate v2 against them. Treat v2 as likely *less* certain than v1 because of Android device behaviour and Streamlit live-refresh uncertainty.
+## v2.1 Effort Notes
+- **Total v2.1 MVP (Phases 10–14, 16–19, edge included):** **Yashwant 77.50 h** (71 tasks), **Sushil 74.50 h** (69 tasks) — total **152.00 h** (140 tasks).
+- **Optional Edge Inference (T12-011..T12-018, gated):** Yashwant 9.25 h, Sushil 0.75 h (10.00 h total).
+- **Total if Edge is dropped:** **Yashwant 68.25 h**, **Sushil 73.75 h** (142.00 h total; rebalance by moving ~2.5–3 h of Phase 14/18 work to Yashwant).
 
 ## Risk Register
 
@@ -181,8 +184,6 @@ Longest dependency chain to the v2.0.0 tag (T14-019) is about **18.5 h** (1,110 
 | **v2:** Stream path diverges from batch results | Medium | High | One implementation (`ml/*` reused); G17 parity test in CI |
 | **v2:** Android OEM background limits stop streaming/logging | High | Medium | Foreground service, per-device manual tests, documented behaviour, replay fallback for demos |
 | **v2:** Streaming perturbs the measured radio | Medium (unverified hypothesis) | Medium | Prefer USB/Wi-Fi link; experiment T12-009; no cellular streaming |
-| **v2:** Alert fatigue from high false-positive rate of global IF threshold | High | High | Evidence-gated policy, persistence/severity gates, cooldown, ML-only never alerts |
-| **v2:** Streamlit cannot meet live-latency KPI | Medium | Medium | REST-polling fallback; revisit front end only if T14-008 fails |
-| **v2:** Edge Isolation Forest parity unreachable | Medium | Low | Time-boxed spike; clean no-go; nothing depends on it |
+| **v2:** Frontend cannot meet live-latency KPI | Medium | Medium | Resolved in v2.1 by React SPA with direct WebSocket client; v1 Streamlit preserved frozen |
 | **v2:** Ingest endpoint exposed on LAN | Medium | High | Loopback default; token + limits; abuse tests; optional TLS docs |
 | **v2:** Over-claiming "real-time" or implementing O-RAN/iOS/SMS | Medium | High | G24, non-claims, scope table; research notes only |
