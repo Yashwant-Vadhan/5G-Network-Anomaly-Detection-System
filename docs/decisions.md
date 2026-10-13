@@ -58,18 +58,18 @@
 ## ADR-006: Local Single-User Execution Model (Auth / Rate Limiting / HTTPS N/A)
 
 - **Date**: 2026-09-28
-- **Status**: Accepted (v1 local); Amended for v2 (2026-10-09, Status: PROPOSED - approval pending (Yashwant, Sushil))
+- **Status**: Accepted (v1 local); Amended for v2 (2026-10-09, Status: APPROVED 3/10/2026 (Yashwant, Sushil))
 - **Context**: System runtime target and deployment architecture.
 - **Decision**: 5G-NADS is designed as a local single-user research tool executed via CLI (`pipelines/run_pipeline.py`) and Streamlit dashboard (`dashboard/app.py` bound to `127.0.0.1`).
 - **Rationale**: Authentication, user authorization, API rate limiting, and HTTPS encryption are **N/A by design** for local workstation execution. If the dashboard is ever deployed to cloud hosting, authentication must be added prior to enabling public access.
-- **v2 Amendment (2026-10-09)**: *Status: PROPOSED - approval pending (Yashwant, Sushil).* Held for v1's local-only batch research tool and remains valid for local CLI batch runs. Superseded for the v2 streaming and hosted server (`streaming/`, FastAPI ingest WebSocket, hosted pairing): authentication (per-session pairing tokens), rate/message limits, and optional TLS become required for any non-loopback network binding. See ADR-010, ADR-011, and Amendment A3.
+- **v2 Amendment (2026-10-09)**: *Status: APPROVED 3/10/2026 (Yashwant, Sushil).* Held for v1's local-only batch research tool and remains valid for local CLI batch runs. Superseded for the v2 streaming and hosted server (`streaming/`, FastAPI ingest WebSocket, hosted pairing): authentication (per-session pairing tokens), rate/message limits, and optional TLS become required for any non-loopback network binding. See ADR-010, ADR-011, and Amendment A3.
 
 ---
 
 ## ADR-007: v2 Scope Derived from Limitations 2.2–2.4
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: Project limitations §2.2–2.4 identified critical gaps in offline-only batch processing: lack of live phone-to-dashboard streaming, UE-side latency in alerting, and manual diagnostic workflows.
 - **Decision**: Scope v2 to deliver (1) real-time phone → server → dashboard streaming path, (2) automated threshold and persistence alerting, and (3) an optional, gated advisory edge-inference spike. O-RAN integration, native iOS collector app, and SMS alerting are explicitly OUT OF SCOPE for v2 implementation (research notes only).
 - **Alternatives considered**:
@@ -83,7 +83,7 @@
 ## ADR-008: Streaming Transport Protocol (WebSocket over TCP)
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: Live telemetry streaming requires low-overhead transmission of tabular 1 Hz NR samples from the Android collector (or replay tool) to the server, and from the server to the browser dashboard, with delivery acknowledgements and back-pressure.
 - **Decision**: Use WebSocket over TCP (`wss://` / `ws://`) with JSON text framing (and optional binary framing for high-throughput replay) for bidirectional streaming, sequence acknowledgements (`ack`), resume tokens, and flow control.
 - **Alternatives considered**:
@@ -97,7 +97,7 @@
 ## ADR-009: Frontend Migration to React Single-Page Application (Streamlit Frozen as v1 Benchmark)
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: The Streamlit v1 dashboard re-runs Python scripts on interaction, creating significant latency for continuous 1 Hz live streaming updates, lacking robust client-side multi-panel time-series zoom/pan synchronization, and prohibiting static hosting without an active Python runtime.
 - **Decision**: Freeze the Streamlit dashboard as a benchmark v1 artifact (maintained only for bug fixes). Build the v2 frontend as a React Single-Page Application (SPA) using Vite, TypeScript, and a chosen time-series chart library.
 - **Alternatives considered**:
@@ -110,7 +110,7 @@
 ## ADR-010: Three Deployment Modes from a Single Codebase
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: The system must support public review demonstrations, private offline laboratory research, and live phone testing without maintaining divergent application codebases.
 - **Decision**: Architect the system for three unified deployment modes from one repository:
   1. **Static Demo**: React SPA + pre-packaged demo bundle (`demo-bundle.json.gz`), hosted on GitHub Pages or Vercel (no backend needed).
@@ -126,7 +126,7 @@
 ## ADR-011: Hosted Pairing via Ephemeral Per-Session Tokens
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: In Hosted Live mode, phone collectors and browser viewers must pair securely without exposing global secrets or requiring complex user account systems.
 - **Decision**: Implement ephemeral pairing codes (or QR codes) that issue scoped per-session tokens (Contract C10): an ingest token (write-only to that session) and a viewer token (read-only to that session). Sessions are memory-only, expire automatically on inactivity, and require no persistent user accounts or passwords.
 - **Alternatives considered**:
@@ -139,7 +139,7 @@
 ## ADR-012: Cell Identifier Protection in Public Demo Bundle (HMAC-SHA256 Hashing)
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: Real cellular tower identifiers (`PCI`, `NCI`, `NRARFCN`) can be cross-referenced with public geolocation databases (OpenCelliD, MLS) to reveal the physical collection location, risking user privacy in public static demo deployments.
 - **Decision**: In the public static demo bundle (`demo-bundle.json.gz`), hash all sensitive cell identifiers (`PCI`, `NCI`) using HMAC-SHA256 with a build-time salt. Hosted live ingest instances must also mask or avoid logging raw cell IDs.
 - **Alternatives considered**:
@@ -152,7 +152,7 @@
 ## ADR-013: Android Collector Architecture (buildCsvRow Pure Function, MVI/UiState, Compose)
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: The Android collector requires streaming telemetry capabilities, improved UI state handling, and strict backward-compatible CSV formatting matching v1.
 - **Decision**:
   - Extract CSV row serialization into a pure, testable function (`buildCsvRow`) shared between local file logging and streaming payload construction.
@@ -168,7 +168,7 @@
 ## ADR-014: Development Workflow (Direct Commits to Main for Documentation and Small Tasks)
 
 - **Date**: 2026-10-09
-- **Status**: PROPOSED - approval pending (Yashwant, Sushil)
+- **Status**: APPROVED 3/10/2026 (Yashwant, Sushil)
 - **Context**: Project collaboration and branching model for rapid iteration on documentation, task tracking, and verified small tasks.
 - **Decision**: Repository owner decision to commit directly to `main` branch for documentation updates and small tasks (after `git pull --rebase`), reserving dedicated feature branches only for large multi-commit architectural features.
 - **Alternatives considered**:

@@ -45,13 +45,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 *Goal: Approved scope, contracts C7–C9, guardrail test stubs, config and CI ready so both people can work in parallel.*
 
 #### T10-001: Amend project-overview.md and extend docs/decisions.md
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add a 'v2 amendments' section to `project-overview.md` covering A1 (optional isolated edge module), A2 (near-real-time monitoring, no latency guarantee, still no operator control) and A3 (auth/limits/TLS required off-loopback), exactly as worded in `PRD_v2.md`. Extend the v1 `docs/decisions.md` (six ADR entries exist) with entries (7)–(10): scope table (§2.2–2.4), transport = WebSocket, dashboard stays Streamlit, SMS/O-RAN/iOS code out of scope; and amend v1 entry (6) ('auth/rate-limit/HTTPS N/A') to say it no longer holds for the streaming server.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Both authors approve the PR
-- [ ] Amendments A1–A3 present and match PRD_v2 wording
-- [ ] decisions.md has the four new entries with date and rationale, and entry (6) is amended
+- [x] Both authors approve the PR
+- [x] Amendments A1–A3 present and match PRD_v2 wording
+- [x] decisions.md has the four new entries with date and rationale, and entry (6) is amended
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Yashwant
@@ -212,13 +212,14 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-015: ⚠️ UNCLEAR: confirm how SENTINEL_INTS are applied per column
-**Status:** ⬜
+**Status:** ✅
+**Note:** sentinel behaviour recorded in docs/eda_findings.md; fix deferred to a separate v1 change
 **Description:** `eda_findings.md` records `SENTINEL_INTS = [2147483647, -1, 99, 999]`. `-1` and `99` can be legitimate dB values (e.g. SINR −1 dB). Read `coerce_numeric` and `docs/eda_findings.md` to confirm whether each sentinel is applied only to the columns where it is actually a sentinel; if applied to all columns, record the effect on real samples (count of legitimate-looking values turned missing). This is a v1 behaviour the live path inherits through G17, so do not change it silently — record the finding and ask the human.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Per-column behaviour documented in eda_findings.md
-- [ ] Count of affected rows on data/raw reported (or 'none')
-- [ ] Decision recorded in decisions.md; any change goes through a separate v1 PR
+- [x] Per-column behaviour documented in eda_findings.md
+- [x] Count of affected rows on data/raw reported (or 'none')
+- [x] Decision recorded in decisions.md; any change goes through a separate v1 PR
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
