@@ -292,7 +292,7 @@ NR Measurement Collection
 CSV Data Logging
 ```
 
-It is NOT currently responsible for machine-learning anomaly detection.
+It is NOT currently responsible for machine-learning anomaly detection. (amended in v2: see A1)
 
 ---
 
@@ -337,7 +337,7 @@ Model        : MG8J4HN/A
 User         : Vishal
 ```
 
-The iPhone should be treated separately because the Android Telephony API collector cannot be directly reused on iOS.
+The iPhone should be treated separately because the Android Telephony API collector cannot be directly reused on iOS. (amended in v2: see A5; iOS collector code remains out of scope, research notes only)
 
 ---
 
@@ -1396,7 +1396,7 @@ Streamlit
 Plotly
 ```
 
-or another lightweight web-dashboard framework.
+or another lightweight web-dashboard framework. (amended in v2: see A4)
 
 ## Agent Layer
 
@@ -1828,7 +1828,7 @@ If precise location is not required for the project, it should not be stored in 
 
 The system should:
 
-* keep raw datasets locally during development
+* keep raw datasets locally during development (amended in v2: see A3, A5)
 * avoid hard-coding credentials
 * avoid storing sensitive information
 * validate uploaded CSV files
@@ -2053,10 +2053,10 @@ The project should NOT claim:
 * universal 5G anomaly detection
 * guaranteed root-cause identification
 * guaranteed SA/NSA identification on every device
-* real-time operator-network control
+* real-time operator-network control (amended in v2: see A2)
 * universal thresholds for all networks
 * that every cell transition is an anomaly
-* that the Android application itself performs the ML detection
+* that the Android application itself performs the ML detection (amended in v2: see A1)
 
 ---
 
@@ -2094,12 +2094,12 @@ Possible future improvements include:
 * mobility-aware anomaly detection
 * supervised anomaly classification after sufficient labeling
 * LSTM/Transformer time-series models
-* edge-based inference
+* edge-based inference (amended in v2: see A1, A5)
 * federated learning
-* O-RAN integration
+* O-RAN integration (not in v2 scope: research notes only; see A5)
 * network-side KPIs
 * 5G core-network metrics
-* automated alerting
+* automated alerting (amended in v2: see A5)
 * richer visualization
 * integration with operator/network-management systems
 
@@ -2261,3 +2261,23 @@ This layered design is the central technical contribution of the project.
 # 60. Final One-Line Description
 
 > **A real-device 5G NR monitoring system that detects unusual radio/network behavior using machine learning and explains the detected events through specialized multi-agent analysis.**
+
+---
+
+# 61. v2 Amendments
+
+**Status:** PROPOSED - approval pending (Yashwant, Sushil)  
+**Date:** 2026-10-09  
+**Source:** `docs/planning/PRD_v2.md` and `docs/planning/archive/V2_1_DELTA.md`
+
+The following amendments formally update v1 architectural and scope statements for the v2/v2.1 real-time streaming, alerting, and dashboard extensions. All v1 text above is preserved as the original historical baseline; the amendments below define the active v2 positions.
+
+| # | What v1 text stated | New v2 position | Date | Status |
+|---|---|---|---|---|
+| **A1** | Section 9 & Section 53 non-claims: The Android app does **not** run ML; collector ≠ ML pipeline (Guardrail G1). | Keep the **measurement/CSV path ML-free**. Optional edge inference puts an isolated scorer on the phone in a **separate Gradle module** (`edge-inference`), is **off by default**, is **advisory only**, and never alters what is logged. Guardrail G1 is reworded to G1′ accordingly. | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+| **A2** | Section 53 non-claim: "real-time operator-network control". PRD v1 lists "live streaming" as future enhancement. | Keep "no operator-network control". Add: "near-real-time **monitoring and alerting of UE-side measurements**, with no latency guarantee". | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+| **A3** | Section 50 Security and ADR-006: "Authentication, rate limiting and HTTPS are N/A by design (local single-user tool)." Core pipeline network call check (T7-009). | Authentication, message/rate limits, and optional TLS become **required** for any non-loopback binding. ADR-006 amended; testing N/A list updated; network-import check re-scoped to `ml/` and `agents/` only (`streaming/` may import web framework). | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+| **A4** | Section 36 names Streamlit as the visualization/dashboard framework. | v1 dashboard = Streamlit (frozen benchmark result, maintained for bug fixes only). v2 dashboard = **React single-page app (Vite + TypeScript)** deployable to static hosts or paired to live server. | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+| **A5** | Section 50 / ADR-006 ("Local single-user tool"; local-first) and Section 55 Future Scope (edge-based inference, automated alerting). | v2 moves live streaming (phone → server → dashboard), advisory edge inference (gated by spike), and automated alerting into active v2 scope. System may run as a **hosted web service** where a user pairs their own phone. Public hosting permitted **only** with: user consent (G28), ephemeral memory-only sessions (G29), per-session tokens (C10), and cell-ID protection in logs. Note: O-RAN, iOS collector, and SMS alerting are explicitly **not** built in v2 (research notes only, code out of scope). | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+| **A6** | A3 (v2) initially specified one shared pairing token. | Replaced by **per-session ingest and viewer tokens** (Contract C10) generated via ephemeral pairing codes/QR codes, expiring with the session, with no persistent user accounts. | 2026-10-09 | PROPOSED - approval pending (Yashwant, Sushil) |
+
