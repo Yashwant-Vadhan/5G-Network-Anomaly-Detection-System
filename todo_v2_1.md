@@ -79,13 +79,13 @@
 **Owner:** Yashwant
 
 #### T16-003: Add cell-ID anonymisation and privacy flags (G27)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Hash `nci`/`pci` with a per-bundle salt for public bundles (stable within the bundle; `pci_changed`/`nci_changed` preserved); label values 'Cell A…' in a lookup; `--raw-cell-ids` allowed only without `--public`; record `privacy` block in the bundle; never ship `data/raw`.
 **Dependencies:** T16-002
 **Acceptance Criteria:**
-- [ ] Public bundle contains no raw nci/pci (grep test)
-- [ ] Change flags identical to unhashed bundle
-- [ ] `--public --raw-cell-ids` exits 2 with a fix hint
+- [x] Public bundle contains no raw nci/pci (grep test)
+- [x] Change flags identical to unhashed bundle
+- [x] `--public --raw-cell-ids` exits 2 with a fix hint
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant

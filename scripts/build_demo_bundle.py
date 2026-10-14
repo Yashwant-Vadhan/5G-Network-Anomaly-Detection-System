@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Build demo data bundle for the static React dashboard (Contract C11, T16-002).
+"""Build demo data bundle for the static React dashboard (Contract C11, T16-002, T16-003).
 
 Usage:
-    python scripts/build_demo_bundle.py --source processed --out frontend/public/demo-bundle.json
-    python scripts/build_demo_bundle.py --source sample --out frontend/public/demo-bundle.json
+    python scripts/build_demo_bundle.py --source processed --public
+    python scripts/build_demo_bundle.py --source sample --public
+    python scripts/build_demo_bundle.py --source processed --raw-cell-ids --out demo-private.json
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import logging
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -70,6 +74,96 @@ def clean_json_value(val: Any) -> Any:
     if isinstance(val, (np.bool_, bool)):
         return bool(val)
     return str(val)
+
+
+def generate_cell_labels(count: int, prefix: str = "Cell-") -> list[str]:
+    """Generate friendly labels: Cell-A, Cell-B, ..., Cell-Z, Cell-AA, Cell-AB, etc."""
+    labels: list[str] = []
+    for i in range(count):
+        label = ""
+        n = i
+        while True:
+            label = chr(ord("A") + (n % 26)) + label
+            n = n // 26 - 1
+            if n < 0:
+                break
+        labels.append(f"{prefix}{label}")
+    return labels
+
+
+def anonymize_cell_ids(
+    df: pd.DataFrame,
+    events: list[dict[str, Any]],
+    salt: str,
+) -> tuple[pd.DataFrame, list[dict[str, Any]], dict[str, Any]]:
+    """Hash PCI and NCI values and assign human-friendly labels (Guardrail G27, T16-003).
+
+    Args:
+        df: Scored DataFrame with raw 'pci' and 'nci'.
+        events: List of diagnosed event dictionaries.
+        salt: Secret salt for HMAC-SHA256 hashing.
+
+    Returns:
+        Tuple of (anonymized_df, anonymized_events, cell_lookup_dict).
+    """
+    anom_df = df.copy()
+
+    # 1. Collect unique PCIs and NCIs
+    unique_pcis = sorted(
+        [int(x) for x in df["pci"].dropna().unique() if pd.notna(x)]
+    ) if "pci" in df.columns else []
+
+    unique_ncis = sorted(
+        [int(x) for x in df["nci"].dropna().unique() if pd.notna(x)]
+    ) if "nci" in df.columns else []
+
+    pci_labels = generate_cell_labels(len(unique_pcis), prefix="Cell-")
+    nci_labels = generate_cell_labels(len(unique_ncis), prefix="NCI-")
+
+    pci_map: dict[int, str] = {}
+    nci_map: dict[int, str] = {}
+    cell_lookup: dict[str, dict[str, str]] = {}
+
+    for raw_pci, label in zip(unique_pcis, pci_labels, strict=False):
+        h = hmac.new(
+            salt.encode("utf-8"), str(raw_pci).encode("utf-8"), hashlib.sha256
+        ).hexdigest()[:16]
+        pci_map[raw_pci] = label
+        cell_lookup[label] = {"hash": h, "type": "PCI"}
+
+    for raw_nci, label in zip(unique_ncis, nci_labels, strict=False):
+        h = hmac.new(
+            salt.encode("utf-8"), str(raw_nci).encode("utf-8"), hashlib.sha256
+        ).hexdigest()[:16]
+        nci_map[raw_nci] = label
+        cell_lookup[label] = {"hash": h, "type": "NCI"}
+
+    # Replace in dataframe
+    if "pci" in anom_df.columns:
+        anom_df["pci"] = anom_df["pci"].map(
+            lambda x: pci_map.get(int(x), None) if pd.notna(x) else None
+        )
+
+    if "nci" in anom_df.columns:
+        anom_df["nci"] = anom_df["nci"].map(
+            lambda x: nci_map.get(int(x), None) if pd.notna(x) else None
+        )
+
+    # 2. Sanitize events JSON (evidence strings, cell reports)
+    events_json_str = json.dumps(events)
+    # Replace NCIs first (longer numbers)
+    for raw_nci, label in nci_map.items():
+        events_json_str = re.sub(rf"\b{raw_nci}\b", label, events_json_str)
+
+    # Replace PCIs
+    for raw_pci, label in pci_map.items():
+        # Match "PCI 336", "PCI: 336", "at 336", or exact word boundary
+        prefix_pattern = r"(PCI\s+(?:remained\s+constant\s+at\s+|changed\s+from\s+|to\s+|at\s+)?)"
+        pattern = rf"{prefix_pattern}\b{raw_pci}\b"
+        events_json_str = re.sub(pattern, rf"\1{label}", events_json_str)
+
+    anonymized_events = json.loads(events_json_str)
+    return anom_df, anonymized_events, cell_lookup
 
 
 def extract_sessions(df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -154,12 +248,16 @@ def build_quality_block(
 def build_bundle(
     source: str = "processed",
     base_dir: Path | str = ".",
+    is_public: bool = True,
+    salt: str | None = None,
 ) -> dict[str, Any]:
     """Build Contract C11 demo data bundle from source files.
 
     Args:
         source: 'processed' or 'sample'.
         base_dir: Repository root directory.
+        is_public: Whether to anonymize cell IDs (G27).
+        salt: Optional salt for HMAC hashing.
 
     Returns:
         Contract C11 dictionary structure.
@@ -211,6 +309,28 @@ def build_bundle(
         with open(model_meta_path, encoding="utf-8") as f:
             model_meta = json.load(f)
 
+    # Determine bundle salt deterministically
+    bundle_salt = salt or os.environ.get("NADS_BUNDLE_SALT")
+    if not bundle_salt:
+        bundle_salt = hashlib.sha256(
+            (model_meta.get("training_data_sha256", "default_salt") + source).encode("utf-8")
+        ).hexdigest()[:16]
+
+    # Cell ID anonymization (G27, T16-003)
+    privacy_block: dict[str, Any] = {
+        "time": "device-local, no timezone",
+    }
+
+    if is_public:
+        logger.info("Anonymizing cell IDs with bundle salt (G27)...")
+        df, events, cell_lookup = anonymize_cell_ids(df, events, bundle_salt)
+        privacy_block["cell_ids"] = "hashed"
+        privacy_block["salt_hash"] = hashlib.sha256(bundle_salt.encode()).hexdigest()[:16]
+        privacy_block["cell_lookup"] = cell_lookup
+    else:
+        logger.info("Retaining raw cell IDs (--raw-cell-ids)...")
+        privacy_block["cell_ids"] = "raw"
+
     # Precomputed transitions (T16-002)
     logger.info("Precomputing transitions...")
     transitions = compute_transitions(df)
@@ -241,10 +361,7 @@ def build_bundle(
         "generated_at": generated_at,
         "model_version": model_version,
         "source": source,
-        "privacy": {
-            "cell_ids": "raw",
-            "time": "device-local, no timezone",
-        },
+        "privacy": privacy_block,
         "sessions": sessions,
         "samples": samples,
         "transitions": transitions,
@@ -271,6 +388,22 @@ def main() -> None:
         help="Data source to bundle: 'processed' (default) or 'sample'.",
     )
     parser.add_argument(
+        "--public",
+        action="store_true",
+        help="Generate an anonymised public bundle (hashes cell IDs per G27).",
+    )
+    parser.add_argument(
+        "--raw-cell-ids",
+        action="store_true",
+        help="Retain raw cell IDs (allowed only without --public).",
+    )
+    parser.add_argument(
+        "--salt",
+        type=str,
+        default=None,
+        help="Salt for cell ID HMAC hashing (default: deterministically derived).",
+    )
+    parser.add_argument(
         "--out",
         type=str,
         default="frontend/public/demo-bundle.json",
@@ -285,8 +418,26 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Guardrail G27 check: --public and --raw-cell-ids are mutually exclusive
+    if args.public and args.raw_cell_ids:
+        print(
+            "Error: Cannot use --raw-cell-ids with --public (Guardrail G27).\n"
+            "Fix: Remove --raw-cell-ids to generate an anonymised public bundle, "
+            "or remove --public for private offline analysis.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    # Default to public anonymisation unless --raw-cell-ids is explicitly specified
+    is_public = not args.raw_cell_ids
+
     try:
-        bundle = build_bundle(source=args.source, base_dir=args.base_dir)
+        bundle = build_bundle(
+            source=args.source,
+            base_dir=args.base_dir,
+            is_public=is_public,
+            salt=args.salt,
+        )
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -296,7 +447,7 @@ def main() -> None:
         size_kb = len(json_bytes) / 1024.0
         size_mb = size_kb / 1024.0
         print(
-            f"Successfully built demo bundle ({args.source}): {out_path} "
+            f"Successfully built demo bundle ({args.source}, public={is_public}): {out_path} "
             f"({len(bundle['samples']['rows'])} samples, {len(bundle['transitions'])} transitions, "
             f"{len(bundle['events'])} events) -> {size_kb:.1f} KB ({size_mb:.2f} MB)"
         )
