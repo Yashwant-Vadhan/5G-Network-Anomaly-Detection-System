@@ -188,13 +188,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-013: Add model_version and feature_hash to the model metadata
-**Status:** ⬜
+**Status:** ✅
 **Description:** `models/if_v1.meta.json` already records feature list, params, seed, sklearn version, training-data SHA-256, row count and date (v1 T4-008). Extend `ml/train.py` to also write `model_version`, `feature_hash` (hash of the ordered `FEATURE_COLUMNS`), `model_sha256` and the saved scaler's SHA-256; add a loader check that raises `ConfigError` on mismatch. Retraining must not change scores (re-run with the same seed and compare).
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Metadata contains the three new fields
-- [ ] Loader raises ConfigError on tampered feature list
-- [ ] `scores.csv` hash on data/sample unchanged
+- [x] Metadata contains the three new fields
+- [x] Loader raises ConfigError on tampered feature list
+- [x] `scores.csv` hash on data/sample unchanged
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Yashwant

@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 
 from ml.config import BASELINE_Z_THRESHOLD, DEFAULT_WINDOW, FEATURE_COLUMNS, MODELS_DIR
 from ml.scaler import transform_features
+from ml.train import verify_model_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,9 @@ def if_scores(
     """
     df = df.copy()
     models_path = Path(models_dir)
+
+    if model is None or scaler is None:
+        verify_model_metadata(models_path, expected_feature_cols=feature_cols)
 
     if model is None:
         model_file = models_path / "if_v1.joblib"

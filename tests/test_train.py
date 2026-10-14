@@ -62,3 +62,72 @@ def test_train_iforest_synthetic_guardrail(dummy_feature_df: pd.DataFrame, tmp_p
     # Should succeed when allow_synthetic=True
     model, _, _ = train_iforest(dummy_feature_df, out_dir=tmp_path, allow_synthetic=True)
     assert model is not None
+
+
+def test_train_iforest_metadata_has_new_fields(dummy_feature_df: pd.DataFrame, tmp_path: Path):
+    """Verify trained model metadata contains model_version, feature_hash, and artifact hashes (T10-013)."""
+    _, _, meta_path = train_iforest(dummy_feature_df, out_dir=tmp_path)
+    with open(meta_path, encoding="utf-8") as f:
+        meta = json.load(f)
+
+    assert meta["model_version"] == "1.0.0"
+    assert "feature_hash" in meta
+    assert len(meta["feature_hash"]) == 64
+    assert "model_sha256" in meta
+    assert len(meta["model_sha256"]) == 64
+    assert "scaler_sha256" in meta
+    assert meta["scaler_sha256"] is not None
+
+
+def test_verify_model_metadata_success():
+    """Verify verify_model_metadata passes on current models directory."""
+    from ml.config import MODELS_DIR
+    from ml.train import verify_model_metadata
+
+    meta = verify_model_metadata(MODELS_DIR)
+    assert meta["model_version"] == "1.0.0"
+    assert "feature_hash" in meta
+
+
+def test_verify_model_metadata_tampered_features(tmp_path: Path):
+    """Verify loader check raises ConfigError on tampered feature list (T10-013)."""
+    from ml.schema import ConfigError
+    from ml.train import update_model_metadata, verify_model_metadata
+
+    # Copy metadata to tmp_path
+    meta = update_model_metadata(
+        meta_path=tmp_path / "if_v1.meta.json",
+        model_path=tmp_path / "if_v1.joblib",
+        scaler_path=tmp_path / "scaler.joblib",
+        feature_cols=list(FEATURE_COLUMNS),
+    )
+
+    # Tamper with feature list
+    tampered_meta = dict(meta)
+    tampered_meta["feature_columns"] = list(FEATURE_COLUMNS)[:-1]  # drop one feature
+    with open(tmp_path / "if_v1.meta.json", "w", encoding="utf-8") as f:
+        json.dump(tampered_meta, f)
+
+    with pytest.raises(ConfigError, match="Model feature columns mismatch"):
+        verify_model_metadata(tmp_path)
+
+
+def test_verify_model_metadata_tampered_hash(tmp_path: Path):
+    """Verify loader check raises ConfigError on tampered feature_hash (T10-013)."""
+    from ml.schema import ConfigError
+    from ml.train import update_model_metadata, verify_model_metadata
+
+    meta = update_model_metadata(
+        meta_path=tmp_path / "if_v1.meta.json",
+        model_path=tmp_path / "if_v1.joblib",
+        scaler_path=tmp_path / "scaler.joblib",
+        feature_cols=list(FEATURE_COLUMNS),
+    )
+
+    tampered_meta = dict(meta)
+    tampered_meta["feature_hash"] = "0" * 64
+    with open(tmp_path / "if_v1.meta.json", "w", encoding="utf-8") as f:
+        json.dump(tampered_meta, f)
+
+    with pytest.raises(ConfigError, match="Model feature_hash mismatch"):
+        verify_model_metadata(tmp_path)
