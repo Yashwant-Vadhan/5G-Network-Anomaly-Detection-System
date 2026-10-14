@@ -337,13 +337,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-010: Create the FastAPI app with auth dependency and config loading
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/server.py`: app factory, `/healthz`, env/config loading, per-request correlation id, token dependency using `hmac.compare_digest`, generic error handler returning the C8 error body (no tracebacks).
 **Dependencies:** T10-004, T10-005, T11-001
 **Acceptance Criteria:**
-- [ ] Wrong/missing token → 401
-- [ ] Errors never leak stack traces or the token
-- [ ] `/healthz` needs no token and leaks nothing sensitive
+- [x] Wrong/missing token → 401
+- [x] Errors never leak stack traces or the token
+- [x] `/healthz` needs no token and leaks nothing sensitive
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
