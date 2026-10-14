@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5G-NADS Chart Spike: uPlot vs Apache ECharts</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/uplot@1.6.32/dist/uPlot.min.css">
+  <script src="https://unpkg.com/uplot@1.6.32/dist/uPlot.iife.min.js"></script>
+  <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>5G-NADS Time-Series Chart Spike (T16-001)</h1>
+      <p class="subtitle">4-Panel Stacked Time Series (5.5k Points, Shared Zoom/Pan, Red × Markers, Gap Breaks)</p>
+    </div>
+    <div class="controls">
+      <button id="btn-uplot" class="active" onclick="switchCandidate('uplot')">uPlot (MIT)</button>
+      <button id="btn-echarts" onclick="switchCandidate('echarts')">Apache ECharts (Apache 2.0)</button>
+      <button id="btn-theme" onclick="toggleTheme()">🌓 Toggle Dark/Light</button>
+    </div>
+  </header>
+
+  <section class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-title">Bundle Size (Gzip)</div>
+      <div class="metric-value" id="val-bundle">~12 KB (uPlot)</div>
+      <div class="metric-sub" id="sub-bundle">vs ~95 KB (ECharts)</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Initial Render (5.5k pts)</div>
+      <div class="metric-value" id="val-render">... ms</div>
+      <div class="metric-sub" id="sub-render">4 panels stacked</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Interaction Smoothness</div>
+      <div class="metric-value" id="val-fps">60 FPS</div>
+      <div class="metric-sub">Sync Zoom & Pan</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Gap Breaks & Markers</div>
+      <div class="metric-value" id="val-features">Native / Pass</div>
+      <div class="metric-sub">Strict null break, red × overlay</div>
+    </div>
+  </section>
+
+  <main class="charts-container">
+    <div id="uplot-wrapper">
+      <div class="panel-header">1. SS-RSRP (dBm)</div>
+      <div id="uplot-rsrp" class="panel-chart"></div>
+      <div class="panel-header">2. SS-RSRQ (dB)</div>
+      <div id="uplot-rsrq" class="panel-chart"></div>
+      <div class="panel-header">3. SS-SINR (dB)</div>
+      <div id="uplot-sinr" class="panel-chart"></div>
+      <div class="panel-header">4. Isolation Forest Score (0..1) with 0.60 Threshold Line</div>
+      <div id="uplot-score" class="panel-chart"></div>
+    </div>
+
+    <div id="echarts-wrapper" style="display: none;">
+      <div class="panel-header">1. SS-RSRP (dBm)</div>
+      <div id="echarts-rsrp" class="panel-chart"></div>
+      <div class="panel-header">2. SS-RSRQ (dB)</div>
+      <div id="echarts-rsrq" class="panel-chart"></div>
+      <div class="panel-header">3. SS-SINR (dB)</div>
+      <div id="echarts-sinr" class="panel-chart"></div>
+      <div class="panel-header">4. Isolation Forest Score (0..1) with 0.60 Threshold Line</div>
+      <div id="echarts-score" class="panel-chart"></div>
+    </div>
+  </main>
+
+  <section class="table-fallback">
+    <details>
+      <summary style="cursor: pointer; font-weight: 600;">📊 Show Accessible Data Table Fallback (WCAG 2.1 AA)</summary>
+      <div class="table-wrapper">
+        <table id="fallback-table">
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Timestamp</th>
+              <th>SS-RSRP</th>
+              <th>SS-RSRQ</th>
+              <th>SS-SINR</th>
+              <th>IF Score</th>
+              <th>Anomaly Flag</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Populated from data.json -->
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

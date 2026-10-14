@@ -55,13 +55,13 @@
 **Owner:** Yashwant
 
 #### T16-001: Spike: choose the chart library and styling approach
-**Status:** ⬜
+**Status:** ✅
 **Description:** Time-box 90 min: build one 4-panel stacked time series (5.5 k points, shared x, zoom/pan, red × markers, gap breaks, table fallback) with 2 candidate libraries; measure bundle size and interaction smoothness; pick one and record the decision. Default styling: CSS variables for DESIGN tokens (+ Tailwind if preferred). Verify library licences and current versions.
 **Dependencies:** T16-000
 **Acceptance Criteria:**
-- [ ] Decision and measurements in docs/decisions.md
-- [ ] Chosen library supports gap breaks and marker overlays
-- [ ] Bundle size noted
+- [x] Decision and measurements in docs/decisions.md
+- [x] Chosen library supports gap breaks and marker overlays
+- [x] Bundle size noted
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
