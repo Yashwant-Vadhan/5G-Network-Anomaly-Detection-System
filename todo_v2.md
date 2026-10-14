@@ -200,13 +200,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-014: Re-scope v1 'no network in core pipeline' checks and amend the N/A security notes
-**Status:** ⬜
+**Status:** ✅
 **Description:** v1 T7-009 (`tests/test_security_privacy.py`) asserts no network library imports (`requests`, `httpx`, `urllib`, `socket`) in `ml/` and `pipelines/`, and a loopback-bound dashboard. Ensure core `ml/`, `pipelines/` and `agents/` remain network-free (G13) while allowing the new `streaming/` package to import FastAPI/httpx; keep the dashboard-binds-127.0.0.1 check. Amend `docs/testing.md` and `docs/decisions.md` (entry 6) where auth/rate-limiting/HTTPS are listed as N/A.
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Check still fails if `ml/` or `agents/` import a network library
-- [ ] `streaming/` is explicitly exempt and documented
-- [ ] `docs/testing.md` N/A list updated
+- [x] Check still fails if `ml/` or `agents/` import a network library
+- [x] `streaming/` is explicitly exempt and documented
+- [x] `docs/testing.md` N/A list updated
 **Estimated Effort:** 30 min
 **Assigned To:** QA
 **Owner:** Yashwant

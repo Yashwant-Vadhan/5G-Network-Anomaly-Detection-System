@@ -30,8 +30,9 @@ For complete mapping of Guardrails G1–G16 to automated test suites, see [`docs
    - Verified by unit tests in [`tests/test_security_privacy.py`](file:///d:/5G-Network-Anomaly-Detection-System/tests/test_security_privacy.py).
 
 2. **Zero-Network / Offline Operation (Guardrail G13):**
-   - Core ML modules (`ml/`, `pipelines/`) are strictly offline.
-   - Test `test_no_network_imports_in_core_pipeline` asserts no usage or imports of `requests`, `urllib`, `httpx`, `aiohttp`, or `socket`.
+   - Core ML modules (`ml/`, `pipelines/`) and core multi-agent code (`agents/`) are strictly offline.
+   - Test `test_no_network_imports_in_core_pipeline` asserts no usage or imports of `requests`, `urllib`, `httpx`, `aiohttp`, or `socket` in `ml/`, `pipelines/`, and core `agents/`.
+   - **v2 exemption (T10-014, Amendment A3):** `streaming/` and `frontend/` are exempt because they require network libraries (FastAPI, httpx, websockets) by design. `agents/llm_explainer.py` is the isolated, optional local Ollama wrapper (G13) that defaults to disabled and connects only to local loopback.
 
 3. **Data & Artifact Isolation (Guardrail G7):**
    - Raw measurements, processed outputs, model artifacts, and environment files (`.env`, `*.key`, `*.pem`, `*.keystore`, `*.jks`) are strictly excluded via `.gitignore`.
@@ -47,15 +48,15 @@ For complete mapping of Guardrails G1–G16 to automated test suites, see [`docs
 
 ## 3. Non-Applicable (N/A) Security Items
 
-The following standard web application security items are classified as **Non-Applicable (N/A)** for the current MVP release:
+The following standard web application security items are classified as **Non-Applicable (N/A)** for v1 batch/local use. v2 Amendment A3 (ADR-006) changes the status for the streaming server:
 
-| Security Domain | Status | Reason & Justification |
-|---|---|---|
-| **User Authentication (AuthN)** | N/A | 5G-NADS is a single-user desktop replay dashboard running locally. No user logins or identity providers are required. |
-| **Role-Based Access Control (RBAC)** | N/A | Local file system access permissions dictate artifact availability. |
-| **TLS / HTTPS Encryption** | N/A | Application operates locally over loopback (`127.0.0.1`). Transport encryption is not applicable for local IPC. |
-| **API Rate Limiting** | N/A | Core pipeline runs as a standalone Python CLI. No public web APIs or webhooks are exposed. |
-| **Cross-Origin Resource Sharing (CORS)** | N/A | Frontend (Streamlit) directly loads local CSV/JSON files without cross-origin HTTP API calls. |
+| Security Domain | v1 Batch Status | v2 Streaming Server Status | Reason & Justification |
+|---|---|---|---|
+| **User Authentication (AuthN)** | N/A | **Required** off-loopback | v1: single-user desktop replay. v2: per-session pairing tokens required for any non-loopback binding (Amendment A3, ADR-010). |
+| **Role-Based Access Control (RBAC)** | N/A | N/A | Local file system permissions. No multi-user roles in v2. |
+| **TLS / HTTPS Encryption** | N/A | **Required** off-loopback | v1: loopback only. v2: optional TLS required for any non-loopback binding (Amendment A3). |
+| **API Rate Limiting** | N/A | **Required** | v1: standalone CLI. v2: message size/rate caps enforced by the streaming server (G20). |
+| **Cross-Origin Resource Sharing (CORS)** | N/A | N/A | v1: Streamlit loads local files. v2 React SPA: same-origin or static bundle. |
 
 ---
 

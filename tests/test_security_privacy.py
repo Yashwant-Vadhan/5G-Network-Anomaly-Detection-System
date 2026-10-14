@@ -52,9 +52,21 @@ def test_gitignore_covers_sensitive_files():
 
 
 def test_no_network_imports_in_core_pipeline():
-    """Guardrail G13: Core ML pipeline and algorithms must run 100% offline without network libraries."""
+    """Guardrail G13: Core ML pipeline and multi-agent system must run 100% offline.
+
+    Scoped to ``ml/``, ``pipelines/``, and core ``agents/`` (v2 Amendment A3, T10-014).
+    - ``streaming/`` and ``frontend/`` are explicitly exempt because they require
+      network libraries (FastAPI, httpx, websockets) by design for live telemetry.
+    - ``agents/llm_explainer.py`` is exempt as it is the isolated, optional local
+      Ollama wrapper (T9-001, G13) that defaults to disabled (NADS_USE_LLM=false)
+      and connects only to local Ollama on loopback.
+    """
     forbidden_modules = ["requests", "urllib", "httpx", "aiohttp", "socket"]
-    python_files = list(Path("ml").rglob("*.py")) + list(Path("pipelines").rglob("*.py"))
+    python_files = (
+        list(Path("ml").rglob("*.py"))
+        + list(Path("pipelines").rglob("*.py"))
+        + [p for p in Path("agents").rglob("*.py") if p.name != "llm_explainer.py"]
+    )
 
     for py_file in python_files:
         code = py_file.read_text(encoding="utf-8")
