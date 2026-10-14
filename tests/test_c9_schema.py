@@ -54,7 +54,12 @@ def test_webhook_body_data_minimization():
         body="SINR below the configured poor-quality level for 24 s; RSRQ also degraded; no cell change in the window.",
         evidence=["SS-RSRP degraded to -105 dBm", "PCI was 336", "Cell ID 13322280247"],
         recommendation={"text": "Investigate coverage gap", "kind": "INVESTIGATION"},
-        policy={"rule_evidence": True, "persistence_samples": 8, "min_persistence": 6, "min_severity": "MEDIUM"},
+        policy={
+            "rule_evidence": True,
+            "persistence_samples": 8,
+            "min_persistence": 6,
+            "min_severity": "MEDIUM",
+        },
         delivery=[
             AlertDelivery(channel="in_app", status="OK"),
             AlertDelivery(channel="webhook", status="FAILED", detail="timeout"),

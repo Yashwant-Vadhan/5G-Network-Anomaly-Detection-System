@@ -54,9 +54,7 @@ def compute_transitions(df: pd.DataFrame) -> list[dict[str, Any]]:
 
         reset_df = session_df.reset_index(drop=True)
         session_str = (
-            str(session_id)
-            if session_id is not None
-            else str(reset_df.get("session_id", ["—"])[0])
+            str(session_id) if session_id is not None else str(reset_df.get("session_id", ["—"])[0])
         )
 
         # 1. PCI transitions

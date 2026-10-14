@@ -109,13 +109,17 @@ def anonymize_cell_ids(
     anom_df = df.copy()
 
     # 1. Collect unique PCIs and NCIs
-    unique_pcis = sorted(
-        [int(x) for x in df["pci"].dropna().unique() if pd.notna(x)]
-    ) if "pci" in df.columns else []
+    unique_pcis = (
+        sorted([int(x) for x in df["pci"].dropna().unique() if pd.notna(x)])
+        if "pci" in df.columns
+        else []
+    )
 
-    unique_ncis = sorted(
-        [int(x) for x in df["nci"].dropna().unique() if pd.notna(x)]
-    ) if "nci" in df.columns else []
+    unique_ncis = (
+        sorted([int(x) for x in df["nci"].dropna().unique() if pd.notna(x)])
+        if "nci" in df.columns
+        else []
+    )
 
     pci_labels = generate_cell_labels(len(unique_pcis), prefix="Cell-")
     nci_labels = generate_cell_labels(len(unique_ncis), prefix="NCI-")

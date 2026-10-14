@@ -66,9 +66,7 @@ def update_model_metadata(
         meta = {}
 
     feat_cols = (
-        list(feature_cols)
-        if feature_cols
-        else meta.get("feature_columns", list(FEATURE_COLUMNS))
+        list(feature_cols) if feature_cols else meta.get("feature_columns", list(FEATURE_COLUMNS))
     )
     meta["model_name"] = meta.get("model_name", "if_v1")
     meta["model_version"] = model_version

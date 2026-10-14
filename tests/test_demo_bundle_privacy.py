@@ -44,6 +44,7 @@ def test_public_bundle_contains_no_raw_cell_ids():
     scores_df = pd.read_csv("data/processed/scores.csv")
     raw_ncis = [str(int(x)) for x in scores_df["nci"].dropna().unique() if len(str(int(x))) > 5]
     import json
+
     bundle_str = json.dumps(bundle)
     for raw_nci in raw_ncis:
         assert raw_nci not in bundle_str, f"Leaked raw NCI {raw_nci} in public bundle!"
@@ -57,7 +58,9 @@ def test_transition_parity_between_hashed_and_unhashed():
     assert len(b_pub["transitions"]) == len(b_raw["transitions"])
     assert [t["ts"] for t in b_pub["transitions"]] == [t["ts"] for t in b_raw["transitions"]]
     assert [t["type"] for t in b_pub["transitions"]] == [t["type"] for t in b_raw["transitions"]]
-    assert [t["session_id"] for t in b_pub["transitions"]] == [t["session_id"] for t in b_raw["transitions"]]
+    assert [t["session_id"] for t in b_pub["transitions"]] == [
+        t["session_id"] for t in b_raw["transitions"]
+    ]
 
 
 def test_public_and_raw_cell_ids_mutual_exclusion():

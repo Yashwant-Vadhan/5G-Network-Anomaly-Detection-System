@@ -159,4 +159,3 @@ def test_token_generator_csprng_randomness():
     # Ensure two consecutive calls generate distinct random tokens
     token2 = secrets.token_hex(32)
     assert token != token2
-

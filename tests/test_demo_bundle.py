@@ -31,13 +31,17 @@ def verify_bundle_against_sources(
     # 2. Row counts per device and session equal scores.csv
     scores_df = pd.read_csv(scores_path)
     total_samples = len(bundle["samples"]["rows"])
-    assert total_samples == len(scores_df), f"Row count mismatch: {total_samples} vs {len(scores_df)}"
+    assert total_samples == len(scores_df), (
+        f"Row count mismatch: {total_samples} vs {len(scores_df)}"
+    )
 
     session_counts_expected = scores_df.groupby("session_id").size().to_dict()
     session_counts_actual = {s["session_id"]: s["n"] for s in bundle["sessions"]}
 
     for session_id, expected_n in session_counts_expected.items():
-        assert session_id in session_counts_actual, f"Session {session_id} missing in bundle sessions"
+        assert session_id in session_counts_actual, (
+            f"Session {session_id} missing in bundle sessions"
+        )
         assert session_counts_actual[session_id] == expected_n, (
             f"Session {session_id} count mismatch: {session_counts_actual[session_id]} != {expected_n}"
         )
@@ -73,7 +77,9 @@ def verify_bundle_against_sources(
             df_val = df_row[col_name]
 
             if pd.isna(df_val):
-                assert bundle_val is None, f"Mismatch at row {row_idx}, col {col_name}: expected None"
+                assert bundle_val is None, (
+                    f"Mismatch at row {row_idx}, col {col_name}: expected None"
+                )
             elif isinstance(bundle_val, bool) or isinstance(df_val, (bool, np.bool_)):
                 assert bool(bundle_val) == bool(df_val), (
                     f"Mismatch at row {row_idx}, col {col_name}: {bundle_val} != {df_val}"
@@ -137,9 +143,7 @@ def test_deliberately_altered_value_fails():
     altered_bundle_val["samples"]["rows"][0][rsrp_idx] = 999.0  # Impossible altered RSRP
 
     with pytest.raises(AssertionError, match="Mismatch at row 0"):
-        verify_bundle_against_sources(
-            altered_bundle_val, scores_path, events_path, prep_log_path
-        )
+        verify_bundle_against_sources(altered_bundle_val, scores_path, events_path, prep_log_path)
 
     # Altering event count / IDs
     altered_bundle_events = json.loads(json.dumps(bundle))

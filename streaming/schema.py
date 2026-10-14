@@ -39,7 +39,6 @@ def validate_iso_with_tz(v: str, field_name: str = "timestamp") -> str:
     return v
 
 
-
 # ==============================================================================
 # Contract C7: Client -> Server Models
 # ==============================================================================
@@ -697,4 +696,3 @@ def serialize_alert_jsonl(alert: AlertRecord) -> str:
 def deserialize_alert_jsonl(line: str) -> AlertRecord:
     """Deserialize a single JSON line from alerts.jsonl into an AlertRecord."""
     return AlertRecord.model_validate_json(line.strip())
-

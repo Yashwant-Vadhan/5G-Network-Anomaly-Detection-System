@@ -216,14 +216,20 @@ def test_live_subscriber_events():
         status="PROVISIONAL",
         alert_decision=AlertDecision(alerted=False, reason="Below persistence/severity threshold"),
     )
-    ev_open = LiveEventOpen(server_time="2026-10-09T10:15:00+05:30", session_id="redmi-1", event=evt_record)
+    ev_open = LiveEventOpen(
+        server_time="2026-10-09T10:15:00+05:30", session_id="redmi-1", event=evt_record
+    )
     assert adapter.validate_python(ev_open.model_dump(mode="json")).type == "event_open"
 
-    ev_upd = LiveEventUpdate(server_time="2026-10-09T10:15:10+05:30", session_id="redmi-1", event=evt_record)
+    ev_upd = LiveEventUpdate(
+        server_time="2026-10-09T10:15:10+05:30", session_id="redmi-1", event=evt_record
+    )
     assert adapter.validate_python(ev_upd.model_dump(mode="json")).type == "event_update"
 
     evt_final = evt_record.model_copy(update={"status": "FINAL"})
-    ev_close = LiveEventClosed(server_time="2026-10-09T10:15:30+05:30", session_id="redmi-1", event=evt_final)
+    ev_close = LiveEventClosed(
+        server_time="2026-10-09T10:15:30+05:30", session_id="redmi-1", event=evt_final
+    )
     assert adapter.validate_python(ev_close.model_dump(mode="json")).type == "event_closed"
 
 
@@ -266,6 +272,8 @@ def test_rest_response_models():
     assert samples_resp.total == 0
 
     err = ErrorResponse(
-        error=ErrorDetail(code="BAD_REQUEST", message="Invalid seq parameter", correlation_id="req-999")
+        error=ErrorDetail(
+            code="BAD_REQUEST", message="Invalid seq parameter", correlation_id="req-999"
+        )
     )
     assert err.error.code == "BAD_REQUEST"

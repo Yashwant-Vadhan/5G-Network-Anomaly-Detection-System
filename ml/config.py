@@ -206,4 +206,3 @@ ALERT_MIN_SEVERITY: str = "MEDIUM"
 # tune on non-evaluation data.
 # Cooldown window in seconds before repeating an alert of the same anomaly type within a session.
 ALERT_COOLDOWN_SECONDS: int = 300
-

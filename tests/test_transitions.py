@@ -19,7 +19,12 @@ def test_transitions_empty_and_single_row():
 def test_transitions_negative_case_no_change():
     """Negative case: No change in PCI or network_type produces zero transition events."""
     data = [
-        {"timestamp": f"2026-10-01 10:00:0{i}", "pci": 336, "network_type": "5G NR", "session_id": "s1"}
+        {
+            "timestamp": f"2026-10-01 10:00:0{i}",
+            "pci": 336,
+            "network_type": "5G NR",
+            "session_id": "s1",
+        }
         for i in range(5)
     ]
     df = pd.DataFrame(data)
@@ -31,9 +36,24 @@ def test_transitions_pci_change():
     """Changing PCI within a session triggers a PCI transition."""
     df = pd.DataFrame(
         [
-            {"timestamp": "2026-10-01 10:00:00", "pci": 336, "network_type": "5G NR", "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:01", "pci": 412, "network_type": "5G NR", "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:02", "pci": 412, "network_type": "5G NR", "session_id": "s1"},
+            {
+                "timestamp": "2026-10-01 10:00:00",
+                "pci": 336,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:01",
+                "pci": 412,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:02",
+                "pci": 412,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
         ]
     )
     transitions = compute_transitions(df)
@@ -50,8 +70,18 @@ def test_transitions_network_type_change():
     """Changing network_type within a session triggers a NETWORK_TYPE transition."""
     df = pd.DataFrame(
         [
-            {"timestamp": "2026-10-01 10:00:00", "pci": 336, "network_type": "LTE", "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:01", "pci": 336, "network_type": "5G NR", "session_id": "s1"},
+            {
+                "timestamp": "2026-10-01 10:00:00",
+                "pci": 336,
+                "network_type": "LTE",
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:01",
+                "pci": 336,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
         ]
     )
     transitions = compute_transitions(df)
@@ -67,11 +97,31 @@ def test_transitions_session_boundary_isolation():
     """Changes across session boundaries do not trigger false intra-session transitions."""
     df = pd.DataFrame(
         [
-            {"timestamp": "2026-10-01 10:00:00", "pci": 100, "network_type": "5G NR", "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:01", "pci": 100, "network_type": "5G NR", "session_id": "s1"},
+            {
+                "timestamp": "2026-10-01 10:00:00",
+                "pci": 100,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:01",
+                "pci": 100,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
             # Session s2 starts with a different PCI, but within s2 it is constant
-            {"timestamp": "2026-10-01 11:00:00", "pci": 200, "network_type": "LTE", "session_id": "s2"},
-            {"timestamp": "2026-10-01 11:00:01", "pci": 200, "network_type": "LTE", "session_id": "s2"},
+            {
+                "timestamp": "2026-10-01 11:00:00",
+                "pci": 200,
+                "network_type": "LTE",
+                "session_id": "s2",
+            },
+            {
+                "timestamp": "2026-10-01 11:00:01",
+                "pci": 200,
+                "network_type": "LTE",
+                "session_id": "s2",
+            },
         ]
     )
     transitions = compute_transitions(df)
@@ -82,9 +132,24 @@ def test_transitions_nan_handling():
     """Missing (NaN) values do not trigger valid transitions."""
     df = pd.DataFrame(
         [
-            {"timestamp": "2026-10-01 10:00:00", "pci": 100, "network_type": "5G NR", "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:01", "pci": None, "network_type": None, "session_id": "s1"},
-            {"timestamp": "2026-10-01 10:00:02", "pci": 100, "network_type": "5G NR", "session_id": "s1"},
+            {
+                "timestamp": "2026-10-01 10:00:00",
+                "pci": 100,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:01",
+                "pci": None,
+                "network_type": None,
+                "session_id": "s1",
+            },
+            {
+                "timestamp": "2026-10-01 10:00:02",
+                "pci": 100,
+                "network_type": "5G NR",
+                "session_id": "s1",
+            },
         ]
     )
     transitions = compute_transitions(df)
