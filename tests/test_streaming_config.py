@@ -52,7 +52,9 @@ def test_existing_constants_preserved():
 
 
 def test_import_config_does_not_import_sklearn():
-    # Verify in a clean check that ml.config does not import sklearn
-    import ml.config  # noqa: F401
+    # Verify in an isolated Python process that ml.config does not import sklearn
+    import subprocess
 
-    assert "sklearn" not in sys.modules
+    cmd = [sys.executable, "-c", "import ml.config, sys; assert 'sklearn' not in sys.modules"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode == 0, f"ml.config imported sklearn: {result.stderr}"

@@ -91,12 +91,12 @@
 **Owner:** Yashwant
 
 #### T16-004: Test the bundle against its source files
-**Status:** ⬜
+**Status:** ✅
 **Description:** Tests: row counts per device/session equal `scores.csv`; sample of 50 values equal; event count and ids equal `events_diagnosed.json`; quality counts equal `preprocess_log.json`; schema/version field present.
 **Dependencies:** T16-003
 **Acceptance Criteria:**
-- [ ] Tests run in CI
-- [ ] A deliberately altered value fails the test
+- [x] Tests run in CI
+- [x] A deliberately altered value fails the test
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant

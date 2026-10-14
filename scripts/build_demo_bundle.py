@@ -67,12 +67,12 @@ def clean_json_value(val: Any) -> Any:
     """Convert pandas/numpy NaN and numpy scalar types to standard JSON-compatible Python types."""
     if pd.isna(val):
         return None
+    if isinstance(val, (np.bool_, bool)):
+        return bool(val)
     if isinstance(val, (np.integer, int)):
         return int(val)
     if isinstance(val, (np.floating, float)):
         return float(val)
-    if isinstance(val, (np.bool_, bool)):
-        return bool(val)
     return str(val)
 
 
