@@ -57,13 +57,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-002: Place v2 planning docs and add a v2 row to the README status table
-**Status:** ⬜
+**Status:** ✅
 **Description:** Commit `PRD_v2.md`, `DESIGN_v2.md`, `TECH_RULES_v2.md`, updated `ROADMAP.md` under `docs/planning/`; add 'v2 real-time' rows to the README status table marked ⬜ (G16: nothing marked implemented).
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Files present under docs/planning/
-- [ ] README status rows exist and all show ⬜
-- [ ] Links in README resolve
+- [x] Files present under docs/planning/
+- [x] README status rows exist and all show ⬜
+- [x] Links in README resolve
 **Estimated Effort:** 30 min
 **Assigned To:** Backend
 **Owner:** Sushil

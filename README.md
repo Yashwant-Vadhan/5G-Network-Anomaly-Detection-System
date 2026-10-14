@@ -18,8 +18,13 @@ This is a research/course project, not an operator-grade product. See [Non-Claim
 | Interpretability dashboard (Streamlit) | ✅ Implemented and verified (Six screens, WCAG accessibility & responsive pass — T6-001 to T6-012) |
 | End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
 | Evaluation & Labelling Guidelines | ✅ Completed (Labelling guidelines T7-011, evaluation labels T7-012/T7-013, baseline vs IF benchmark T7-016, false-positive report T7-018) |
+| Real-time streaming server (`streaming/`) | ⬜ Planned (FastAPI, WebSockets, C7/C8 ingest & live push) |
+| Real-time alerting & dispatch (`alerts/`) | ⬜ Planned (C9 alert record, dedupe, webhook/email dispatch) |
+| Android collector streaming extension | ⬜ Planned (C7 WebSocket client, queuing, foreground service) |
+| React SPA dashboard (Vite + TypeScript) | ⬜ Planned (Static demo bundle, live charts, pairing) |
+| Advisory edge inference module | ⬜ Planned (Optional isolated Gradle module, parity-gated) |
 
-Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md).
+Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md), [`todo_v2.md`](./todo_v2.md), and [`todo_v2_1.md`](./todo_v2_1.md).
 
 ## Architecture
 
@@ -29,7 +34,7 @@ Three separated layers, kept independently verifiable:
 2. **Detection Layer** — Python pipeline validates and cleans the data, engineers temporal features (deltas, rolling stats, persistence counters), and scores each sample with a rolling z-score baseline and an Isolation Forest model.
 3. **Diagnostic Layer** — Five deterministic agents (Signal, Cell, Network, Diagnosis, Recommendation) turn a detected event into a structured, evidence-based, hedged explanation and a monitoring-oriented recommendation. No LLM is used in the core detection or diagnosis decision.
 
-Full architecture, data contracts, and rationale: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md).
+Full architecture, data contracts, and rationale: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) and [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md).
 
 ## Quick Start
 
@@ -61,14 +66,16 @@ commands directly, e.g. `python -m ruff check .` and `python -m pytest`.
 ├── ml/                    # preprocessing, feature engineering, detection models
 ├── agents/                # Signal / Cell / Network / Diagnosis / Recommendation agents
 ├── pipelines/             # end-to-end pipeline CLI
-├── dashboard/             # Streamlit interpretability dashboard
+├── dashboard/             # Streamlit interpretability dashboard (frozen v1 baseline)
 ├── models/                # trained model artifacts + metadata
 ├── notebooks/             # EDA and model-selection notebooks
 ├── tests/                 # unit / integration / e2e tests
 ├── docs/
-│   └── planning/          # PRD.md, DESIGN.md, TECH_RULES.md, ROADMAP.md
-├── todo.md                # full task breakdown, ownership, dependencies
-└── project-overview.md    # original project specification (source of truth)
+│   └── planning/          # PRD.md, DESIGN.md, TECH_RULES.md, ROADMAP.md, PRD_v2.md, DESIGN_v2.md, TECH_RULES_v2.md
+├── todo.md                # v1 task breakdown, ownership, dependencies
+├── todo_v2.md             # v2 streaming & real-time task breakdown
+├── todo_v2_1.md           # v2.1 React dashboard & static demo task breakdown
+└── project-overview.md    # original project specification (source of truth, incl. amendments A1–A6)
 ```
 
 ## Data Policy
@@ -79,18 +86,23 @@ commands directly, e.g. `python -m ruff check .` and `python -m pytest`.
 - An unreported (`UNKNOWN`) deployment mode is never inferred to be SA.
 - Synthetic data, where used for testing, is explicitly labelled and never mixed into real-data results.
 
-Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Security Rules) and [`docs/planning/PRD.md`](docs/planning/PRD.md) (Assumptions & Constraints).
+Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Security Rules), [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md), and [`docs/planning/PRD.md`](docs/planning/PRD.md) (Assumptions & Constraints).
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [`project-overview.md`](./project-overview.md) | Original project specification — source of truth |
+| [`project-overview.md`](./project-overview.md) | Original project specification — source of truth (including v2 amendments A1–A6) |
 | [`docs/planning/PRD.md`](docs/planning/PRD.md) | Goals, personas, user stories, functional/non-functional requirements, MVP scope |
-| [`docs/planning/DESIGN.md`](docs/planning/DESIGN.md) | Dashboard information architecture, screens, design system |
-| [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) | Architecture, tech stack, data contracts, coding/security/testing standards, guardrails |
+| [`docs/planning/PRD_v2.md`](docs/planning/PRD_v2.md) | v2 streaming requirements, live alerting, edge inference scope, amendments A1–A6 |
+| [`docs/planning/DESIGN.md`](docs/planning/DESIGN.md) | Dashboard information architecture, screens, design system (v1) |
+| [`docs/planning/DESIGN_v2.md`](docs/planning/DESIGN_v2.md) | v2.1 React dashboard specifications, live connection states, alert design, tokens |
+| [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) | Architecture, tech stack, data contracts, coding/security/testing standards, guardrails (v1) |
+| [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md) | v2 architecture, contracts C7–C11, guardrails G1′ & G17–G32, parity rules |
 | [`docs/planning/ROADMAP.md`](docs/planning/ROADMAP.md) | Milestones, effort estimates, risk register |
-| [`todo.md`](./todo.md) | Full task list with ownership, dependencies, and acceptance criteria |
+| [`todo.md`](./todo.md) | Full v1 task list with ownership, dependencies, and acceptance criteria |
+| [`todo_v2.md`](./todo_v2.md) | v2 task list covering streaming server, live alerting, and edge inference |
+| [`todo_v2_1.md`](./todo_v2_1.md) | v2.1 task list covering React SPA dashboard and static demo bundle |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, branch/commit conventions, task claiming, guardrail checklist for contributors and AI agents |
 | [`docs/eda_findings.md`](docs/eda_findings.md) | Collector verification results, EDA observations, and answers to open questions |
 | [`docs/decisions.md`](docs/decisions.md) | Architectural Decision Records (ADRs) covering agents, ML baseline, privacy, and storage |
