@@ -105,13 +105,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-006: Implement C8 live-event models
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `streaming/schema.py` add `LiveSampleEvent` (all C4 columns + `seq`, `received_at`, `scored_at`, `published_at`, `edge_if_score`, `edge_divergence`, `model_eligible`), `EventRecord` (C5-compatible + `status` PROVISIONAL|FINAL + `alert_decision{alerted,reason}`), `ConnectionEvent`, `SnapshotEvent`, `DroppedEvent`, `HeartbeatEvent`, and the REST response models.
 **Dependencies:** T10-005
 **Acceptance Criteria:**
-- [ ] `status` is a closed enum
-- [ ] `alert_decision.reason` is one of the five fixed strings from DESIGN_v2
-- [ ] Models serialise to JSON with ISO-8601 timestamps
+- [x] `status` is a closed enum
+- [x] `alert_decision.reason` is one of the five fixed strings from DESIGN_v2
+- [x] Models serialise to JSON with ISO-8601 timestamps
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

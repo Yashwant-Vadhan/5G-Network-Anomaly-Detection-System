@@ -27,6 +27,19 @@ ERROR_CODES = {
 }
 
 
+def validate_iso_with_tz(v: str, field_name: str = "timestamp") -> str:
+    """Validate string is a valid ISO-8601 datetime with explicit timezone offset."""
+    try:
+        dt = datetime.fromisoformat(v)
+    except Exception as e:
+        raise ValueError(f"{field_name} must be a valid ISO-8601 datetime: {e}") from e
+
+    if dt.tzinfo is None:
+        raise ValueError(f"{field_name} must include a timezone offset (e.g. +05:30 or Z)")
+    return v
+
+
+
 # ==============================================================================
 # Contract C7: Client -> Server Models
 # ==============================================================================
@@ -237,3 +250,376 @@ class Pong(BaseModel):
     type: Literal["pong"] = "pong"
     schema_version: int = SCHEMA_VERSION
     server_time: str
+
+
+# ==============================================================================
+# Contract C8: Live Event Models (Server -> Dashboard / Live Subscribers)
+# ==============================================================================
+
+# Closed enum of the five fixed alert decision reasons from DESIGN_v2 / TECH_RULES_v2
+ALERT_DECISION_REASONS = (
+    "Alert triggered",
+    "ML-only (no rule evidence)",
+    "Transition only",
+    "Below persistence/severity threshold",
+    "Cooldown active",
+)
+
+AlertDecisionReason = Literal[
+    "Alert triggered",
+    "ML-only (no rule evidence)",
+    "Transition only",
+    "Below persistence/severity threshold",
+    "Cooldown active",
+]
+
+EventStatus = Literal["PROVISIONAL", "FINAL"]
+ConnectionState = Literal[
+    "LIVE", "STALE", "RECONNECTING", "WAITING", "DISCONNECTED", "REPLAY-SOURCE"
+]
+SessionStatus = Literal["OPEN", "CLOSED", "INCOMPLETE"]
+StreamSource = Literal["phone", "replay"]
+
+
+class AlertDecision(BaseModel):
+    """Decision record indicating whether an event fired an alert and why."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    alerted: bool
+    reason: AlertDecisionReason
+
+
+class ScoredSample(BaseModel):
+    """One scored sample bearing all C4 columns plus C8 streaming metadata."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    # Raw measurement & collector columns (C1)
+    timestamp: str
+    device: str
+    manufacturer: str | None = None
+    android: str | None = None
+    operator: str | None = None
+    network_type: str | None = None
+    deployment_mode: str | None = None
+    display_override: str | None = None
+    registered: bool | None = None
+    ss_rsrp: float | None = None
+    ss_rsrq: float | None = None
+    ss_sinr: float | None = None
+    csi_rsrp: float | None = None
+    csi_rsrq: float | None = None
+    csi_sinr: float | None = None
+    pci: int | None = None
+    nci: int | None = None
+    nrarfcn: int | None = None
+
+    # Pipeline metadata & validity flags
+    session_id: str
+    sample_idx: int = 0
+    is_valid: bool = True
+    model_eligible: bool = True
+    csi_available: bool = False
+    is_synthetic: bool = False
+    source_file: str | None = None
+    dup_ts: bool = False
+
+    # Feature columns (C3 subset)
+    delta_rsrp: float | None = None
+    delta_rsrq: float | None = None
+    delta_sinr: float | None = None
+    pci_changed: int | bool | None = None
+    nci_changed: int | bool | None = None
+    network_changed: int | bool | None = None
+    rolling_mean_rsrp: float | None = None
+    rolling_std_rsrp: float | None = None
+    rolling_mean_rsrq: float | None = None
+    rolling_std_rsrq: float | None = None
+    rolling_mean_sinr: float | None = None
+    rolling_std_sinr: float | None = None
+    weak_rsrp_run: int | None = None
+    poor_rsrq_run: int | None = None
+    poor_sinr_run: int | None = None
+
+    # Score & anomaly classification columns (C4)
+    baseline_z_rsrp: float | None = None
+    baseline_z_rsrq: float | None = None
+    baseline_z_sinr: float | None = None
+    baseline_z_max: float | None = None
+    baseline_flag: bool = False
+    if_score: float | None = None
+    if_flag: bool = False
+    anomaly_type: str = "NORMAL"
+    severity: str = "NONE"
+    event_id: str | None = None
+    is_anom: bool = False
+
+    # Streaming-specific extensions (C8)
+    seq: int = Field(..., ge=0)
+    received_at: str
+    scored_at: str
+    published_at: str
+    edge_if_score: float | None = None
+    edge_divergence: float | None = None
+
+    @field_validator("received_at", "scored_at", "published_at")
+    @classmethod
+    def _validate_iso8601_timestamps(cls, v: str) -> str:
+        validate_iso_with_tz(v)
+        return v
+
+
+class EventRecord(BaseModel):
+    """C5-compatible diagnosed event record with C8 status and alert decision."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    event_id: str
+    session_id: str
+    start: str
+    end: str
+    anomaly_type: str
+    severity: str
+    ml: dict[str, Any]
+    signal: dict[str, Any] | None = None
+    cell: dict[str, Any] | None = None
+    network: dict[str, Any] | None = None
+    signal_report: dict[str, Any] | None = None
+    cell_report: dict[str, Any] | None = None
+    network_report: dict[str, Any] | None = None
+    diagnosis: dict[str, Any] | None = None
+    recommendation: dict[str, Any] | None = None
+    explanation_text: str | None = None
+
+    # Contract C8 additions:
+    status: EventStatus
+    alert_decision: AlertDecision
+
+
+# ------------------------------------------------------------------------------
+# WebSocket /api/v1/live Event Messages
+# ------------------------------------------------------------------------------
+
+
+class LiveSampleEvent(BaseModel):
+    """Live scored sample broadcast on /api/v1/live (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["sample"] = "sample"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str
+    sample: ScoredSample
+
+
+class LiveEventOpen(BaseModel):
+    """Event open notification (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["event_open"] = "event_open"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str
+    event: EventRecord
+
+
+class LiveEventUpdate(BaseModel):
+    """Event update notification while provisional (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["event_update"] = "event_update"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str
+    event: EventRecord
+
+
+class LiveEventClosed(BaseModel):
+    """Event closed notification (transitions to FINAL, C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["event_closed"] = "event_closed"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str
+    event: EventRecord
+
+
+class ConnectionEvent(BaseModel):
+    """Server-authoritative connection & freshness state event (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["connection"] = "connection"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str | None = None
+    state: ConnectionState
+    last_sample_age_s: float | None = None
+    source: StreamSource | None = None
+
+
+class SnapshotEvent(BaseModel):
+    """Initial connection snapshot emitted to newly connected live subscribers (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["snapshot"] = "snapshot"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str
+    latest_sample: ScoredSample | None = None
+    state: ConnectionState
+    open_events: list[EventRecord] = Field(default_factory=list)
+    last_alerts: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DroppedEvent(BaseModel):
+    """Queue overflow warning informing subscriber to resync state via REST (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["dropped"] = "dropped"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str | None = None
+    count: int = Field(..., ge=1)
+
+
+class HeartbeatEvent(BaseModel):
+    """Periodic 5-second server heartbeat frame (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["heartbeat"] = "heartbeat"
+    schema_version: int = SCHEMA_VERSION
+    server_time: str
+    session_id: str | None = None
+
+
+class BrowserAuthFrame(BaseModel):
+    """First-frame browser ticket auth on WS /api/v1/live within 5s of connect (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    type: Literal["auth"] = "auth"
+    ticket: str = Field(..., min_length=1, max_length=256)
+
+
+LiveSubscriberMessage = Annotated[
+    LiveSampleEvent
+    | LiveEventOpen
+    | LiveEventUpdate
+    | LiveEventClosed
+    | ConnectionEvent
+    | SnapshotEvent
+    | DroppedEvent
+    | HeartbeatEvent,
+    Field(discriminator="type"),
+]
+
+
+# ==============================================================================
+# Contract C8: REST API Response Models
+# ==============================================================================
+
+
+class HealthResponse(BaseModel):
+    """Public healthcheck response for GET /healthz (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    status: str = "ok"
+    version: str = "2.0.0"
+    uptime_s: float = Field(..., ge=0.0)
+
+
+class SessionSummary(BaseModel):
+    """Session metadata summary item (C8)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    session_id: str
+    source: StreamSource
+    status: SessionStatus
+    sample_count: int = Field(default=0, ge=0)
+    event_count: int = Field(default=0, ge=0)
+    start_time: str | None = None
+    end_time: str | None = None
+
+
+class SessionListResponse(BaseModel):
+    """Response payload for GET /api/v1/sessions."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    sessions: list[SessionSummary] = Field(default_factory=list)
+    total: int = Field(default=0, ge=0)
+
+
+class SamplesResponse(BaseModel):
+    """Response payload for GET /api/v1/sessions/{id}/samples."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    samples: list[ScoredSample] = Field(default_factory=list)
+    total: int = Field(default=0, ge=0)
+    has_more: bool = False
+
+
+class EventsResponse(BaseModel):
+    """Response payload for GET /api/v1/sessions/{id}/events."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    events: list[EventRecord] = Field(default_factory=list)
+    total: int = Field(default=0, ge=0)
+
+
+class ModelInfoResponse(BaseModel):
+    """Response payload for GET /api/v1/model."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    model_version: str
+    feature_columns: list[str] = Field(default_factory=list)
+    feature_hash: str
+    thresholds: dict[str, Any] = Field(default_factory=dict)
+
+
+class MetricsResponse(BaseModel):
+    """Response payload for GET /api/v1/metrics."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    p50_latency_ms: float | None = None
+    p95_latency_ms: float | None = None
+    max_latency_ms: float | None = None
+    sequence_gaps: list[dict[str, int]] = Field(default_factory=list)
+    duplicates_count: int = 0
+    drops_count: int = 0
+    skew_estimate_s: float | None = None
+    queue_depth: int = 0
+
+
+class ErrorDetail(BaseModel):
+    """Error detail block adhering strictly to C8 error specification."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    code: str
+    message: str
+    correlation_id: str
+
+
+class ErrorResponse(BaseModel):
+    """Generic REST error envelope returning C8 error body without stack traces."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    error: ErrorDetail
