@@ -117,13 +117,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-007: Implement C9 alert model and log format
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add `AlertRecord` (fields exactly as in TECH_RULES_v2 C9), `AlertDelivery`, and a `to_webhook_body()` method returning only `title, body, severity, anomaly_type, event_status, created_at`. Define `alerts.jsonl` as one JSON object per line.
 **Dependencies:** T10-006
 **Acceptance Criteria:**
-- [ ] Webhook body contains no evidence/cell IDs/device identifiers by default
-- [ ] `kind` enum NEW|ESCALATION|RESOLVED
-- [ ] JSONL round-trip test
+- [x] Webhook body contains no evidence/cell IDs/device identifiers by default
+- [x] `kind` enum NEW|ESCALATION|RESOLVED
+- [x] JSONL round-trip test
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil

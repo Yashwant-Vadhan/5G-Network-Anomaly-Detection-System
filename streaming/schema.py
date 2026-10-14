@@ -623,3 +623,78 @@ class ErrorResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     error: ErrorDetail
+
+
+# ==============================================================================
+# Contract C9: Alert Models & Log Format (alerts.jsonl, webhooks, alert events)
+# ==============================================================================
+
+AlertKind = Literal["NEW", "ESCALATION", "RESOLVED"]
+DeliveryStatus = Literal["OK", "FAILED", "SKIPPED"]
+
+
+class AlertDelivery(BaseModel):
+    """Per-channel delivery attempt result."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    channel: str
+    status: DeliveryStatus
+    detail: str | None = None
+
+
+class AlertRecord(BaseModel):
+    """Alert record specification for alerts.jsonl, alert events, and external dispatches."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    alert_id: str
+    created_at: str
+    event_id: str
+    session_id: str
+    source: StreamSource
+    kind: AlertKind
+    severity: str
+    anomaly_type: str
+    event_status: EventStatus
+    title: str
+    body: str
+    evidence: list[str] = Field(default_factory=list)
+    recommendation: dict[str, Any] = Field(default_factory=dict)
+    policy: dict[str, Any] = Field(default_factory=dict)
+    delivery: list[AlertDelivery] = Field(default_factory=list)
+    acknowledged_at: str | None = None
+
+    @field_validator("created_at")
+    @classmethod
+    def _validate_created_at_has_tz(cls, v: str) -> str:
+        validate_iso_with_tz(v, field_name="created_at")
+        return v
+
+    def to_webhook_body(self, include_evidence: bool = False) -> dict[str, Any]:
+        """Return webhook/email payload subset conforming to G26 data minimization.
+
+        By default excludes raw measurements, cell IDs, device IDs, and evidence.
+        """
+        payload = {
+            "title": self.title,
+            "body": self.body,
+            "severity": self.severity,
+            "anomaly_type": self.anomaly_type,
+            "event_status": self.event_status,
+            "created_at": self.created_at,
+        }
+        if include_evidence:
+            payload["evidence"] = self.evidence
+        return payload
+
+
+def serialize_alert_jsonl(alert: AlertRecord) -> str:
+    """Serialize an AlertRecord as a single-line JSON string for alerts.jsonl."""
+    return alert.model_dump_json() + "\n"
+
+
+def deserialize_alert_jsonl(line: str) -> AlertRecord:
+    """Deserialize a single JSON line from alerts.jsonl into an AlertRecord."""
+    return AlertRecord.model_validate_json(line.strip())
+
