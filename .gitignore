@@ -9,6 +9,8 @@ data/raw/*
 !data/raw/MANIFEST.sha256
 data/processed/*
 !data/processed/.gitkeep
+data/live/*
+!data/live/.gitkeep
 models/*
 !models/.gitkeep
 !models/*.meta.example.json

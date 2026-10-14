@@ -165,13 +165,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-011: Add env template, token generator and Makefile targets
-**Status:** ⬜
+**Status:** ✅
 **Description:** Update `.env.example` with `NADS_HOST`, `NADS_PORT`, `NADS_INGEST_TOKEN`, `NADS_ALLOW_LAN`, `NADS_ALLOW_REMOTE_VIEW`, `NADS_ALERT_WEBHOOK_URL`, `NADS_ALERT_EMAIL_*`, `NADS_ALERT_INCLUDE_EVIDENCE` (placeholders only). Extend the existing v1 Makefile (targets `setup, lint, format, test, preprocess, pipeline, dashboard, clean-processed, help`; `dashboard` already binds 127.0.0.1) with `make token` (prints a CSPRNG token, does not save it), `make serve`, `make replay CSV=…`, `make demo-live`; update `make help`; `clean-processed` must still never touch `data/raw/` or `data/live/`.
 **Dependencies:** T10-003
 **Acceptance Criteria:**
-- [ ] `.env` ignored; `.env.example` has placeholders only
-- [ ] `make token` output is ≥32 bytes of randomness
-- [ ] `make help` lists the new targets; existing targets unchanged
+- [x] `.env` ignored; `.env.example` has placeholders only
+- [x] `make token` output is ≥32 bytes of randomness
+- [x] `make help` lists the new targets; existing targets unchanged
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Sushil

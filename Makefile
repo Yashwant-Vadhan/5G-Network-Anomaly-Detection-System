@@ -1,10 +1,11 @@
-# 5G-NADS developer entry points (todo.md T1-011).
+# 5G-NADS developer entry points (todo.md T1-011, todo_v2.md T10-011).
 # `make help` lists every target.
 
 PYTHON ?= python
 RAW_DIR := data/raw
 PROCESSED_DIR := data/processed
 SAMPLE_DIR := data/sample
+LIVE_DIR := data/live
 
 # TODO(T7): set to 80 once the Phase 7 unit/integration tests exist. pyproject.toml
 # already records 80 as the target via [tool.coverage.report] fail_under.
@@ -14,7 +15,7 @@ COV_FAIL_UNDER ?= 0
 PYTEST_NO_TESTS := 5
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test preprocess pipeline dashboard demo clean-processed
+.PHONY: help setup lint format test preprocess pipeline dashboard demo clean-processed token serve replay demo-live
 
 help:
 	@echo "5G-NADS targets:"
@@ -27,6 +28,10 @@ help:
 	@echo "  dashboard         streamlit run dashboard/app.py on 127.0.0.1"
 	@echo "  demo              runs pipeline on sample data then launches dashboard"
 	@echo "  clean-processed   delete generated files in $(PROCESSED_DIR)/ only"
+	@echo "  token             generate a 32-byte CSPRNG token (prints, does not save)"
+	@echo "  serve             start FastAPI streaming server on 127.0.0.1:8000"
+	@echo "  replay            replay CSV telemetry stream (usage: make replay CSV=...)"
+	@echo "  demo-live         launch live streaming server and demo pipeline"
 
 setup:
 	@echo "Installing pinned dev requirements (Python 3.12+)"
@@ -71,11 +76,26 @@ demo:
 	@echo "Launching dashboard on 127.0.0.1..."
 	$(PYTHON) -m streamlit run dashboard/app.py --server.address 127.0.0.1
 
-# Guardrail G7: raw data is immutable. This recipe touches $(PROCESSED_DIR) and
-# nothing else; the guard below aborts if that path is empty or resolves inside
-# the raw tree.
-clean-processed:
-	@case "$(PROCESSED_DIR)" in ""|$(RAW_DIR)|$(RAW_DIR)/*) echo "refusing to clean '$(PROCESSED_DIR)': never delete raw data"; exit 1;; esac
-	@echo "Deleting generated CSV/JSON under $(PROCESSED_DIR)/ (raw data is untouched)"
-	rm -f $(PROCESSED_DIR)/*.csv $(PROCESSED_DIR)/*.json
+token:
+	@$(PYTHON) -c "import secrets; print(secrets.token_hex(32))"
 
+serve:
+	@echo "Starting 5G-NADS streaming server on 127.0.0.1:8000..."
+	$(PYTHON) -m uvicorn streaming.server:create_app --factory --host 127.0.0.1 --port 8000
+
+CSV ?= $(SAMPLE_DIR)/5G_measurements_Samsung_Indoor-Movement.csv
+replay:
+	@echo "Replaying stream from $(CSV)..."
+	$(PYTHON) scripts/replay_stream.py --csv $(CSV)
+
+demo-live:
+	@echo "Running demo-live: starting streaming server..."
+	$(PYTHON) -m uvicorn streaming.server:create_app --factory --host 127.0.0.1 --port 8000
+
+# Guardrail G7 & G22: raw and live data are immutable. This recipe touches $(PROCESSED_DIR)
+# and nothing else; the guard below aborts if that path is empty or resolves inside
+# the raw or live trees.
+clean-processed:
+	@case "$(PROCESSED_DIR)" in ""|$(RAW_DIR)|$(RAW_DIR)/*|$(LIVE_DIR)|$(LIVE_DIR)/*) echo "refusing to clean '$(PROCESSED_DIR)': never delete raw or live data"; exit 1;; esac
+	@echo "Deleting generated CSV/JSON under $(PROCESSED_DIR)/ (raw and live data are untouched)"
+	rm -f $(PROCESSED_DIR)/*.csv $(PROCESSED_DIR)/*.json

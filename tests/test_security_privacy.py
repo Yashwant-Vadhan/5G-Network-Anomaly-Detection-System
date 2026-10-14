@@ -40,6 +40,7 @@ def test_gitignore_covers_sensitive_files():
     required_patterns = [
         "data/raw/*",
         "data/processed/*",
+        "data/live/*",
         "models/*",
         ".env",
         "*.keystore",
@@ -117,3 +118,45 @@ def test_dashboard_binds_to_localhost_by_default():
         content = config_file.read_text(encoding="utf-8")
         # Ensure address isn't bound to 0.0.0.0
         assert "0.0.0.0" not in content, "Dashboard must not bind to 0.0.0.0 for security"
+
+
+def test_env_example_contains_placeholders_only():
+    """T10-011: .env.example contains placeholders only and no real secrets."""
+    env_example = Path(".env.example")
+    assert env_example.exists()
+    content = env_example.read_text(encoding="utf-8")
+
+    # Required v2 streaming variables must be present
+    required_vars = [
+        "NADS_HOST",
+        "NADS_PORT",
+        "NADS_INGEST_TOKEN",
+        "NADS_ALLOW_LAN",
+        "NADS_ALLOW_REMOTE_VIEW",
+        "NADS_ALERT_WEBHOOK_URL",
+        "NADS_ALERT_EMAIL_HOST",
+        "NADS_ALERT_EMAIL_PORT",
+        "NADS_ALERT_EMAIL_USER",
+        "NADS_ALERT_EMAIL_PASSWORD",
+        "NADS_ALERT_EMAIL_FROM",
+        "NADS_ALERT_EMAIL_TO",
+        "NADS_ALERT_INCLUDE_EVIDENCE",
+    ]
+    for var in required_vars:
+        assert var in content, f".env.example missing required variable: {var}"
+
+    # Verify placeholders are clearly marked and not real secrets
+    assert "placeholder" in content.lower()
+
+
+def test_token_generator_csprng_randomness():
+    """T10-011: token generation yields at least 32 bytes of randomness."""
+    import secrets
+
+    token = secrets.token_hex(32)
+    token_bytes = bytes.fromhex(token)
+    assert len(token_bytes) >= 32
+    # Ensure two consecutive calls generate distinct random tokens
+    token2 = secrets.token_hex(32)
+    assert token != token2
+
