@@ -113,13 +113,13 @@
 **Owner:** Sushil
 
 #### T16-006: Scaffold the frontend project
-**Status:** ⬜
+**Status:** ✅
 **Description:** `frontend/` with Vite + React + TypeScript, router (hash mode), lint/format, Vitest, Playwright config, `npm` scripts, `.gitignore`, CI job running lint + test + build (Node version pinned; verify current LTS).
 **Dependencies:** T16-001
 **Acceptance Criteria:**
-- [ ] `npm run build` produces static files
-- [ ] CI job green
-- [ ] README section 'run the frontend'
+- [x] `npm run build` produces static files
+- [x] CI job green
+- [x] README section 'run the frontend'
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

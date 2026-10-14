@@ -53,6 +53,16 @@ make dashboard          # launch the Streamlit interpretability dashboard on 127
 `make help` lists every target. On Windows without `make`, run the underlying
 commands directly, e.g. `python -m ruff check .` and `python -m pytest`.
 
+### Run the React Frontend (v2.1)
+
+```bash
+cd frontend
+npm install              # Node 22 LTS (.nvmrc)
+npm run dev              # launch local Vite dev server on 127.0.0.1:3000
+npm run test             # run unit/component tests with Vitest
+npm run build            # compile static production bundle to frontend/dist/
+```
+
 ## Repository Map
 
 ```
