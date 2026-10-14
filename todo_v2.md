@@ -93,13 +93,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-005: Implement C7 ingest models in streaming/schema.py
-**Status:** ⬜
+**Status:** ✅
 **Description:** Create pydantic models `IngestHello`, `IngestSample`, `IngestPing`, `IngestBye` and server messages `HelloAck`, `Ack`, `ErrorMsg`, `AlertPush`, plus `SCHEMA_VERSION = 2`. `IngestSample.payload` must carry exactly the 18 C1 columns (null = NA); `payload.timestamp` is a string exactly as the collector writes it to CSV (`dd-MM-yy HH:mm:ss`, device-local, no offset — `eda_findings.md` Open Question 1), parsed server-side by the existing `parse_timestamps`; `sent_at` is ISO-8601 *with* offset. Reject unknown `type`, over-long strings, negative `seq`.
 **Dependencies:** T10-003, T10-004
 **Acceptance Criteria:**
-- [ ] Golden valid/invalid examples round-trip (one with the real collector timestamp format)
-- [ ] Unknown fields in payload rejected; unknown top-level fields ignored
-- [ ] Version constant exported
+- [x] Golden valid/invalid examples round-trip (one with the real collector timestamp format)
+- [x] Unknown fields in payload rejected; unknown top-level fields ignored
+- [x] Version constant exported
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
