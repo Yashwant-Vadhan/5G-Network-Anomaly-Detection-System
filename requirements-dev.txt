@@ -16,3 +16,6 @@ pre-commit==4.6.2
 
 # Notebooks are for EDA and model-selection studies only (overview §35).
 jupyter==1.1.1
+
+# Streaming replay and WebSocket test tools (v2 / T10-003)
+websockets==17.1

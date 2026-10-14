@@ -69,13 +69,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-003: Add streaming dependencies to requirements files
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add FastAPI, uvicorn (with a WebSocket implementation), pydantic, httpx and `websockets` to `requirements.txt` (runtime) / `requirements-dev.txt` (test tools). Verify current stable versions at the time and pin them; run `pip install -r requirements-dev.txt` on both machines.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Versions verified against the package indexes and pinned
-- [ ] `make lint test` still green on both machines
-- [ ] No new dependency added for anything the stdlib covers
+- [x] Versions verified against the package indexes and pinned
+- [x] `make lint test` still green on both machines
+- [x] No new dependency added for anything the stdlib covers
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant

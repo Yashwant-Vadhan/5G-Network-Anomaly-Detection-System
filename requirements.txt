@@ -11,3 +11,9 @@ scikit-learn==1.9.1
 joblib==1.6.0
 streamlit==1.64.0
 plotly==7.1.0
+
+# Streaming ingest, WebSocket server and alert webhook channel (v2 / T10-003)
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+httpx==0.28.1
