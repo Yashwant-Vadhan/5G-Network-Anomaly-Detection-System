@@ -42,14 +42,14 @@
 *Goal: A public-link React dashboard with parity to the six Streamlit pages, fed by a precomputed, anonymised data bundle — no backend, no phone.*
 
 #### T16-000: Merge V2_1_DELTA into the v2 docs and amend the overview
-**Status:** ⬜
+**Status:** ✅
 **Description:** Fold `V2_1_DELTA.md` into `PRD_v2`, `DESIGN_v2`, `TECH_RULES_v2`, `ROADMAP.md`, `todo_v2.md`; add overview amendments A4–A6 beside A1–A3 (extend `T10-001`'s PR or a follow-up); add decisions to `docs/decisions.md`; mark superseded tasks ⛔ (`superseded by T16-…`) and apply the dependency patches listed in this file's Appendix; add G27–G32 and contracts C10/C11 to TECH_RULES_v2; archive the delta file.
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Both authors approve
-- [ ] No superseded task is a dependency of an active task
-- [ ] G27–G32 and C10/C11 present in TECH_RULES_v2
-- [ ] ROADMAP milestone table matches this file
+- [x] Both authors approve
+- [x] No superseded task is a dependency of an active task
+- [x] G27–G32 and C10/C11 present in TECH_RULES_v2
+- [x] ROADMAP milestone table matches this file
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
