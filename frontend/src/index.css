@@ -1,31 +1,47 @@
-/* 5G-NADS DESIGN tokens (DESIGN_v2.md & DESIGN.md) */
+/* 5G-NADS Design Tokens & App Shell (DESIGN_v2.md & DESIGN.md) */
 :root {
+  /* Surface & Background */
   --color-bg: #F8FAFC;
   --color-surface: #FFFFFF;
   --color-surface-hover: #F1F5F9;
+  --color-border: #CBD5E1;
+
+  /* Typography */
   --color-text: #0F172A;
-  --color-text-muted: #64748B;
-  --color-border: #E2E8F0;
+  --color-text-muted: #475569;
+
+  /* Brand Accent */
   --color-primary: #2563EB;
   --color-primary-hover: #1D4ED8;
+
+  /* Status Tokens (DESIGN_v2.md §Connection Model & DESIGN.md) */
   --color-normal: #15803D;
   --color-warning: #B45309;
   --color-anomaly: #DC2626;
   --color-info: #0369A1;
   --color-neutral-700: #334155;
+
+  /* Typography Stack */
   --font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, Menlo, Consolas, monospace;
 }
 
 [data-theme="dark"] {
+  /* Surface & Background */
   --color-bg: #0F172A;
   --color-surface: #1E293B;
   --color-surface-hover: #334155;
+  --color-border: #334155;
+
+  /* Typography */
   --color-text: #F8FAFC;
   --color-text-muted: #94A3B8;
-  --color-border: #334155;
+
+  /* Brand Accent */
   --color-primary: #3B82F6;
   --color-primary-hover: #60A5FA;
+
+  /* Status Tokens */
   --color-normal: #22C55E;
   --color-warning: #F59E0B;
   --color-anomaly: #EF4444;
@@ -53,4 +69,23 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+/* Accessible Keyboard Navigation & Focus Rings */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference (WCAG 2.1 AA) */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

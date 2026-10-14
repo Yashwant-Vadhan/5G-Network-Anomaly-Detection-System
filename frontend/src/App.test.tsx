@@ -60,4 +60,31 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(localStorage.getItem('nads_theme')).toBe('light');
   });
+
+  it('supports keyboard navigation to every route', () => {
+    render(
+      <HashRouter>
+        <App />
+      </HashRouter>
+    );
+    const nav = screen.getByRole('navigation', { name: /primary navigation/i });
+    const links = within(nav).getAllByRole('link');
+    expect(links).toHaveLength(PAGES.length);
+
+    links.forEach((link, idx) => {
+      link.focus();
+      expect(link).toHaveFocus();
+      expect(link).toHaveAttribute('href', `#${PAGES[idx].path}`);
+    });
+  });
+
+  it('renders filters area placeholder', () => {
+    render(
+      <HashRouter>
+        <App />
+      </HashRouter>
+    );
+    expect(screen.getByLabelText(/filters and session controls/i)).toBeInTheDocument();
+  });
 });
+

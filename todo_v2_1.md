@@ -125,13 +125,13 @@
 **Owner:** Sushil
 
 #### T16-007: Implement design tokens, theme and app shell
-**Status:** ⬜
+**Status:** ✅
 **Description:** DESIGN tokens as CSS variables (light + dark); app shell: single brand header (fixes duplicated sidebar title), nav for six pages, filters area, footer with version/model_version and the research-prototype notice; keyboard-reachable; no 'Deploy' chrome.
 **Dependencies:** T16-006
 **Acceptance Criteria:**
-- [ ] Light/dark switch persists
-- [ ] Contrast of text tokens ≥ 4.5:1 (checked)
-- [ ] Footer notice present on every page (G31)
+- [x] Light/dark switch persists
+- [x] Contrast of text tokens ≥ 4.5:1 (checked)
+- [x] Footer notice present on every page (G31)
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
