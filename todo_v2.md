@@ -230,13 +230,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 *Goal: Phone-independent live path: ingest → engine → events → agents → live API, proven equal to batch.*
 
 #### T11-001: Create the streaming/ package skeleton
-**Status:** ⬜
+**Status:** ✅
 **Description:** Create `streaming/{__init__,schema,server,session_manager,engine,event_tracker,hub,store,metrics}.py` and `streaming/alerts/{__init__,policy,dispatcher}.py` plus `channels/` with module docstrings stating each module's single responsibility. No logic yet.
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Package importable
-- [ ] Each module has a one-paragraph responsibility docstring
-- [ ] ruff passes
+- [x] Package importable
+- [x] Each module has a one-paragraph responsibility docstring
+- [x] ruff passes
 **Estimated Effort:** 30 min
 **Assigned To:** Backend
 **Owner:** Sushil
