@@ -18,4 +18,5 @@ pre-commit==4.6.2
 jupyter==1.1.1
 
 # Streaming replay and WebSocket test tools (v2 / T10-003)
-websockets==17.1
+# Note: Streamlit 1.64.0 requires websockets<17,>=12.0.0; 16.1.1 is the latest compatible release.
+websockets==16.1.1
