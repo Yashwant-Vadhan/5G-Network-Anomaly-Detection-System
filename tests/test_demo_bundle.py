@@ -114,11 +114,23 @@ def verify_bundle_against_sources(
     assert quality_log["clean_rows"] == prep_log["clean_output_rows"]
 
 
-def test_bundle_matches_processed_sources():
-    """Verify demo bundle matches processed sources."""
+def ensure_processed_sources() -> tuple[Path, Path, Path]:
+    """Ensure data/processed artifacts exist for tests, generating from sample if absent."""
     scores_path = Path("data/processed/scores.csv")
     events_path = Path("data/processed/events_diagnosed.json")
     prep_log_path = Path("data/processed/preprocess_log.json")
+    if not (scores_path.exists() and events_path.exists() and prep_log_path.exists()):
+        from pipelines.run_pipeline import run_pipeline
+
+        run_pipeline(
+            input_dir=Path("data/sample"), output_dir=Path("data/processed"), retrain=False
+        )
+    return scores_path, events_path, prep_log_path
+
+
+def test_bundle_matches_processed_sources():
+    """Verify demo bundle matches processed sources."""
+    scores_path, events_path, prep_log_path = ensure_processed_sources()
 
     assert scores_path.exists()
     assert events_path.exists()
@@ -130,9 +142,7 @@ def test_bundle_matches_processed_sources():
 
 def test_deliberately_altered_value_fails():
     """Acceptance criteria: A deliberately altered value fails the verification test."""
-    scores_path = Path("data/processed/scores.csv")
-    events_path = Path("data/processed/events_diagnosed.json")
-    prep_log_path = Path("data/processed/preprocess_log.json")
+    scores_path, events_path, prep_log_path = ensure_processed_sources()
 
     bundle = build_bundle(source="processed", is_public=True)
 

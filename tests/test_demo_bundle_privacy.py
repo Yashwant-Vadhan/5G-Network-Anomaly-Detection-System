@@ -4,14 +4,27 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 
 import pandas as pd
 
 from scripts.build_demo_bundle import build_bundle
 
 
+def ensure_processed_sources() -> None:
+    """Ensure data/processed artifacts exist for tests, generating from sample if absent."""
+    scores_path = Path("data/processed/scores.csv")
+    if not scores_path.exists():
+        from pipelines.run_pipeline import run_pipeline
+
+        run_pipeline(
+            input_dir=Path("data/sample"), output_dir=Path("data/processed"), retrain=False
+        )
+
+
 def test_public_bundle_contains_no_raw_cell_ids():
     """Guardrail G27: Public bundle must not contain real cell identifiers."""
+    ensure_processed_sources()
     bundle = build_bundle(source="processed", is_public=True)
 
     # 1. Check samples columns
@@ -52,6 +65,7 @@ def test_public_bundle_contains_no_raw_cell_ids():
 
 def test_transition_parity_between_hashed_and_unhashed():
     """Cell change events and counts must be identical between raw and hashed bundles."""
+    ensure_processed_sources()
     b_pub = build_bundle(source="processed", is_public=True)
     b_raw = build_bundle(source="processed", is_public=False)
 
