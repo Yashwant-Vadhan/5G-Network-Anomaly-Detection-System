@@ -67,13 +67,13 @@
 **Owner:** Sushil
 
 #### T16-002: Write the demo-bundle builder (Contract C11)
-**Status:** ⬜
+**Status:** ✅
 **Description:** `scripts/build_demo_bundle.py --source processed|sample --out frontend/public/demo-bundle.json`: assemble sessions, columnar samples (columns used by the dashboard per `dashboard_inventory.md` §4), **precomputed transitions** (move the logic now living in `3_Cells_And_Network.py` L42–78 into a tested helper; do not edit the Streamlit page), events from `events_diagnosed.json`, quality block from `preprocess_log.json` + missing/CSI/deployment-mode stats, model meta. Deterministic output; gzip-friendly.
 **Dependencies:** T16-000
 **Acceptance Criteria:**
-- [ ] Bundle < 1 MB uncompressed for sample and < 5 MB for processed (report sizes)
-- [ ] Running twice gives identical bytes
-- [ ] Transition helper has unit tests and a negative case (no change → no event)
+- [x] Bundle < 1 MB uncompressed for sample (33.7 KB) and < 5 MB for processed (3.08 MB) (report sizes)
+- [x] Running twice gives identical bytes
+- [x] Transition helper has unit tests and a negative case (no change → no event)
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Yashwant
