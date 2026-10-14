@@ -154,3 +154,56 @@ RAW_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DIR: Path = DATA_DIR / "processed"
 SAMPLE_DIR: Path = DATA_DIR / "sample"
 MODELS_DIR: Path = REPO_ROOT / "models"
+
+# --- Real-Time Streaming & Alerting Constants (v2 / Contracts C7–C10) ---------
+# All streaming constants below carry origin comments per G17/G20 and TECH_RULES_v2.
+# Tune only on non-evaluation data (e.g. exploration/validation split).
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §2 — tune on non-evaluation data.
+# Maximum in-memory C2 rows retained per (client_id, session) buffer (~41 h at 3 s interval).
+SESSION_MAX_ROWS: int = 50000
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §2 — tune on non-evaluation data.
+# Consecutive non-event samples required to transition an event from PROVISIONAL to FINAL.
+EVENT_CLOSE_GAP_SAMPLES: int = 5
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` and `DESIGN_v2.md`
+# §Connection Model — tune on non-evaluation data.
+# Age threshold in seconds beyond which arriving data is flagged STALE (~3 sampling intervals).
+STALE_AFTER_SECONDS: float = 10.0
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Time — tune on non-evaluation data.
+# Threshold in seconds for absolute clock skew (|sent_at - received_at|) before flagging a warning.
+CLOCK_SKEW_WARN_SECONDS: float = 5.0
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C7 Rules — tune on non-evaluation data.
+# Duration in seconds that server keeps an idle/disconnected session alive for reconnection resume.
+SESSION_RESUME_WINDOW_SECONDS: int = 600
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C7 Rules — tune on non-evaluation data.
+# Maximum frame size in bytes permitted for WebSocket ingest frames (8 KiB).
+MAX_MESSAGE_BYTES: int = 8192
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C7 Rules — tune on non-evaluation data.
+# Rate limit for client ingest messages per minute (token bucket allowance).
+MAX_MSGS_PER_MIN: int = 120
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C7 Rules — tune on non-evaluation data.
+# Maximum unacknowledged in-flight samples from client before backpressure applies.
+MAX_INFLIGHT_UNACKED: int = 50
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Alert Policy Rules —
+# tune on non-evaluation data.
+# Minimum consecutive degraded samples required to satisfy persistence condition for an alert.
+ALERT_MIN_PERSISTENCE_SAMPLES: int = 6
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Alert Policy Rules —
+# tune on non-evaluation data.
+# Minimum severity level required to trigger an external alert notification ("LOW/MEDIUM/HIGH").
+ALERT_MIN_SEVERITY: str = "MEDIUM"
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Alert Policy Rules —
+# tune on non-evaluation data.
+# Cooldown window in seconds before repeating an alert of the same anomaly type within a session.
+ALERT_COOLDOWN_SECONDS: int = 300
+

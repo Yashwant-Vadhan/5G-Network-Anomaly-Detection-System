@@ -81,13 +81,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-004: Add streaming constants to ml/config.py
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add `SESSION_MAX_ROWS`, `EVENT_CLOSE_GAP_SAMPLES`, `STALE_AFTER_SECONDS`, `CLOCK_SKEW_WARN_SECONDS`, `SESSION_RESUME_WINDOW_SECONDS`, `MAX_MESSAGE_BYTES`, `MAX_MSGS_PER_MIN`, `MAX_INFLIGHT_UNACKED`, `ALERT_MIN_PERSISTENCE_SAMPLES`, `ALERT_MIN_SEVERITY`, `ALERT_COOLDOWN_SECONDS`, using the *proposed* values from TECH_RULES_v2, each with an origin comment ('proposed — tune on non-evaluation data'). Do **not** redefine constants v1 already settled in EDA: `SESSION_GAP_SECONDS=30`, `DEFAULT_WINDOW=10`, `SAMPLING_SECONDS=3`, `PERSIST_THRESHOLDS`, `SENTINEL_INTS`, `RANDOM_STATE=42`; import them.
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Every constant has a type and an origin comment
-- [ ] No threshold appears inline anywhere in streaming/ (grep check added in T10-009)
-- [ ] Constants are importable without importing sklearn
+- [x] Every constant has a type and an origin comment
+- [x] No threshold appears inline anywhere in streaming/ (grep check added in T10-009)
+- [x] Constants are importable without importing sklearn
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil
