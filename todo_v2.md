@@ -254,13 +254,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-003: Validate and coerce ingest samples via the batch code
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `streaming/engine.py` add `coerce_sample(payload) -> DataFrame` that builds a one-row C1 frame and calls the existing `ml.schema` validation and the `ml.preprocessing` functions `coerce_numeric`, `flag_invalid`, `add_missing_flags` (every `NA` token and every `SENTINEL_INTS` value → missing, range flag, `csi_available`, `model_eligible`; `nci` stays 64-bit-safe). No new coercion logic may be written.
 **Dependencies:** T11-001, T10-005
 **Acceptance Criteria:**
-- [ ] `NA`, null and every `SENTINEL_INTS` value become missing, never 0 (G3); `nci=13322280247` survives
-- [ ] Invalid `deployment_mode` raises SchemaError
-- [ ] Function body contains no duplicated range/sentinel constants
+- [x] `NA`, null and every `SENTINEL_INTS` value become missing, never 0 (G3); `nci=13322280247` survives
+- [x] Invalid `deployment_mode` raises SchemaError
+- [x] Function body contains no duplicated range/sentinel constants
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Yashwant
