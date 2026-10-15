@@ -1,9 +1,11 @@
-"""In-memory session buffer and state tracking for active client connections (T11-002).
+"""In-memory session buffer and state tracking for active client connections (T11-002, T11-004).
 
 Implements SessionBuffer and SessionManager per TECH_RULES_v2:
 - Bounded in-memory buffer of Contract C2 rows per (client_id, session).
 - Ignores duplicate sequence numbers without adding rows.
 - Maintains strict device-timestamp ordering even when samples arrive out of order.
+- Applies batch session-gap rule (SESSION_GAP_SECONDS=30) and source_file changes
+  to delimit sessions identically to batch preprocessing.
 - Enforces SESSION_MAX_ROWS rollover, closing the full session and opening a new one.
 - Pure, synchronous, and accepts an injectable clock.
 """
@@ -18,7 +20,8 @@ from typing import Any
 
 import pandas as pd
 
-from ml.config import SESSION_MAX_ROWS
+from ml.config import SESSION_GAP_SECONDS, SESSION_MAX_ROWS
+from ml.preprocessing import add_sessions
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,18 @@ logger = logging.getLogger(__name__)
 def slugify_device(val: str) -> str:
     """Standard device slugifier matching batch preprocessing logic."""
     return "".join(c.lower() if c.isalnum() else "-" for c in str(val)).strip("-") or "device"
+
+
+def apply_session_gap(
+    df: pd.DataFrame,
+    gap_seconds: int = SESSION_GAP_SECONDS,
+) -> pd.DataFrame:
+    """Apply the batch session-gap rule directly to a DataFrame.
+
+    Calls ml.preprocessing.add_sessions to ensure byte-for-byte identical session
+    partitioning between stream and batch pipelines.
+    """
+    return add_sessions(df, gap_seconds=gap_seconds)
 
 
 class SessionBuffer:
@@ -42,12 +57,14 @@ class SessionBuffer:
         device: str,
         max_rows: int = SESSION_MAX_ROWS,
         clock: Callable[[], float] = time.time,
+        source_file: str | None = None,
     ) -> None:
         self.client_id = client_id
         self.session_id = session_id
         self.device = device
         self.max_rows = max_rows
         self.clock = clock
+        self.source_file = source_file
 
         self.created_at: float = clock()
         self.last_active_at: float = self.created_at
@@ -155,16 +172,18 @@ class SessionBuffer:
 class SessionManager:
     """Manages active streaming sessions per client connection.
 
-    Coordinates session creation, sequence tracking, sample routing, and
-    automatic rollover when a session reaches SESSION_MAX_ROWS.
+    Coordinates session creation, sequence tracking, sample routing, session-gap
+    break detection (>30s gap), source_file changes, and automatic rollover.
     """
 
     def __init__(
         self,
         max_rows: int = SESSION_MAX_ROWS,
+        gap_seconds: int = SESSION_GAP_SECONDS,
         clock: Callable[[], float] = time.time,
     ) -> None:
         self.max_rows = max_rows
+        self.gap_seconds = gap_seconds
         self.clock = clock
         self._active_sessions: dict[str, SessionBuffer] = {}
         self._session_counters: dict[str, int] = {}
@@ -180,6 +199,7 @@ class SessionManager:
         client_id: str,
         device: str,
         session_id: str | None = None,
+        source_file: str | None = None,
     ) -> SessionBuffer:
         """Retrieve existing active session for client or create a new session buffer."""
         buffer = self._active_sessions.get(client_id)
@@ -205,19 +225,26 @@ class SessionManager:
             device=device,
             max_rows=self.max_rows,
             clock=self.clock,
+            source_file=source_file,
         )
         self._active_sessions[client_id] = new_buffer
         return new_buffer
 
-    def roll_session(self, client_id: str, device: str) -> SessionBuffer:
+    def roll_session(
+        self,
+        client_id: str,
+        device: str,
+        reason: str = "cap",
+        source_file: str | None = None,
+    ) -> SessionBuffer:
         """Close current session for client and create a new session buffer."""
         old_buffer = self._active_sessions.get(client_id)
         if old_buffer is not None:
             old_buffer.close()
             logger.warning(
-                "Session %s reached cap (%d rows); rolling over for client %s",
+                "Session %s closed (reason: %s); rolling over for client %s",
                 old_buffer.session_id,
-                self.max_rows,
+                reason,
                 client_id,
             )
 
@@ -228,9 +255,24 @@ class SessionManager:
             device=device,
             max_rows=self.max_rows,
             clock=self.clock,
+            source_file=source_file,
         )
         self._active_sessions[client_id] = new_buffer
         return new_buffer
+
+    def start_new_session(
+        self,
+        client_id: str,
+        device: str,
+        source_file: str | None = None,
+    ) -> SessionBuffer:
+        """Explicitly open a new session (e.g. hello without resume_from_seq)."""
+        return self.roll_session(
+            client_id=client_id,
+            device=device,
+            reason="new_connection",
+            source_file=source_file,
+        )
 
     def append_sample(
         self,
@@ -239,7 +281,7 @@ class SessionManager:
         seq: int,
         device: str | None = None,
     ) -> tuple[SessionBuffer, bool]:
-        """Append sample to active session, rolling over if buffer capacity is reached.
+        """Append sample to active session with gap detection and rollover.
 
         Args:
             client_id: Unique client identifier.
@@ -250,16 +292,63 @@ class SessionManager:
         Returns:
             Tuple of (active_session_buffer, appended_bool).
         """
-        row_dict = row.to_dict() if isinstance(row, pd.Series) else row
+        row_dict = row.to_dict() if isinstance(row, pd.Series) else dict(row)
         dev = device or str(row_dict.get("device", "device"))
+        source_file = row_dict.get("source_file")
 
-        buffer = self.get_or_create_session(client_id=client_id, device=dev)
+        buffer = self.get_or_create_session(
+            client_id=client_id,
+            device=dev,
+            source_file=source_file,
+        )
 
         if buffer.has_seq(seq):
             return buffer, False
 
+        # Check source_file change
+        if source_file and buffer.source_file and str(source_file) != str(buffer.source_file):
+            logger.info(
+                "Source file changed (%s -> %s); rolling session for client %s",
+                buffer.source_file,
+                source_file,
+                client_id,
+            )
+            buffer = self.roll_session(
+                client_id=client_id,
+                device=dev,
+                reason="source_file_change",
+                source_file=source_file,
+            )
+
+        # Check batch session-gap rule (>30s gap between consecutive samples)
+        if len(buffer) > 0:
+            last_row = buffer.get_latest_row()
+            if last_row is not None and "timestamp" in last_row:
+                last_ts = pd.to_datetime(last_row["timestamp"], errors="coerce")
+                new_ts = pd.to_datetime(row_dict.get("timestamp"), errors="coerce")
+                if pd.notna(last_ts) and pd.notna(new_ts):
+                    delta_seconds = (new_ts - last_ts).total_seconds()
+                    if delta_seconds > self.gap_seconds:
+                        logger.info(
+                            "Session gap detected (%.1fs > %ds); rolling session for client %s",
+                            delta_seconds,
+                            self.gap_seconds,
+                            client_id,
+                        )
+                        buffer = self.roll_session(
+                            client_id=client_id,
+                            device=dev,
+                            reason=f"time_gap_{delta_seconds:.1f}s",
+                            source_file=source_file,
+                        )
+
         if buffer.is_full():
-            buffer = self.roll_session(client_id=client_id, device=dev)
+            buffer = self.roll_session(
+                client_id=client_id,
+                device=dev,
+                reason="buffer_cap",
+                source_file=source_file,
+            )
 
         appended = buffer.append(row_dict, seq)
         return buffer, appended

@@ -266,12 +266,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-004: Apply the batch session-gap rule in the stream
-**Status:** ⬜
+**Status:** ✅
 **Description:** Call `add_sessions(df, gap_seconds=SESSION_GAP_SECONDS)` (30 s, from EDA) so a gap starts a new `session_id` (`<device_slug>-<n>`) and `sample_idx` restarts at 0 exactly as in batch. v1 also starts a session when `source_file` changes, so the server sets `source_file` to the live capture filename and a `hello` without `resume_from_seq` opens a new one. Use `parse_timestamps` for the collector's `dd-MM-yy HH:mm:ss` strings.
 **Dependencies:** T11-002, T11-003
 **Acceptance Criteria:**
-- [ ] A >30 s gap fixture yields 2 sessions, same ids as batch
-- [ ] Warm-up semantics identical at session start
+- [x] A >30 s gap fixture yields 2 sessions, same ids as batch
+- [x] Warm-up semantics identical at session start
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
