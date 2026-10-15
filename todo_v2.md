@@ -373,13 +373,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-013: Implement the live fan-out hub
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/hub.py`: async pub/sub with bounded per-subscriber queues; on overflow drop oldest and send a `dropped` event; subscriber cleanup on disconnect.
 **Dependencies:** T11-001, T10-006
 **Acceptance Criteria:**
-- [ ] Slow subscriber never blocks the engine
-- [ ] `dropped` event emitted with count
-- [ ] Cleanup test (no leaked subscribers)
+- [x] Slow subscriber never blocks the engine
+- [x] `dropped` event emitted with count
+- [x] Cleanup test (no leaked subscribers)
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
