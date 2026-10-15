@@ -277,13 +277,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-005: Implement StreamingEngine.process()
-**Status:** ⬜
+**Status:** ✅
 **Description:** `StreamingEngine.process(sample) -> ScoredSample`: append to buffer, call the same v1 functions on the session buffer — `build_features(df, window=DEFAULT_WINDOW)`, `baseline_scores`, `if_scores(df, model, scaler)` (model and the saved scaler loaded once, meta verified per T10-013), `classify`, `estimate_severity` (confirm exact names/signatures in the repo) — and return the last row with C4 columns. Rows with missing model features get `model_eligible=False` and no IF score.
 **Dependencies:** T11-004, T10-013
 **Acceptance Criteria:**
-- [ ] Model and meta verified at startup; ConfigError on mismatch
-- [ ] No fillna/interpolation on ss_*/csi_* (G2)
-- [ ] No sklearn import outside ml/ and the model loader
+- [x] Model and meta verified at startup; ConfigError on mismatch
+- [x] No fillna/interpolation on ss_*/csi_* (G2)
+- [x] No sklearn import outside ml/ and the model loader
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Yashwant

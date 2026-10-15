@@ -169,3 +169,34 @@ def if_scores(
     df["if_flag"] = if_flag.astype("boolean")
 
     return df
+
+
+def load_model_and_scaler(
+    models_dir: Path | str = MODELS_DIR,
+    feature_cols: Sequence[str] = FEATURE_COLUMNS,
+) -> tuple[IsolationForest, StandardScaler]:
+    """Load and verify Isolation Forest model and StandardScaler artifacts.
+
+    Verifies model provenance metadata at startup, raising ConfigError on mismatch.
+
+    Args:
+        models_dir: Directory containing if_v1.joblib, scaler.joblib, and if_v1.meta.json.
+        feature_cols: Expected ordered feature columns.
+
+    Returns:
+        Tuple of (IsolationForest, StandardScaler).
+    """
+    models_path = Path(models_dir)
+    verify_model_metadata(models_path, expected_feature_cols=feature_cols)
+
+    model_file = models_path / "if_v1.joblib"
+    if not model_file.exists():
+        raise FileNotFoundError(f"Model file not found at {model_file}")
+
+    scaler_file = models_path / "scaler.joblib"
+    if not scaler_file.exists():
+        raise FileNotFoundError(f"Scaler file not found at {scaler_file}")
+
+    model: IsolationForest = joblib.load(model_file)
+    scaler: StandardScaler = joblib.load(scaler_file)
+    return model, scaler
