@@ -242,13 +242,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-002: Implement the per-session buffer
-**Status:** ⬜
+**Status:** ✅
 **Description:** In `streaming/session_manager.py` implement `SessionBuffer`: append validated C2 rows, track `last_seq`, ignore duplicate seq, keep device-timestamp order, enforce `SESSION_MAX_ROWS` (close and roll to a new session, log WARNING). Pure, synchronous, injectable clock.
 **Dependencies:** T11-001, T10-005
 **Acceptance Criteria:**
-- [ ] Duplicate seq adds no row
-- [ ] Out-of-order arrivals end up ordered by timestamp
-- [ ] Rollover at cap tested
+- [x] Duplicate seq adds no row
+- [x] Out-of-order arrivals end up ordered by timestamp
+- [x] Rollover at cap tested
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Yashwant
