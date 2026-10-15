@@ -1,0 +1,47 @@
+{
+  "description": "Error message returned to client on contract or operational violations (C7).",
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "fatal": {
+      "default": false,
+      "title": "Fatal",
+      "type": "boolean"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "seq": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Seq"
+    },
+    "type": {
+      "const": "error",
+      "default": "error",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ],
+  "title": "ErrorMsg",
+  "type": "object"
+}

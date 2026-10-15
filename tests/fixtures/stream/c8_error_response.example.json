@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "correlation_id": "corr-12345",
+    "message": "Unauthorized access"
+  }
+}

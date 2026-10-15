@@ -1,0 +1,43 @@
+{
+  "description": "Queue overflow warning informing subscriber to resync state via REST (C8).",
+  "properties": {
+    "count": {
+      "minimum": 1,
+      "title": "Count",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    },
+    "type": {
+      "const": "dropped",
+      "default": "dropped",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time",
+    "count"
+  ],
+  "title": "DroppedEvent",
+  "type": "object"
+}

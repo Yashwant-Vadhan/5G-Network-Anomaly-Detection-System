@@ -1,0 +1,25 @@
+{
+  "description": "Public healthcheck response for GET /healthz (C8).",
+  "properties": {
+    "status": {
+      "default": "ok",
+      "title": "Status",
+      "type": "string"
+    },
+    "uptime_s": {
+      "minimum": 0.0,
+      "title": "Uptime S",
+      "type": "number"
+    },
+    "version": {
+      "default": "2.0.0",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "uptime_s"
+  ],
+  "title": "HealthResponse",
+  "type": "object"
+}

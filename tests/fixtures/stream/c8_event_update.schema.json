@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "AlertDecision": {
+      "description": "Decision record indicating whether an event fired an alert and why.",
+      "properties": {
+        "alerted": {
+          "title": "Alerted",
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "Alert triggered",
+            "ML-only (no rule evidence)",
+            "Transition only",
+            "Below persistence/severity threshold",
+            "Cooldown active"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alerted",
+        "reason"
+      ],
+      "title": "AlertDecision",
+      "type": "object"
+    },
+    "EventRecord": {
+      "description": "C5-compatible diagnosed event record with C8 status and alert decision.",
+      "properties": {
+        "alert_decision": {
+          "$ref": "#/$defs/AlertDecision"
+        },
+        "anomaly_type": {
+          "title": "Anomaly Type",
+          "type": "string"
+        },
+        "cell": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell"
+        },
+        "cell_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Report"
+        },
+        "diagnosis": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diagnosis"
+        },
+        "end": {
+          "title": "End",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "explanation_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation Text"
+        },
+        "ml": {
+          "title": "Ml",
+          "type": "object"
+        },
+        "network": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network"
+        },
+        "network_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network Report"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommendation"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "signal": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal"
+        },
+        "signal_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal Report"
+        },
+        "start": {
+          "title": "Start",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "PROVISIONAL",
+            "FINAL"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "session_id",
+        "start",
+        "end",
+        "anomaly_type",
+        "severity",
+        "ml",
+        "status",
+        "alert_decision"
+      ],
+      "title": "EventRecord",
+      "type": "object"
+    }
+  },
+  "description": "Event update notification while provisional (C8).",
+  "properties": {
+    "event": {
+      "$ref": "#/$defs/EventRecord"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "type": {
+      "const": "event_update",
+      "default": "event_update",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time",
+    "session_id",
+    "event"
+  ],
+  "title": "LiveEventUpdate",
+  "type": "object"
+}

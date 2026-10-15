@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "ErrorDetail": {
+      "description": "Error detail block adhering strictly to C8 error specification.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "correlation_id": {
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "correlation_id"
+      ],
+      "title": "ErrorDetail",
+      "type": "object"
+    }
+  },
+  "description": "Generic REST error envelope returning C8 error body without stack traces.",
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorDetail"
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "title": "ErrorResponse",
+  "type": "object"
+}

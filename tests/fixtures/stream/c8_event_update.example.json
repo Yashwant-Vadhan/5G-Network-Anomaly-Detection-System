@@ -1,0 +1,56 @@
+{
+  "event": {
+    "alert_decision": {
+      "alerted": true,
+      "reason": "Alert triggered"
+    },
+    "anomaly_type": "PERSISTENT_POOR_QUALITY",
+    "cell": {
+      "cell_event": "NONE",
+      "evidence": [
+        "PCI stayed constant"
+      ]
+    },
+    "cell_report": null,
+    "diagnosis": {
+      "anomaly_type": "PERSISTENT_POOR_QUALITY",
+      "confidence_note": "Diagnostic correlation derived deterministically from empirical measurements.",
+      "evidence": [
+        "SINR degraded for 24s without cell change"
+      ],
+      "summary": "Persistent poor radio quality (possible)"
+    },
+    "end": "2026-10-09T10:15:30+05:30",
+    "event_id": "redmi-1-e003",
+    "explanation_text": null,
+    "ml": {
+      "anomaly_type": "PERSISTENT_POOR_QUALITY",
+      "max_severity": "MEDIUM",
+      "sample_count": 8
+    },
+    "network": {
+      "deployment_mode": "NSA",
+      "network_state": "stable"
+    },
+    "network_report": null,
+    "recommendation": {
+      "kind": "MONITORING",
+      "text": "Monitor area coverage"
+    },
+    "session_id": "redmi-1",
+    "severity": "MEDIUM",
+    "signal": {
+      "evidence": [
+        "SINR below poor threshold"
+      ],
+      "signal_condition": "degraded"
+    },
+    "signal_report": null,
+    "start": "2026-10-09T10:15:00+05:30",
+    "status": "PROVISIONAL"
+  },
+  "schema_version": 2,
+  "server_time": "2026-10-09T10:15:10+05:30",
+  "session_id": "redmi-1",
+  "type": "event_update"
+}

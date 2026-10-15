@@ -1,0 +1,22 @@
+{
+  "description": "First-frame browser ticket auth on WS /api/v1/live within 5s of connect (C8).",
+  "properties": {
+    "ticket": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Ticket",
+      "type": "string"
+    },
+    "type": {
+      "const": "auth",
+      "default": "auth",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "ticket"
+  ],
+  "title": "BrowserAuthFrame",
+  "type": "object"
+}

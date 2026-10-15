@@ -1,0 +1,284 @@
+{
+  "$defs": {
+    "EdgeSampleInfo": {
+      "description": "Optional advisory edge inference score sent alongside a sample.",
+      "properties": {
+        "feature_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feature Hash"
+        },
+        "if_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "If Score"
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Version"
+        }
+      },
+      "title": "EdgeSampleInfo",
+      "type": "object"
+    },
+    "IngestPayload": {
+      "additionalProperties": false,
+      "description": "Raw telemetry measurement payload carrying exactly the 18 C1 columns.\n\nUnknown fields are strictly forbidden per Contract C7. NA strings and sentinels\nare accepted and coerced to None / missing values where appropriate.",
+      "properties": {
+        "android": {
+          "maxLength": 50,
+          "title": "Android",
+          "type": "string"
+        },
+        "csi_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Rsrp"
+        },
+        "csi_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Rsrq"
+        },
+        "csi_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Sinr"
+        },
+        "deployment_mode": {
+          "default": "UNKNOWN",
+          "maxLength": 50,
+          "title": "Deployment Mode",
+          "type": "string"
+        },
+        "device": {
+          "maxLength": 100,
+          "title": "Device",
+          "type": "string"
+        },
+        "display_override": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Override"
+        },
+        "manufacturer": {
+          "maxLength": 100,
+          "title": "Manufacturer",
+          "type": "string"
+        },
+        "nci": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nci"
+        },
+        "network_type": {
+          "maxLength": 50,
+          "title": "Network Type",
+          "type": "string"
+        },
+        "nrarfcn": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nrarfcn"
+        },
+        "operator": {
+          "maxLength": 100,
+          "title": "Operator",
+          "type": "string"
+        },
+        "pci": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pci"
+        },
+        "registered": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registered"
+        },
+        "ss_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Rsrp"
+        },
+        "ss_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Rsrq"
+        },
+        "ss_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Sinr"
+        },
+        "timestamp": {
+          "maxLength": 64,
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "timestamp",
+        "device",
+        "manufacturer",
+        "android",
+        "operator",
+        "network_type"
+      ],
+      "title": "IngestPayload",
+      "type": "object"
+    }
+  },
+  "description": "Single telemetry measurement message from phone collector (C7).",
+  "properties": {
+    "edge": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EdgeSampleInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "payload": {
+      "$ref": "#/$defs/IngestPayload"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "sent_at": {
+      "title": "Sent At",
+      "type": "string"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "type": {
+      "const": "sample",
+      "default": "sample",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "seq",
+    "sent_at",
+    "payload"
+  ],
+  "title": "IngestSample",
+  "type": "object"
+}

@@ -1,0 +1,39 @@
+{
+  "acknowledged_at": null,
+  "alert_id": "al-000017",
+  "anomaly_type": "PERSISTENT_POOR_QUALITY",
+  "body": "SINR below the configured poor-quality level for 24 s; RSRQ also degraded; no cell change in the window.",
+  "created_at": "2026-10-09T10:15:41+05:30",
+  "delivery": [
+    {
+      "channel": "in_app",
+      "detail": null,
+      "status": "OK"
+    },
+    {
+      "channel": "webhook",
+      "detail": "timeout",
+      "status": "FAILED"
+    }
+  ],
+  "event_id": "redmi-1-e003",
+  "event_status": "PROVISIONAL",
+  "evidence": [
+    "SS-RSRP degraded to -105 dBm"
+  ],
+  "kind": "NEW",
+  "policy": {
+    "min_persistence": 6,
+    "min_severity": "MEDIUM",
+    "persistence_samples": 8,
+    "rule_evidence": true
+  },
+  "recommendation": {
+    "kind": "MONITORING",
+    "text": "Maintain standard telemetry"
+  },
+  "session_id": "redmi-1",
+  "severity": "MEDIUM",
+  "source": "phone",
+  "title": "MEDIUM \u00b7 Persistent poor radio quality (possible)"
+}

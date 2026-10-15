@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "SessionSummary": {
+      "description": "Session metadata summary item (C8).",
+      "properties": {
+        "end_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Time"
+        },
+        "event_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Event Count",
+          "type": "integer"
+        },
+        "sample_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "phone",
+            "replay"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "start_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Time"
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "CLOSED",
+            "INCOMPLETE"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id",
+        "source",
+        "status"
+      ],
+      "title": "SessionSummary",
+      "type": "object"
+    }
+  },
+  "description": "Response payload for GET /api/v1/sessions.",
+  "properties": {
+    "sessions": {
+      "items": {
+        "$ref": "#/$defs/SessionSummary"
+      },
+      "title": "Sessions",
+      "type": "array"
+    },
+    "total": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "title": "SessionListResponse",
+  "type": "object"
+}

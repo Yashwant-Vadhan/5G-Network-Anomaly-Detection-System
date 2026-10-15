@@ -1,0 +1,30 @@
+{
+  "description": "Response payload for GET /api/v1/model.",
+  "properties": {
+    "feature_columns": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Feature Columns",
+      "type": "array"
+    },
+    "feature_hash": {
+      "title": "Feature Hash",
+      "type": "string"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "thresholds": {
+      "title": "Thresholds",
+      "type": "object"
+    }
+  },
+  "required": [
+    "model_version",
+    "feature_hash"
+  ],
+  "title": "ModelInfoResponse",
+  "type": "object"
+}

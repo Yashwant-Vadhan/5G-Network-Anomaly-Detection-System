@@ -1,0 +1,63 @@
+{
+  "$defs": {
+    "IngestLimits": {
+      "description": "Operational server limits negotiated during hello handshake.",
+      "properties": {
+        "max_message_bytes": {
+          "default": 8192,
+          "title": "Max Message Bytes",
+          "type": "integer"
+        },
+        "max_msgs_per_min": {
+          "default": 120,
+          "title": "Max Msgs Per Min",
+          "type": "integer"
+        }
+      },
+      "title": "IngestLimits",
+      "type": "object"
+    }
+  },
+  "description": "Server handshake acknowledgment accepting an ingest session (C7).",
+  "properties": {
+    "last_seq_acked": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Last Seq Acked",
+      "type": "integer"
+    },
+    "limits": {
+      "$ref": "#/$defs/IngestLimits"
+    },
+    "model_version": {
+      "default": "if_v1",
+      "title": "Model Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "type": {
+      "const": "hello_ack",
+      "default": "hello_ack",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "server_time"
+  ],
+  "title": "HelloAck",
+  "type": "object"
+}

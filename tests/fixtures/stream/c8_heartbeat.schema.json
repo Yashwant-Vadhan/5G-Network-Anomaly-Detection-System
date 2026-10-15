@@ -1,0 +1,37 @@
+{
+  "description": "Periodic 5-second server heartbeat frame (C8).",
+  "properties": {
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    },
+    "type": {
+      "const": "heartbeat",
+      "default": "heartbeat",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time"
+  ],
+  "title": "HeartbeatEvent",
+  "type": "object"
+}

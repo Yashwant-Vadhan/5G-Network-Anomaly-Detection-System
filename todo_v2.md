@@ -129,13 +129,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-008: Export golden contract examples and add a drift check
-**Status:** ⬜
+**Status:** ✅
 **Description:** Write `scripts/export_contract_examples.py` that emits JSON Schema and one valid example per message to `tests/fixtures/stream/`; add `--check` mode that fails if committed files differ from regenerated ones.
 **Dependencies:** T10-005, T10-006, T10-007
 **Acceptance Criteria:**
-- [ ] Files committed under tests/fixtures/stream/
-- [ ] `--check` fails after a deliberate schema edit
-- [ ] Kotlin tests can read the same example files
+- [x] Files committed under tests/fixtures/stream/
+- [x] `--check` fails after a deliberate schema edit
+- [x] Kotlin tests can read the same example files
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant

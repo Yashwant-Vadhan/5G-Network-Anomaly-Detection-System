@@ -1,0 +1,80 @@
+{
+  "description": "Response payload for GET /api/v1/metrics.",
+  "properties": {
+    "drops_count": {
+      "default": 0,
+      "title": "Drops Count",
+      "type": "integer"
+    },
+    "duplicates_count": {
+      "default": 0,
+      "title": "Duplicates Count",
+      "type": "integer"
+    },
+    "max_latency_ms": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Latency Ms"
+    },
+    "p50_latency_ms": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "P50 Latency Ms"
+    },
+    "p95_latency_ms": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "P95 Latency Ms"
+    },
+    "queue_depth": {
+      "default": 0,
+      "title": "Queue Depth",
+      "type": "integer"
+    },
+    "sequence_gaps": {
+      "items": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object"
+      },
+      "title": "Sequence Gaps",
+      "type": "array"
+    },
+    "skew_estimate_s": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Skew Estimate S"
+    }
+  },
+  "title": "MetricsResponse",
+  "type": "object"
+}

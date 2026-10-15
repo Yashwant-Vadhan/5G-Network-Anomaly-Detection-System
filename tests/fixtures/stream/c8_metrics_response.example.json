@@ -1,0 +1,10 @@
+{
+  "drops_count": 0,
+  "duplicates_count": 0,
+  "max_latency_ms": 12.0,
+  "p50_latency_ms": 2.1,
+  "p95_latency_ms": 4.8,
+  "queue_depth": 0,
+  "sequence_gaps": [],
+  "skew_estimate_s": null
+}

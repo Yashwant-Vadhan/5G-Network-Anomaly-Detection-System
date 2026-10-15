@@ -1,0 +1,120 @@
+{
+  "last_alerts": [],
+  "latest_sample": {
+    "android": "16",
+    "anomaly_type": "NORMAL",
+    "baseline_flag": false,
+    "baseline_z_max": 0.4,
+    "baseline_z_rsrp": 0.2,
+    "baseline_z_rsrq": 0.1,
+    "baseline_z_sinr": -0.4,
+    "csi_available": false,
+    "csi_rsrp": null,
+    "csi_rsrq": null,
+    "csi_sinr": null,
+    "delta_rsrp": -2.0,
+    "delta_rsrq": 0.0,
+    "delta_sinr": 1.0,
+    "deployment_mode": "NSA",
+    "device": "SM-A156E",
+    "display_override": "NR_NSA",
+    "dup_ts": false,
+    "edge_divergence": 0.01,
+    "edge_if_score": 0.34,
+    "event_id": null,
+    "if_flag": false,
+    "if_score": 0.35,
+    "is_anom": false,
+    "is_synthetic": false,
+    "is_valid": true,
+    "manufacturer": "samsung",
+    "model_eligible": true,
+    "nci": 0,
+    "nci_changed": false,
+    "network_changed": false,
+    "network_type": "LTE",
+    "nrarfcn": 629952,
+    "operator": "airtel",
+    "pci": 861,
+    "pci_changed": false,
+    "poor_rsrq_run": 0,
+    "poor_sinr_run": 0,
+    "published_at": "2026-10-01T18:26:32.508+05:30",
+    "received_at": "2026-10-01T18:26:32.500+05:30",
+    "registered": false,
+    "rolling_mean_rsrp": -96.5,
+    "rolling_mean_rsrq": -12.0,
+    "rolling_mean_sinr": 2.8,
+    "rolling_std_rsrp": 0.5,
+    "rolling_std_rsrq": 0.0,
+    "rolling_std_sinr": 0.4,
+    "sample_idx": 42,
+    "scored_at": "2026-10-01T18:26:32.505+05:30",
+    "seq": 42,
+    "session_id": "sm-a156e-1",
+    "severity": "NONE",
+    "source_file": "5G_measurements_Samsung_Indoor-Movement.csv",
+    "ss_rsrp": -97.0,
+    "ss_rsrq": -12.0,
+    "ss_sinr": 3.0,
+    "timestamp": "01-10-26 18:26:32",
+    "weak_rsrp_run": 0
+  },
+  "open_events": [
+    {
+      "alert_decision": {
+        "alerted": true,
+        "reason": "Alert triggered"
+      },
+      "anomaly_type": "PERSISTENT_POOR_QUALITY",
+      "cell": {
+        "cell_event": "NONE",
+        "evidence": [
+          "PCI stayed constant"
+        ]
+      },
+      "cell_report": null,
+      "diagnosis": {
+        "anomaly_type": "PERSISTENT_POOR_QUALITY",
+        "confidence_note": "Diagnostic correlation derived deterministically from empirical measurements.",
+        "evidence": [
+          "SINR degraded for 24s without cell change"
+        ],
+        "summary": "Persistent poor radio quality (possible)"
+      },
+      "end": "2026-10-09T10:15:30+05:30",
+      "event_id": "redmi-1-e003",
+      "explanation_text": null,
+      "ml": {
+        "anomaly_type": "PERSISTENT_POOR_QUALITY",
+        "max_severity": "MEDIUM",
+        "sample_count": 8
+      },
+      "network": {
+        "deployment_mode": "NSA",
+        "network_state": "stable"
+      },
+      "network_report": null,
+      "recommendation": {
+        "kind": "MONITORING",
+        "text": "Monitor area coverage"
+      },
+      "session_id": "redmi-1",
+      "severity": "MEDIUM",
+      "signal": {
+        "evidence": [
+          "SINR below poor threshold"
+        ],
+        "signal_condition": "degraded"
+      },
+      "signal_report": null,
+      "start": "2026-10-09T10:15:00+05:30",
+      "status": "PROVISIONAL"
+    }
+  ],
+  "schema_version": 2,
+  "server_time": "2026-10-09T10:15:00+05:30",
+  "session_id": "redmi-1",
+  "state": "LIVE",
+  "type": "snapshot"
+}

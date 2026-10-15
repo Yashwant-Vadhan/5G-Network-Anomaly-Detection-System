@@ -1,0 +1,26 @@
+{
+  "description": "Cumulative delivery acknowledgment sent from server to client (C7).",
+  "properties": {
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "type": {
+      "const": "ack",
+      "default": "ack",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "seq"
+  ],
+  "title": "Ack",
+  "type": "object"
+}

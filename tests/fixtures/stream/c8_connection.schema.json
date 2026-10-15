@@ -1,0 +1,78 @@
+{
+  "description": "Server-authoritative connection & freshness state event (C8).",
+  "properties": {
+    "last_sample_age_s": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Sample Age S"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "enum": [
+            "phone",
+            "replay"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
+    },
+    "state": {
+      "enum": [
+        "LIVE",
+        "STALE",
+        "RECONNECTING",
+        "WAITING",
+        "DISCONNECTED",
+        "REPLAY-SOURCE"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "type": {
+      "const": "connection",
+      "default": "connection",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time",
+    "state"
+  ],
+  "title": "ConnectionEvent",
+  "type": "object"
+}

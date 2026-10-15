@@ -1,0 +1,5 @@
+{
+  "reason": "user_stopped",
+  "schema_version": 2,
+  "type": "bye"
+}

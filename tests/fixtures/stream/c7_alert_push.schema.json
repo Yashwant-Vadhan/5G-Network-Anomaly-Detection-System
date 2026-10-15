@@ -1,0 +1,25 @@
+{
+  "description": "Compact alert push notification sent from server to client (C7).",
+  "properties": {
+    "alert": {
+      "title": "Alert",
+      "type": "object"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "type": {
+      "const": "alert",
+      "default": "alert",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "alert"
+  ],
+  "title": "AlertPush",
+  "type": "object"
+}

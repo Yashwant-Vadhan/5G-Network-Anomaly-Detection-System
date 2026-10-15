@@ -1,0 +1,149 @@
+{
+  "$defs": {
+    "AlertDelivery": {
+      "description": "Per-channel delivery attempt result.",
+      "properties": {
+        "channel": {
+          "title": "Channel",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "status": {
+          "enum": [
+            "OK",
+            "FAILED",
+            "SKIPPED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "channel",
+        "status"
+      ],
+      "title": "AlertDelivery",
+      "type": "object"
+    }
+  },
+  "description": "Alert record specification for alerts.jsonl, alert events, and external dispatches.",
+  "properties": {
+    "acknowledged_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Acknowledged At"
+    },
+    "alert_id": {
+      "title": "Alert Id",
+      "type": "string"
+    },
+    "anomaly_type": {
+      "title": "Anomaly Type",
+      "type": "string"
+    },
+    "body": {
+      "title": "Body",
+      "type": "string"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "delivery": {
+      "items": {
+        "$ref": "#/$defs/AlertDelivery"
+      },
+      "title": "Delivery",
+      "type": "array"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_status": {
+      "enum": [
+        "PROVISIONAL",
+        "FINAL"
+      ],
+      "title": "Event Status",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "kind": {
+      "enum": [
+        "NEW",
+        "ESCALATION",
+        "RESOLVED"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "policy": {
+      "title": "Policy",
+      "type": "object"
+    },
+    "recommendation": {
+      "title": "Recommendation",
+      "type": "object"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "severity": {
+      "title": "Severity",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "phone",
+        "replay"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "alert_id",
+    "created_at",
+    "event_id",
+    "session_id",
+    "source",
+    "kind",
+    "severity",
+    "anomaly_type",
+    "event_status",
+    "title",
+    "body"
+  ],
+  "title": "AlertRecord",
+  "type": "object"
+}

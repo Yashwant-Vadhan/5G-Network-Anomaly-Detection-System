@@ -1,0 +1,27 @@
+{
+  "edge": null,
+  "payload": {
+    "android": "16",
+    "csi_rsrp": null,
+    "csi_rsrq": null,
+    "csi_sinr": null,
+    "deployment_mode": "NSA",
+    "device": "SM-A156E",
+    "display_override": "NR_NSA",
+    "manufacturer": "samsung",
+    "nci": 0,
+    "network_type": "LTE",
+    "nrarfcn": 629952,
+    "operator": "airtel",
+    "pci": 861,
+    "registered": false,
+    "ss_rsrp": -97.0,
+    "ss_rsrq": -12.0,
+    "ss_sinr": 3.0,
+    "timestamp": "01-10-26 18:26:32"
+  },
+  "schema_version": 2,
+  "sent_at": "2026-10-01T18:26:32.412+05:30",
+  "seq": 119,
+  "type": "sample"
+}

@@ -1,0 +1,14 @@
+{
+  "sessions": [
+    {
+      "end_time": null,
+      "event_count": 0,
+      "sample_count": 100,
+      "session_id": "redmi-1",
+      "source": "phone",
+      "start_time": null,
+      "status": "OPEN"
+    }
+  ],
+  "total": 1
+}

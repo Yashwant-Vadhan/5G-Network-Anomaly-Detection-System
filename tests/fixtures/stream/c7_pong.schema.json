@@ -1,0 +1,25 @@
+{
+  "description": "Heartbeat response to client ping (C7).",
+  "properties": {
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "type": {
+      "const": "pong",
+      "default": "pong",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time"
+  ],
+  "title": "Pong",
+  "type": "object"
+}

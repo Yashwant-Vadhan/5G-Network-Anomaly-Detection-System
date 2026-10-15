@@ -1,0 +1,30 @@
+{
+  "description": "Heartbeat ping from client (C7).",
+  "properties": {
+    "dropped_from_queue": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Dropped From Queue",
+      "type": "integer"
+    },
+    "queue_depth": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Queue Depth",
+      "type": "integer"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "type": {
+      "const": "ping",
+      "default": "ping",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "title": "IngestPing",
+  "type": "object"
+}

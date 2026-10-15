@@ -1,0 +1,8 @@
+{
+  "alert": {
+    "severity": "MEDIUM",
+    "title": "MEDIUM \u00b7 Radio anomaly"
+  },
+  "schema_version": 2,
+  "type": "alert"
+}

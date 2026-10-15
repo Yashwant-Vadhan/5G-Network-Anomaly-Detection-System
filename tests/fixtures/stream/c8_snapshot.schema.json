@@ -1,0 +1,850 @@
+{
+  "$defs": {
+    "AlertDecision": {
+      "description": "Decision record indicating whether an event fired an alert and why.",
+      "properties": {
+        "alerted": {
+          "title": "Alerted",
+          "type": "boolean"
+        },
+        "reason": {
+          "enum": [
+            "Alert triggered",
+            "ML-only (no rule evidence)",
+            "Transition only",
+            "Below persistence/severity threshold",
+            "Cooldown active"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alerted",
+        "reason"
+      ],
+      "title": "AlertDecision",
+      "type": "object"
+    },
+    "EventRecord": {
+      "description": "C5-compatible diagnosed event record with C8 status and alert decision.",
+      "properties": {
+        "alert_decision": {
+          "$ref": "#/$defs/AlertDecision"
+        },
+        "anomaly_type": {
+          "title": "Anomaly Type",
+          "type": "string"
+        },
+        "cell": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell"
+        },
+        "cell_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Report"
+        },
+        "diagnosis": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Diagnosis"
+        },
+        "end": {
+          "title": "End",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "explanation_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation Text"
+        },
+        "ml": {
+          "title": "Ml",
+          "type": "object"
+        },
+        "network": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network"
+        },
+        "network_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network Report"
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommendation"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        },
+        "signal": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal"
+        },
+        "signal_report": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal Report"
+        },
+        "start": {
+          "title": "Start",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "PROVISIONAL",
+            "FINAL"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "session_id",
+        "start",
+        "end",
+        "anomaly_type",
+        "severity",
+        "ml",
+        "status",
+        "alert_decision"
+      ],
+      "title": "EventRecord",
+      "type": "object"
+    },
+    "ScoredSample": {
+      "description": "One scored sample bearing all C4 columns plus C8 streaming metadata.",
+      "properties": {
+        "android": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Android"
+        },
+        "anomaly_type": {
+          "default": "NORMAL",
+          "title": "Anomaly Type",
+          "type": "string"
+        },
+        "baseline_flag": {
+          "default": false,
+          "title": "Baseline Flag",
+          "type": "boolean"
+        },
+        "baseline_z_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Z Max"
+        },
+        "baseline_z_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Z Rsrp"
+        },
+        "baseline_z_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Z Rsrq"
+        },
+        "baseline_z_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baseline Z Sinr"
+        },
+        "csi_available": {
+          "default": false,
+          "title": "Csi Available",
+          "type": "boolean"
+        },
+        "csi_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Rsrp"
+        },
+        "csi_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Rsrq"
+        },
+        "csi_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csi Sinr"
+        },
+        "delta_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delta Rsrp"
+        },
+        "delta_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delta Rsrq"
+        },
+        "delta_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delta Sinr"
+        },
+        "deployment_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deployment Mode"
+        },
+        "device": {
+          "title": "Device",
+          "type": "string"
+        },
+        "display_override": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Override"
+        },
+        "dup_ts": {
+          "default": false,
+          "title": "Dup Ts",
+          "type": "boolean"
+        },
+        "edge_divergence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Edge Divergence"
+        },
+        "edge_if_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Edge If Score"
+        },
+        "event_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Id"
+        },
+        "if_flag": {
+          "default": false,
+          "title": "If Flag",
+          "type": "boolean"
+        },
+        "if_score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "If Score"
+        },
+        "is_anom": {
+          "default": false,
+          "title": "Is Anom",
+          "type": "boolean"
+        },
+        "is_synthetic": {
+          "default": false,
+          "title": "Is Synthetic",
+          "type": "boolean"
+        },
+        "is_valid": {
+          "default": true,
+          "title": "Is Valid",
+          "type": "boolean"
+        },
+        "manufacturer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manufacturer"
+        },
+        "model_eligible": {
+          "default": true,
+          "title": "Model Eligible",
+          "type": "boolean"
+        },
+        "nci": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nci"
+        },
+        "nci_changed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nci Changed"
+        },
+        "network_changed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network Changed"
+        },
+        "network_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Network Type"
+        },
+        "nrarfcn": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nrarfcn"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operator"
+        },
+        "pci": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pci"
+        },
+        "pci_changed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pci Changed"
+        },
+        "poor_rsrq_run": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Poor Rsrq Run"
+        },
+        "poor_sinr_run": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Poor Sinr Run"
+        },
+        "published_at": {
+          "title": "Published At",
+          "type": "string"
+        },
+        "received_at": {
+          "title": "Received At",
+          "type": "string"
+        },
+        "registered": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registered"
+        },
+        "rolling_mean_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Mean Rsrp"
+        },
+        "rolling_mean_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Mean Rsrq"
+        },
+        "rolling_mean_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Mean Sinr"
+        },
+        "rolling_std_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Std Rsrp"
+        },
+        "rolling_std_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Std Rsrq"
+        },
+        "rolling_std_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rolling Std Sinr"
+        },
+        "sample_idx": {
+          "default": 0,
+          "title": "Sample Idx",
+          "type": "integer"
+        },
+        "scored_at": {
+          "title": "Scored At",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "severity": {
+          "default": "NONE",
+          "title": "Severity",
+          "type": "string"
+        },
+        "source_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source File"
+        },
+        "ss_rsrp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Rsrp"
+        },
+        "ss_rsrq": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Rsrq"
+        },
+        "ss_sinr": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ss Sinr"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "weak_rsrp_run": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weak Rsrp Run"
+        }
+      },
+      "required": [
+        "timestamp",
+        "device",
+        "session_id",
+        "seq",
+        "received_at",
+        "scored_at",
+        "published_at"
+      ],
+      "title": "ScoredSample",
+      "type": "object"
+    }
+  },
+  "description": "Initial connection snapshot emitted to newly connected live subscribers (C8).",
+  "properties": {
+    "last_alerts": {
+      "items": {
+        "type": "object"
+      },
+      "title": "Last Alerts",
+      "type": "array"
+    },
+    "latest_sample": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScoredSample"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "open_events": {
+      "items": {
+        "$ref": "#/$defs/EventRecord"
+      },
+      "title": "Open Events",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "server_time": {
+      "title": "Server Time",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "LIVE",
+        "STALE",
+        "RECONNECTING",
+        "WAITING",
+        "DISCONNECTED",
+        "REPLAY-SOURCE"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "type": {
+      "const": "snapshot",
+      "default": "snapshot",
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "server_time",
+    "session_id",
+    "state"
+  ],
+  "title": "SnapshotEvent",
+  "type": "object"
+}

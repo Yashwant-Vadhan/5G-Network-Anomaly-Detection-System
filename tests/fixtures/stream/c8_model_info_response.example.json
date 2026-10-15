@@ -1,0 +1,12 @@
+{
+  "feature_columns": [
+    "ss_rsrp",
+    "ss_rsrq",
+    "ss_sinr"
+  ],
+  "feature_hash": "hash-12345",
+  "model_version": "if_v1",
+  "thresholds": {
+    "if_threshold": 0.6
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "last_sample_age_s": 1.5,
+  "schema_version": 2,
+  "server_time": "2026-10-09T10:15:00+05:30",
+  "session_id": "redmi-1",
+  "source": "phone",
+  "state": "LIVE",
+  "type": "connection"
+}

@@ -1,0 +1,8 @@
+{
+  "code": "BAD_MESSAGE",
+  "fatal": false,
+  "message": "Payload invalid",
+  "schema_version": 2,
+  "seq": 105,
+  "type": "error"
+}

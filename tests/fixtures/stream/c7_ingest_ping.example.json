@@ -1,0 +1,6 @@
+{
+  "dropped_from_queue": 0,
+  "queue_depth": 5,
+  "schema_version": 2,
+  "type": "ping"
+}
