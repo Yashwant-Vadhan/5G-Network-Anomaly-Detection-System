@@ -325,13 +325,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-009: Implement the live capture store
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/store.py`: append each accepted sample to `data/live/<client>_<session>_<YYYYMMDD>_<HHMM>.csv` in exact C1 header/format, write `.meta.json` (`source`, `status` OPEN/CLOSED/INCOMPLETE), fsync and sha256 on close. Refuse any path under `data/raw/`.
 **Dependencies:** T11-002
 **Acceptance Criteria:**
-- [ ] Capture re-ingested by the batch pipeline gives identical rows
-- [ ] Path guard test (G7/G22)
-- [ ] Crash simulation leaves status INCOMPLETE
+- [x] Capture re-ingested by the batch pipeline gives identical rows
+- [x] Path guard test (G7/G22)
+- [x] Crash simulation leaves status INCOMPLETE
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
