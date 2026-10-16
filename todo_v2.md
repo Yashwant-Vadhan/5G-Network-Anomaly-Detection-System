@@ -153,13 +153,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-010: Extend CI for streaming tests and secret patterns
-**Status:** ⬜
+**Status:** ✅
 **Description:** Update `.github/workflows/ci.yml` to run `pytest tests/streaming`, the contract drift check, and the secret scan with extra patterns (webhook URLs, SMTP passwords, 32-byte hex/base64 tokens). Soak tests excluded from CI.
 **Dependencies:** T10-003
 **Acceptance Criteria:**
-- [ ] CI green on a PR touching streaming/
-- [ ] A planted fake token in a test branch makes CI fail
-- [ ] Runtime stays reasonable (note it in the PR)
+- [x] CI green on a PR touching streaming/
+- [x] A planted fake token in a test branch makes CI fail
+- [x] Runtime stays reasonable (note it in the PR)
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Yashwant

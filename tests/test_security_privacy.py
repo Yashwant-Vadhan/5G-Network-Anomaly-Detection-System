@@ -88,6 +88,11 @@ def test_no_hardcoded_secrets_in_repo():
         r"aws_secret_access_key",
         r"ghp_[a-zA-Z0-9]{36}",
         r"sk-[a-zA-Z0-9]{48}",
+        r"https://hooks\.slack\.com/services/[A-Za-z0-9/]+",
+        r"https://discord\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+",
+        r"(?i)smtp_password\s*=\s*[\"'][^\"']{8,}[\"']",
+        r"(?i)(?:ingest_token|api_key|secret_key)\s*[:=]\s*[\"'][0-9a-f]{64}[\"']",
+        r"(?i)(?:ingest_token|api_key|secret_key)\s*[:=]\s*[\"'][A-Za-z0-9+/=]{44}[\"']",
     ]
     tracked_files = [
         p

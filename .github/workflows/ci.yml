@@ -43,7 +43,7 @@ jobs:
         run: python -m pipelines.run_pipeline --input data/sample --output data/processed
 
       - name: Test (pytest with coverage)
-        run: python -m pytest --cov=ml --cov=agents --cov-report=term-missing --cov-fail-under=80
+        run: python -m pytest --cov=ml --cov=agents --cov=streaming --cov-report=term-missing --cov-fail-under=80 -m "not soak"
 
   frontend:
     name: frontend lint, test, build
