@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Export JSON Schema and golden examples for Contract C7, C8, and C9 models (T10-008).
+"""Export JSON Schema and golden examples for Contract C7, C8, C9, C11 models (T10-008, T16-005).
 
 Emits schemas and golden test fixtures to tests/fixtures/stream/ for:
 1. Python unit tests and contract drift verification (--check).
 2. Android Kotlin client deserialization tests (Contract C7 ingest).
-3. React TypeScript frontend type generation (Contract C8 live-stream / REST).
+3. React TypeScript frontend type generation in frontend/src/types/ (C8, C9, C11).
 
 Usage:
-    python scripts/export_contract_examples.py           # Generate / update fixtures
-    python scripts/export_contract_examples.py --check   # Verify committed fixtures match schemas
+    python scripts/export_contract_examples.py           # Generate / update fixtures & TS types
+    python scripts/export_contract_examples.py --check   # Verify committed files match schemas
 """
 
 from __future__ import annotations
@@ -33,7 +33,11 @@ from streaming.schema import (  # noqa: E402
     AlertPush,
     AlertRecord,
     BrowserAuthFrame,
+    BundlePrivacy,
+    BundleSamples,
+    BundleSession,
     ConnectionEvent,
+    DemoBundle,
     DroppedEvent,
     ErrorDetail,
     ErrorMsg,
@@ -61,6 +65,7 @@ from streaming.schema import (  # noqa: E402
 )
 
 FIXTURES_DIR = Path("tests/fixtures/stream")
+TYPES_DIR = Path("frontend/src/types")
 
 
 def get_golden_definitions() -> list[dict[str, Any]]:
@@ -137,7 +142,11 @@ def get_golden_definitions() -> list[dict[str, Any]]:
         end="2026-10-09T10:15:30+05:30",
         anomaly_type="PERSISTENT_POOR_QUALITY",
         severity="MEDIUM",
-        ml={"anomaly_type": "PERSISTENT_POOR_QUALITY", "max_severity": "MEDIUM", "sample_count": 8},
+        ml={
+            "anomaly_type": "PERSISTENT_POOR_QUALITY",
+            "max_severity": "MEDIUM",
+            "sample_count": 8,
+        },
         signal={"signal_condition": "degraded", "evidence": ["SINR below poor threshold"]},
         cell={"cell_event": "NONE", "evidence": ["PCI stayed constant"]},
         network={"network_state": "stable", "deployment_mode": "NSA"},
@@ -182,6 +191,101 @@ def get_golden_definitions() -> list[dict[str, Any]]:
             AlertDelivery(channel="webhook", status="FAILED", detail="timeout"),
         ],
         acknowledged_at=None,
+    )
+
+    demo_bundle = DemoBundle(
+        bundle_version=1,
+        generated_at="2026-10-12T10:00:00Z",
+        model_version="1.0.0",
+        source="sample",
+        privacy=BundlePrivacy(
+            time="device-local, no timezone",
+            cell_ids="hashed",
+            salt_hash="a1b2c3d4e5f60718",
+            cell_lookup={"pci": {"42": "Cell-A"}, "nci": {"13322280247": "Cell-A"}},
+        ),
+        sessions=[
+            BundleSession(
+                session_id="samsung-1",
+                device="Samsung Galaxy S21",
+                operator="Jio",
+                start="2026-10-09 10:15:00",
+                end="2026-10-09 10:15:06",
+                n=3,
+            )
+        ],
+        samples=BundleSamples(
+            columns=[
+                "timestamp",
+                "device",
+                "operator",
+                "network_type",
+                "deployment_mode",
+                "registered",
+                "ss_rsrp",
+                "ss_rsrq",
+                "ss_sinr",
+                "pci",
+                "nci",
+                "nrarfcn",
+                "session_id",
+                "sample_idx",
+                "is_anom",
+                "anomaly_type",
+                "severity",
+                "baseline_flag",
+                "if_flag",
+                "if_score",
+            ],
+            rows=[
+                [
+                    "2026-10-09 10:15:00",
+                    "Samsung Galaxy S21",
+                    "Jio",
+                    "5G",
+                    "NSA",
+                    True,
+                    -95.0,
+                    -11.0,
+                    18.5,
+                    42,
+                    13322280247,
+                    632000,
+                    "samsung-1",
+                    0,
+                    False,
+                    "NORMAL",
+                    "NONE",
+                    False,
+                    False,
+                    0.12,
+                ]
+            ],
+        ),
+        transitions=[
+            {
+                "device": "Samsung Galaxy S21",
+                "session_id": "samsung-1",
+                "timestamp": "2026-10-09 10:15:03",
+                "sample_idx": 1,
+                "type": "PCI",
+                "from_cell": "Cell-A",
+                "to_cell": "Cell-B",
+            }
+        ],
+        events=[
+            {
+                "event_id": "e-001",
+                "session_id": "samsung-1",
+                "start": "2026-10-09 10:15:00",
+                "end": "2026-10-09 10:15:06",
+                "anomaly_type": "SIGNAL_DEGRADATION",
+                "max_severity": "LOW",
+                "status": "FINAL",
+            }
+        ],
+        quality={"total_raw": 3, "clean_rows": 3, "dropped": 0},
+        model_meta={"model_name": "if_v1", "model_version": "1.0.0", "contamination": 0.05},
     )
 
     return [
@@ -370,16 +474,374 @@ def get_golden_definitions() -> list[dict[str, Any]]:
         },
         # Contract C9 Alerts
         {"name": "c9_alert_record", "model": AlertRecord, "example": alert_record},
+        # Contract C11 Demo Bundle
+        {"name": "c11_demo_bundle", "model": DemoBundle, "example": demo_bundle},
     ]
 
 
-def export_examples(check_mode: bool = False, output_dir: Path = FIXTURES_DIR) -> int:
-    """Generate or verify JSON Schema and example files."""
+def generate_typescript_contracts() -> str:
+    """Generate strongly-typed TypeScript interfaces from Contract C8, C9, and C11 schemas."""
+    return """/**
+ * Auto-generated Contract TypeScript Definitions (T16-005).
+ * Generated by scripts/export_contract_examples.py.
+ * DO NOT EDIT DIRECTLY. Run `python scripts/export_contract_examples.py` to regenerate.
+ */
+
+// ==============================================================================
+// Domain Literals & Enums
+// ==============================================================================
+
+export type AnomalyType =
+  | 'NORMAL'
+  | 'SIGNAL_DEGRADATION'
+  | 'SUDDEN_SIGNAL_DEGRADATION'
+  | 'PERSISTENT_POOR_QUALITY'
+  | 'NETWORK_STATE_TRANSITION'
+  | 'CELL_TRANSITION'
+  | 'COMBINED_ANOMALY'
+  | 'STATISTICAL_ONLY';
+
+export type Severity = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
+
+export type EventStatus = 'PROVISIONAL' | 'FINAL';
+
+export type ConnectionState =
+  | 'LIVE'
+  | 'STALE'
+  | 'RECONNECTING'
+  | 'WAITING'
+  | 'DISCONNECTED'
+  | 'REPLAY-SOURCE';
+
+export type AlertKind = 'NEW' | 'ESCALATION' | 'RESOLVED';
+
+export type DeploymentMode = 'NSA' | 'SA' | 'UNKNOWN';
+
+// ==============================================================================
+// Contract C8: Live Streaming & Telemetry Models
+// ==============================================================================
+
+export interface ScoredSample {
+  timestamp: string;
+  device: string;
+  manufacturer?: string | null;
+  android?: string | null;
+  operator?: string | null;
+  network_type?: string | null;
+  deployment_mode?: string | null;
+  display_override?: string | null;
+  registered?: boolean | null;
+  ss_rsrp?: number | null;
+  ss_rsrq?: number | null;
+  ss_sinr?: number | null;
+  csi_rsrp?: number | null;
+  csi_rsrq?: number | null;
+  csi_sinr?: number | null;
+  pci?: number | null;
+  nci?: number | null;
+  nrarfcn?: number | null;
+  session_id: string;
+  sample_idx: number;
+  is_valid: boolean;
+  model_eligible: boolean;
+  csi_available: boolean;
+  is_synthetic: boolean;
+  source_file?: string | null;
+  dup_ts: boolean;
+  delta_rsrp?: number | null;
+  delta_rsrq?: number | null;
+  delta_sinr?: number | null;
+  pci_changed?: number | boolean | null;
+  nci_changed?: number | boolean | null;
+  network_changed?: number | boolean | null;
+  rolling_mean_rsrp?: number | null;
+  rolling_std_rsrp?: number | null;
+  rolling_mean_rsrq?: number | null;
+  rolling_std_rsrq?: number | null;
+  rolling_mean_sinr?: number | null;
+  rolling_std_sinr?: number | null;
+  weak_rsrp_run?: number | null;
+  poor_rsrq_run?: number | null;
+  poor_sinr_run?: number | null;
+  baseline_z_rsrp?: number | null;
+  baseline_z_rsrq?: number | null;
+  baseline_z_sinr?: number | null;
+  baseline_z_max?: number | null;
+  baseline_flag: boolean;
+  if_score?: number | null;
+  if_flag: boolean;
+  anomaly_type: AnomalyType | string;
+  severity: Severity | string;
+  event_id?: string | null;
+  is_anom: boolean;
+  seq: number;
+  received_at: string;
+  scored_at: string;
+  published_at: string;
+  edge_if_score?: number | null;
+  edge_divergence?: number | null;
+}
+
+export interface LiveSampleEvent {
+  type: 'sample';
+  schema_version: number;
+  server_time: string;
+  session_id: string;
+  sample: ScoredSample;
+}
+
+export interface EventRecord {
+  event_id: string;
+  session_id: string;
+  start: string;
+  end: string;
+  sample_count: number;
+  anomaly_type: AnomalyType | string;
+  max_severity: Severity | string;
+  ml: Record<string, unknown>;
+  signal: Record<string, unknown>;
+  cell: Record<string, unknown>;
+  network: Record<string, unknown>;
+  diagnosis: Record<string, unknown>;
+  recommendation: Record<string, unknown>;
+  status: EventStatus | string;
+  alert_decision?: Record<string, unknown> | null;
+}
+
+export interface LiveEventOpen {
+  type: 'event_open';
+  schema_version: number;
+  server_time: string;
+  session_id: string;
+  event: EventRecord;
+}
+
+export interface LiveEventUpdate {
+  type: 'event_update';
+  schema_version: number;
+  server_time: string;
+  session_id: string;
+  event: EventRecord;
+}
+
+export interface LiveEventClosed {
+  type: 'event_closed';
+  schema_version: number;
+  server_time: string;
+  session_id: string;
+  event: EventRecord;
+}
+
+export interface ConnectionEvent {
+  type: 'connection';
+  schema_version: number;
+  server_time: string;
+  state: ConnectionState;
+  device?: string | null;
+  session_id?: string | null;
+  sample_age_s?: number | null;
+  message?: string | null;
+}
+
+export interface SnapshotEvent {
+  type: 'snapshot';
+  schema_version: number;
+  server_time: string;
+  session_id: string;
+  device: string;
+  latest_sample?: ScoredSample | null;
+  state: ConnectionState;
+  open_events: EventRecord[];
+  last_alerts: Record<string, unknown>[];
+}
+
+export interface DroppedEvent {
+  type: 'dropped';
+  schema_version: number;
+  server_time: string;
+  session_id?: string | null;
+  count: number;
+}
+
+export interface HeartbeatEvent {
+  type: 'heartbeat';
+  schema_version: number;
+  server_time: string;
+}
+
+export interface BrowserAuthFrame {
+  type: 'auth';
+  ticket: string;
+}
+
+// ==============================================================================
+// Contract C8: REST API Response Models
+// ==============================================================================
+
+export interface HealthResponse {
+  status: string;
+  version: string;
+  model_version: string;
+  uptime_s: number;
+  active_sessions: number;
+}
+
+export interface SessionSummary {
+  session_id: string;
+  device: string;
+  operator: string;
+  start_time: string;
+  last_time: string;
+  sample_count: number;
+  anomaly_count: number;
+  is_active: boolean;
+}
+
+export interface SessionListResponse {
+  sessions: SessionSummary[];
+}
+
+export interface SamplesResponse {
+  session_id: string;
+  samples: ScoredSample[];
+  total_count: number;
+  has_more: boolean;
+}
+
+export interface EventsResponse {
+  session_id: string;
+  events: EventRecord[];
+  total_count: number;
+}
+
+export interface ModelInfoResponse {
+  model_name: string;
+  model_version: string;
+  feature_columns: string[];
+  feature_hash: string;
+  training_rows?: number | null;
+  contamination?: number | null;
+  created_at?: string | null;
+}
+
+export interface MetricsResponse {
+  p50_latency_ms: number;
+  p95_latency_ms: number;
+  max_latency_ms: number;
+  duplicates_count: number;
+  drops_count: number;
+}
+
+export interface ErrorDetail {
+  code: string;
+  message: string;
+  correlation_id?: string | null;
+}
+
+export interface ErrorResponse {
+  error: ErrorDetail;
+}
+
+// ==============================================================================
+// Contract C9: Alert Models
+// ==============================================================================
+
+export interface AlertDelivery {
+  channel: string;
+  status: string;
+  detail?: string | null;
+}
+
+export interface AlertRecord {
+  alert_id: string;
+  created_at: string;
+  event_id: string;
+  session_id: string;
+  source: 'phone' | 'server' | 'replay';
+  kind: AlertKind;
+  severity: string;
+  anomaly_type: string;
+  event_status: EventStatus;
+  title: string;
+  body: string;
+  evidence: string[];
+  recommendation: Record<string, unknown>;
+  policy: Record<string, unknown>;
+  delivery: AlertDelivery[];
+  acknowledged_at?: string | null;
+}
+
+// ==============================================================================
+// Contract C11: Demo Data Bundle Models
+// ==============================================================================
+
+export interface BundlePrivacy {
+  time: string;
+  cell_ids: 'raw' | 'hashed';
+  salt_hash?: string | null;
+  cell_lookup?: Record<string, unknown> | null;
+}
+
+export interface BundleSession {
+  session_id: string;
+  device: string;
+  operator?: string | null;
+  start: string;
+  end: string;
+  n: number;
+}
+
+export interface BundleSamples {
+  columns: string[];
+  rows: (number | string | boolean | null)[][];
+}
+
+export interface BundleTransition {
+  device: string;
+  session_id: string;
+  timestamp: string;
+  sample_idx: number;
+  pci_from?: number | string | null;
+  pci_to?: number | string | null;
+  nci_from?: number | string | null;
+  nci_to?: number | string | null;
+  nrarfcn_from?: number | null;
+  nrarfcn_to?: number | null;
+  kind?: string | null;
+  type?: string | null;
+  from_cell?: string | null;
+  to_cell?: string | null;
+}
+
+export interface DemoBundle {
+  bundle_version: number;
+  generated_at: string;
+  model_version: string;
+  source: 'processed' | 'sample';
+  privacy: BundlePrivacy;
+  sessions: BundleSession[];
+  samples: BundleSamples;
+  transitions: BundleTransition[];
+  events: EventRecord[] | Record<string, unknown>[];
+  quality: Record<string, unknown>;
+  model_meta: Record<string, unknown>;
+}
+"""
+
+
+def export_examples(
+    check_mode: bool = False,
+    output_dir: Path = FIXTURES_DIR,
+    types_dir: Path = TYPES_DIR,
+) -> int:
+    """Generate or verify JSON Schema, example files, and TypeScript definitions."""
     definitions = get_golden_definitions()
     output_dir.mkdir(parents=True, exist_ok=True)
+    types_dir.mkdir(parents=True, exist_ok=True)
 
     discrepancies: list[str] = []
 
+    # 1. Export JSON Schemas and golden examples
     for item in definitions:
         name = item["name"]
         model: type[BaseModel] = item["model"]
@@ -388,14 +850,12 @@ def export_examples(check_mode: bool = False, output_dir: Path = FIXTURES_DIR) -
         schema_file = output_dir / f"{name}.schema.json"
         example_file = output_dir / f"{name}.example.json"
 
-        # Generate schema & example JSON
         schema_json = json.dumps(model.model_json_schema(), indent=2, sort_keys=True) + "\n"
         example_json = (
             json.dumps(example_inst.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
         )
 
         if check_mode:
-            # Check schema
             if not schema_file.exists():
                 discrepancies.append(f"Missing schema file: {schema_file}")
             else:
@@ -403,7 +863,6 @@ def export_examples(check_mode: bool = False, output_dir: Path = FIXTURES_DIR) -
                 if existing_schema != schema_json:
                     discrepancies.append(f"Schema drift detected in {schema_file}")
 
-            # Check example
             if not example_file.exists():
                 discrepancies.append(f"Missing example file: {example_file}")
             else:
@@ -415,6 +874,31 @@ def export_examples(check_mode: bool = False, output_dir: Path = FIXTURES_DIR) -
             example_file.write_text(example_json, encoding="utf-8")
             print(f"Exported: {schema_file.name} & {example_file.name}")
 
+    # 2. Export / verify TypeScript type definitions
+    ts_content = generate_typescript_contracts()
+    ts_file = types_dir / "contracts.ts"
+    index_file = types_dir / "index.ts"
+    index_content = "export * from './contracts';\n"
+
+    if check_mode:
+        if not ts_file.exists():
+            discrepancies.append(f"Missing TypeScript types file: {ts_file}")
+        else:
+            existing_ts = ts_file.read_text(encoding="utf-8")
+            if existing_ts != ts_content:
+                discrepancies.append(f"TypeScript type drift detected in {ts_file}")
+
+        if not index_file.exists():
+            discrepancies.append(f"Missing TypeScript index file: {index_file}")
+        else:
+            existing_index = index_file.read_text(encoding="utf-8")
+            if existing_index != index_content:
+                discrepancies.append(f"TypeScript index drift detected in {index_file}")
+    else:
+        ts_file.write_text(ts_content, encoding="utf-8")
+        index_file.write_text(index_content, encoding="utf-8")
+        print(f"Generated: {ts_file} & {index_file}")
+
     if check_mode:
         if discrepancies:
             print("ERROR: Contract example drift check failed!", file=sys.stderr)
@@ -425,16 +909,16 @@ def export_examples(check_mode: bool = False, output_dir: Path = FIXTURES_DIR) -
                 file=sys.stderr,
             )
             return 1
-        print(f"OK: All {len(definitions)} contract schemas and examples match committed fixtures.")
+        print(f"OK: All {len(definitions)} contract schemas and TS types match committed files.")
         return 0
 
-    print(f"\nSuccessfully exported {len(definitions)} schemas and examples to {output_dir}")
+    print(f"\nSuccessfully exported {len(definitions)} schemas, examples, and TypeScript types.")
     return 0
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Export contract JSON schemas and golden fixtures."
+        description="Export contract JSON schemas, golden fixtures, and TypeScript types."
     )
     parser.add_argument(
         "--check", action="store_true", help="Fail with non-zero exit code if files have drifted."
@@ -442,9 +926,14 @@ def main() -> None:
     parser.add_argument(
         "--out-dir", type=Path, default=FIXTURES_DIR, help="Target directory for fixtures."
     )
+    parser.add_argument(
+        "--types-dir", type=Path, default=TYPES_DIR, help="Target directory for TS types."
+    )
     args = parser.parse_args()
 
-    exit_code = export_examples(check_mode=args.check, output_dir=args.out_dir)
+    exit_code = export_examples(
+        check_mode=args.check, output_dir=args.out_dir, types_dir=args.types_dir
+    )
     sys.exit(exit_code)
 
 

@@ -102,12 +102,12 @@
 **Owner:** Yashwant
 
 #### T16-005: Generate TypeScript types from the JSON Schemas
-**Status:** ⬜
+**Status:** ✅
 **Description:** Extend `scripts/export_contract_examples.py` to emit JSON Schema for C11 (and C8/C9/C10 as they land); generate TS types into `frontend/src/types/` with a check that generated files are current (verify the generator tool and its licence).
 **Dependencies:** T16-004, T10-008
 **Acceptance Criteria:**
-- [ ] Types compile
-- [ ] CI fails if schema and types drift
+- [x] Types compile
+- [x] CI fails if schema and types drift
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend
 **Owner:** Sushil

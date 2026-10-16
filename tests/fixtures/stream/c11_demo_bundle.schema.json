@@ -1,0 +1,191 @@
+{
+  "$defs": {
+    "BundlePrivacy": {
+      "description": "Privacy configuration and cell anonymisation lookup (C11, G27).",
+      "properties": {
+        "cell_ids": {
+          "default": "hashed",
+          "enum": [
+            "raw",
+            "hashed"
+          ],
+          "title": "Cell Ids",
+          "type": "string"
+        },
+        "cell_lookup": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cell Lookup"
+        },
+        "salt_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Salt Hash"
+        },
+        "time": {
+          "default": "device-local, no timezone",
+          "title": "Time",
+          "type": "string"
+        }
+      },
+      "title": "BundlePrivacy",
+      "type": "object"
+    },
+    "BundleSamples": {
+      "description": "Columnar sample representation within demo bundle (C11).",
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {},
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "columns",
+        "rows"
+      ],
+      "title": "BundleSamples",
+      "type": "object"
+    },
+    "BundleSession": {
+      "description": "Session summary within demo bundle (C11).",
+      "properties": {
+        "device": {
+          "title": "Device",
+          "type": "string"
+        },
+        "end": {
+          "title": "End",
+          "type": "string"
+        },
+        "n": {
+          "minimum": 0,
+          "title": "N",
+          "type": "integer"
+        },
+        "operator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operator"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "start": {
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id",
+        "device",
+        "start",
+        "end",
+        "n"
+      ],
+      "title": "BundleSession",
+      "type": "object"
+    }
+  },
+  "description": "Contract C11: Offline demo data bundle for the static React dashboard.",
+  "properties": {
+    "bundle_version": {
+      "default": 1,
+      "title": "Bundle Version",
+      "type": "integer"
+    },
+    "events": {
+      "items": {
+        "type": "object"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "model_meta": {
+      "title": "Model Meta",
+      "type": "object"
+    },
+    "model_version": {
+      "default": "1.0.0",
+      "title": "Model Version",
+      "type": "string"
+    },
+    "privacy": {
+      "$ref": "#/$defs/BundlePrivacy"
+    },
+    "quality": {
+      "title": "Quality",
+      "type": "object"
+    },
+    "samples": {
+      "$ref": "#/$defs/BundleSamples"
+    },
+    "sessions": {
+      "items": {
+        "$ref": "#/$defs/BundleSession"
+      },
+      "title": "Sessions",
+      "type": "array"
+    },
+    "source": {
+      "default": "processed",
+      "enum": [
+        "processed",
+        "sample"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "transitions": {
+      "items": {
+        "type": "object"
+      },
+      "title": "Transitions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "generated_at",
+    "privacy",
+    "sessions",
+    "samples"
+  ],
+  "title": "DemoBundle",
+  "type": "object"
+}

@@ -696,3 +696,77 @@ def serialize_alert_jsonl(alert: AlertRecord) -> str:
 def deserialize_alert_jsonl(line: str) -> AlertRecord:
     """Deserialize a single JSON line from alerts.jsonl into an AlertRecord."""
     return AlertRecord.model_validate_json(line.strip())
+
+
+# ==============================================================================
+# Contract C11: Demo Data Bundle Models (T16-002, T16-005)
+# ==============================================================================
+
+
+class BundlePrivacy(BaseModel):
+    """Privacy configuration and cell anonymisation lookup (C11, G27)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    time: str = "device-local, no timezone"
+    cell_ids: Literal["raw", "hashed"] = "hashed"
+    salt_hash: str | None = None
+    cell_lookup: dict[str, Any] | None = None
+
+
+class BundleSession(BaseModel):
+    """Session summary within demo bundle (C11)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    session_id: str
+    device: str
+    operator: str | None = None
+    start: str
+    end: str
+    n: int = Field(..., ge=0)
+
+
+class BundleSamples(BaseModel):
+    """Columnar sample representation within demo bundle (C11)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    columns: list[str]
+    rows: list[list[Any]]
+
+
+class BundleTransition(BaseModel):
+    """Precomputed handover / transition record (C11, T16-002)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    device: str
+    session_id: str
+    timestamp: str
+    sample_idx: int
+    pci_from: int | str | None = None
+    pci_to: int | str | None = None
+    nci_from: int | str | None = None
+    nci_to: int | str | None = None
+    nrarfcn_from: int | None = None
+    nrarfcn_to: int | None = None
+    kind: str | None = None
+
+
+class DemoBundle(BaseModel):
+    """Contract C11: Offline demo data bundle for the static React dashboard."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    bundle_version: int = 1
+    generated_at: str
+    model_version: str = "1.0.0"
+    source: Literal["processed", "sample"] = "processed"
+    privacy: BundlePrivacy
+    sessions: list[BundleSession]
+    samples: BundleSamples
+    transitions: list[dict[str, Any]] = Field(default_factory=list)
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    quality: dict[str, Any] = Field(default_factory=dict)
+    model_meta: dict[str, Any] = Field(default_factory=dict)
