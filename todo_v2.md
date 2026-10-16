@@ -433,13 +433,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-018: Add latency and stream-quality instrumentation
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/metrics.py`: record `received_at`, `scored_at`, `published_at` per sample (monotonic where possible), rolling p50/p95/max, sequence-gap ranges, duplicates, drops, skew estimate; expose via `/api/v1/metrics`.
 **Dependencies:** T11-005, T11-013
 **Acceptance Criteria:**
-- [ ] Percentiles computed over a bounded window
-- [ ] Metrics reset per session
-- [ ] No wall-clock sleeps in tests
+- [x] Percentiles computed over a bounded window
+- [x] Metrics reset per session
+- [x] No wall-clock sleeps in tests
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

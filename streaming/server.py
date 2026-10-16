@@ -20,10 +20,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from streaming.metrics import get_stream_metrics
 from streaming.schema import (
     ErrorDetail,
     ErrorResponse,
     HealthResponse,
+    MetricsResponse,
 )
 
 logger = logging.getLogger("streaming.server")
@@ -197,5 +199,11 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
     @app.get("/api/v1/auth-check")
     async def auth_check(_token: str | None = Depends(verify_ingest_token)) -> dict[str, str]:
         return {"status": "authenticated"}
+
+    @app.get("/api/v1/metrics", response_model=MetricsResponse)
+    async def get_metrics(session_id: str | None = None) -> MetricsResponse:
+        """Report stream latency percentiles, drop counts, sequence gaps, and skew."""
+        metrics = get_stream_metrics(session_id)
+        return metrics.to_response()
 
     return app
