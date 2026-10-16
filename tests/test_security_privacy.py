@@ -96,6 +96,8 @@ def test_no_hardcoded_secrets_in_repo():
         and not any(part.startswith(".") for part in p.parts)
         and "data" not in p.parts
         and "models" not in p.parts
+        and "node_modules" not in p.parts
+        and "dist" not in p.parts
         and "__pycache__" not in p.parts
         and p.name != "test_security_privacy.py"
     ]

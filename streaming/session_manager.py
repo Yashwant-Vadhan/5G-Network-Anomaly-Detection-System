@@ -241,12 +241,21 @@ class SessionManager:
         old_buffer = self._active_sessions.get(client_id)
         if old_buffer is not None:
             old_buffer.close()
-            logger.warning(
-                "Session %s closed (reason: %s); rolling over for client %s",
-                old_buffer.session_id,
-                reason,
-                client_id,
-            )
+            if reason in ("cap", "buffer_cap"):
+                logger.warning(
+                    "Session %s reached cap (%d rows); rolling over for client %s (reason: %s)",
+                    old_buffer.session_id,
+                    old_buffer.max_rows,
+                    client_id,
+                    reason,
+                )
+            else:
+                logger.warning(
+                    "Session %s closed (reason: %s); rolling over for client %s",
+                    old_buffer.session_id,
+                    reason,
+                    client_id,
+                )
 
         new_session_id = self._next_session_id(device)
         new_buffer = SessionBuffer(
