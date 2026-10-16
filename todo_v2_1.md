@@ -275,12 +275,12 @@
 **Owner:** Yashwant
 
 #### T16-020: No-logic lint (G30)
-**Status:** ⬜
+**Status:** ✅
 **Description:** A test that fails if frontend source contains score/threshold/z-score/event-grouping computations (denylist of identifiers + code review checklist); document what is allowed (formatting, filtering, sorting, plotting).
 **Dependencies:** T16-006
 **Acceptance Criteria:**
-- [ ] Test fails when a forbidden identifier is added
-- [ ] Allowed operations documented
+- [x] Test fails when a forbidden identifier is added
+- [x] Allowed operations documented
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
