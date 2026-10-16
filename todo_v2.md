@@ -313,13 +313,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-008: Run the unchanged agents on event open/change/close
-**Status:** ⬜
+**Status:** ✅
 **Description:** In the tracker, call `agents.orchestrator.build_event_window(scores_df, event, context=N)` and `run_agents(window)` on open, on type/severity change and on close; cache by `(event_id, window_hash)`. Validate each record with the same check `write_events_diagnosed` uses, and attach the `PROVISIONAL|FINAL` status. No file under `agents/` may change.
 **Dependencies:** T11-007
 **Acceptance Criteria:**
-- [ ] `git diff` shows no change under agents/
-- [ ] ML flags identical with agents stubbed out (G9)
-- [ ] Diagnosis text passes the existing hedged-language tests
+- [x] `git diff` shows no change under agents/
+- [x] ML flags identical with agents stubbed out (G9)
+- [x] Diagnosis text passes the existing hedged-language tests
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
