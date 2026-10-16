@@ -204,5 +204,6 @@ def reset_stream_metrics(session_id: str | None = None) -> None:
     """Reset metrics for a specific session or global default."""
     if session_id is None:
         _DEFAULT_METRICS.reset()
+        _SESSION_METRICS.clear()
     elif session_id in _SESSION_METRICS:
         _SESSION_METRICS[session_id].reset()

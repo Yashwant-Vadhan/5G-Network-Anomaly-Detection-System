@@ -39,7 +39,7 @@ from ml.schema import ConfigError, SchemaError
 from streaming.engine import StreamingEngine
 from streaming.event_tracker import EventTracker
 from streaming.hub import LiveHub
-from streaming.metrics import get_stream_metrics
+from streaming.metrics import get_stream_metrics, reset_stream_metrics
 from streaming.schema import (
     Ack,
     ErrorDetail,
@@ -475,6 +475,7 @@ def create_app(
                     else:
                         sess_buf = sess_mgr.start_new_session(client_id, device)
                         last_seq_acked = 0
+                        reset_stream_metrics(sess_buf.session_id)
 
                     session_id = sess_buf.session_id
 

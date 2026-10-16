@@ -6,6 +6,7 @@ import json
 
 from fastapi.testclient import TestClient
 
+from streaming.metrics import reset_stream_metrics
 from streaming.schema import SCHEMA_VERSION
 from streaming.server import ServerConfig, create_app
 from streaming.session_manager import SessionManager
@@ -162,6 +163,7 @@ def test_reconnect_after_window_rolls_new_session():
 
 def test_duplicate_samples_add_no_rows_and_seq_gaps_in_metrics():
     """Duplicate fixtures add no rows; forward sequence gaps appear in /api/v1/metrics."""
+    reset_stream_metrics()
     session_manager = SessionManager(max_rows=100)
     config = ServerConfig(retention_enabled=False)
     app = create_app(config, session_manager=session_manager)

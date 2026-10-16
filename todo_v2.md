@@ -409,13 +409,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-016: Unit tests for buffer, validation and ingest handling
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/streaming/`: buffer dedupe/order/rollover, coercion negatives (bad enum, extra column, sentinel), seq gap and duplicate handling, rate limiter token bucket (injectable clock).
 **Dependencies:** T11-002, T11-003, T11-012
 **Acceptance Criteria:**
-- [ ] Each function has a negative/edge test
-- [ ] No sleep-based assertions
-- [ ] Coverage on streaming/ ≥80% so far
+- [x] Each function has a negative/edge test
+- [x] No sleep-based assertions
+- [x] Coverage on streaming/ ≥80% so far
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
