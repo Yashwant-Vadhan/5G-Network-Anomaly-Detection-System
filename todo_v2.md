@@ -301,13 +301,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-007: Implement the EventTracker
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/event_tracker.py`: open an event at the first classified sample, update type/severity as it grows by reusing the event-grouping logic in `ml/anomaly_analysis.detect()` (if grouping is not separately callable, extract it into a helper with unchanged batch output — `scores.csv`/`events.json` byte-identical on `data/sample/`), close after `EVENT_CLOSE_GAP_SAMPLES` normal samples or session end. Status PROVISIONAL → FINAL; FINAL events immutable.
 **Dependencies:** T11-005
 **Acceptance Criteria:**
-- [ ] Event ids match the batch format (`<session>-eNNN`)
-- [ ] FINAL event cannot be modified (raises)
-- [ ] Closed events equal batch events on fixtures (extends T11-006)
+- [x] Event ids match the batch format (`<session>-eNNN`)
+- [x] FINAL event cannot be modified (raises)
+- [x] Closed events equal batch events on fixtures (extends T11-006)
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
