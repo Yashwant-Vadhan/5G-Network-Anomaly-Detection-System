@@ -361,13 +361,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-012: Implement resume and idempotent acks
-**Status:** ⬜
+**Status:** ✅
 **Description:** Honour `resume_from_seq` and `SESSION_RESUME_WINDOW_SECONDS`; duplicates re-acked but not reprocessed (G19); forward seq gaps recorded in metrics as ranges; `SESSION_CONFLICT` for a second live connection on one `client_id`.
 **Dependencies:** T11-011
 **Acceptance Criteria:**
-- [ ] Duplicate fixtures add no rows
-- [ ] Gap ranges visible in `/api/v1/metrics`
-- [ ] Reconnect within window continues the same session
+- [x] Duplicate fixtures add no rows
+- [x] Gap ranges visible in `/api/v1/metrics`
+- [x] Reconnect within window continues the same session
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

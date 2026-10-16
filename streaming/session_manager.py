@@ -20,7 +20,11 @@ from typing import Any
 
 import pandas as pd
 
-from ml.config import SESSION_GAP_SECONDS, SESSION_MAX_ROWS
+from ml.config import (
+    SESSION_GAP_SECONDS,
+    SESSION_MAX_ROWS,
+    SESSION_RESUME_WINDOW_SECONDS,
+)
 from ml.preprocessing import add_sessions
 
 logger = logging.getLogger(__name__)
@@ -181,10 +185,12 @@ class SessionManager:
         max_rows: int = SESSION_MAX_ROWS,
         gap_seconds: int = SESSION_GAP_SECONDS,
         clock: Callable[[], float] = time.time,
+        resume_window_seconds: int = SESSION_RESUME_WINDOW_SECONDS,
     ) -> None:
         self.max_rows = max_rows
         self.gap_seconds = gap_seconds
         self.clock = clock
+        self.resume_window_seconds = resume_window_seconds
         self._active_sessions: dict[str, SessionBuffer] = {}
         self._session_counters: dict[str, int] = {}
 
@@ -193,6 +199,32 @@ class SessionManager:
         count = self._session_counters.get(slug, 0) + 1
         self._session_counters[slug] = count
         return f"{slug}-{count}"
+
+    def get_or_resume_session(
+        self,
+        client_id: str,
+        device: str,
+        resume_from_seq: int = 0,
+        source_file: str | None = None,
+    ) -> SessionBuffer:
+        """Retrieve active session or resume within SESSION_RESUME_WINDOW_SECONDS."""
+        buffer = self._active_sessions.get(client_id)
+        if buffer is not None:
+            now = self.clock()
+            age = now - buffer.last_active_at
+            if age <= self.resume_window_seconds:
+                if buffer.is_closed and resume_from_seq > 0:
+                    buffer.is_closed = False
+                return buffer
+            # Expired past window -> roll session
+            return self.roll_session(
+                client_id=client_id,
+                device=device,
+                reason="resume_window_expired",
+                source_file=source_file,
+            )
+
+        return self.get_or_create_session(client_id, device, source_file=source_file)
 
     def get_or_create_session(
         self,

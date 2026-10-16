@@ -446,7 +446,11 @@ def create_app(
 
                     sess_mgr: SessionManager = app.state.session_manager
                     if hello.resume_from_seq and hello.resume_from_seq > 0:
-                        sess_buf = sess_mgr.get_or_create_session(client_id, device)
+                        sess_buf = sess_mgr.get_or_resume_session(
+                            client_id=client_id,
+                            device=device,
+                            resume_from_seq=hello.resume_from_seq,
+                        )
                         last_seq_acked = hello.resume_from_seq - 1
                     else:
                         sess_buf = sess_mgr.start_new_session(client_id, device)
@@ -491,6 +495,8 @@ def create_app(
 
                     # Idempotent re-ack if seq <= last_seq_acked
                     if sample.seq <= last_seq_acked:
+                        if session_id:
+                            get_stream_metrics(session_id).record_sample({"seq": sample.seq})
                         re_ack = Ack(seq=sample.seq)
                         await websocket.send_text(re_ack.model_dump_json())
                         continue
@@ -524,6 +530,12 @@ def create_app(
                             continue
                     else:
                         scored = None
+
+                    if session_id:
+                        if scored is not None:
+                            get_stream_metrics(session_id).record_sample(scored)
+                        else:
+                            get_stream_metrics(session_id).record_sample({"seq": sample.seq})
 
                     if store is not None:
                         store.append_sample(sample.payload)
