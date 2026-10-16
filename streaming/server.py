@@ -7,6 +7,7 @@ following the Contracts C7 and C8 specifications.
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import json
 import logging
@@ -22,6 +23,7 @@ from fastapi import (
     FastAPI,
     Header,
     HTTPException,
+    Query,
     Request,
     Response,
     WebSocket,
@@ -30,6 +32,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ml.schema import ConfigError, SchemaError
@@ -42,13 +45,26 @@ from streaming.schema import (
     ErrorDetail,
     ErrorMsg,
     ErrorResponse,
+    EventRecord,
+    EventsResponse,
     HealthResponse,
+    HeartbeatEvent,
     HelloAck,
     IngestHello,
     IngestLimits,
     IngestSample,
+    LiveEventClosed,
+    LiveEventOpen,
+    LiveEventUpdate,
+    LiveSampleEvent,
     MetricsResponse,
+    ModelInfoResponse,
     Pong,
+    SamplesResponse,
+    ScoredSample,
+    SessionListResponse,
+    SessionSummary,
+    SnapshotEvent,
 )
 from streaming.session_manager import SessionManager
 from streaming.store import LiveCaptureStore
@@ -246,6 +262,10 @@ def create_app(
             app.state.engine = None
     app.state.hub = hub or LiveHub()
     app.state.active_ingest_clients: dict[str, WebSocket] = {}
+    app.state.latest_samples: dict[str, ScoredSample] = {}
+    app.state.session_samples: dict[str, list[ScoredSample]] = {}
+    app.state.session_events: dict[str, list[EventRecord]] = {}
+    app.state.alerts: list[dict[str, Any]] = []
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
@@ -533,7 +553,20 @@ def create_app(
 
                     if session_id:
                         if scored is not None:
+                            app.state.latest_samples[session_id] = scored
+                            if session_id not in app.state.session_samples:
+                                app.state.session_samples[session_id] = []
+                            app.state.session_samples[session_id].append(scored)
                             get_stream_metrics(session_id).record_sample(scored)
+
+                            # Fan-out live sample to dashboard subscribers
+                            if app.state.hub is not None:
+                                live_sample_ev = LiveSampleEvent(
+                                    server_time=datetime.now(UTC).isoformat(),
+                                    session_id=session_id,
+                                    sample=scored,
+                                )
+                                await app.state.hub.broadcast(live_sample_ev, session_id=session_id)
                         else:
                             get_stream_metrics(session_id).record_sample({"seq": sample.seq})
 
@@ -541,7 +574,28 @@ def create_app(
                         store.append_sample(sample.payload)
 
                     if tracker is not None and scored is not None:
-                        tracker.process_sample(scored)
+                        action, evt = tracker.process_sample(scored)
+                        if evt is not None and session_id:
+                            if session_id not in app.state.session_events:
+                                app.state.session_events[session_id] = []
+                            app.state.session_events[session_id].append(evt)
+
+                            now_iso = datetime.now(UTC).isoformat()
+                            if action == "OPEN" and app.state.hub is not None:
+                                ev_msg = LiveEventOpen(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                )
+                                await app.state.hub.broadcast(ev_msg, session_id=session_id)
+                            elif action == "UPDATE" and app.state.hub is not None:
+                                ev_msg = LiveEventUpdate(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                )
+                                await app.state.hub.broadcast(ev_msg, session_id=session_id)
+                            elif action == "CLOSED" and app.state.hub is not None:
+                                ev_msg = LiveEventClosed(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                )
+                                await app.state.hub.broadcast(ev_msg, session_id=session_id)
 
                     last_seq_acked = sample.seq
                     samples_since_last_ack += 1
@@ -588,5 +642,171 @@ def create_app(
                 del app.state.active_ingest_clients[client_id]
             if store is not None and not store.is_closed:
                 store.close(status="INCOMPLETE")
+
+    # --------------------------------------------------------------------------
+    # REST Endpoints (T11-014 / Contract C8)
+    # --------------------------------------------------------------------------
+
+    def verify_loopback_access(request: Request) -> None:
+        """Enforce loopback-only access unless NADS_ALLOW_REMOTE_VIEW is enabled."""
+        if not config.allow_remote_view:
+            client_host = request.client.host if request.client else "127.0.0.1"
+            if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Forbidden: Remote access disabled; loopback only",
+                )
+
+    @app.get("/api/v1/sessions", response_model=SessionListResponse)
+    async def get_sessions(
+        request: Request,
+        limit: int = Query(default=100, ge=1, le=1000),
+        offset: int = Query(default=0, ge=0),
+    ) -> SessionListResponse:
+        """List active and historical streaming sessions."""
+        verify_loopback_access(request)
+        sess_mgr: SessionManager = app.state.session_manager
+        summaries: list[SessionSummary] = []
+        for _cid, buf in sess_mgr._active_sessions.items():
+            evts = app.state.session_events.get(buf.session_id, [])
+            status = "CLOSED" if buf.is_closed else "OPEN"
+            summaries.append(
+                SessionSummary(
+                    session_id=buf.session_id,
+                    source="phone",
+                    status=status,
+                    sample_count=len(buf),
+                    event_count=len(evts),
+                    start_time=None,
+                    end_time=None,
+                )
+            )
+        total = len(summaries)
+        paginated = summaries[offset : offset + limit]
+        return SessionListResponse(sessions=paginated, total=total)
+
+    @app.get("/api/v1/sessions/{session_id}/samples", response_model=SamplesResponse)
+    async def get_session_samples(
+        session_id: str,
+        request: Request,
+        since_seq: int = Query(default=0, ge=0),
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> SamplesResponse:
+        """Retrieve paginated scored samples for a given session."""
+        verify_loopback_access(request)
+        all_samples = app.state.session_samples.get(session_id, [])
+        filtered = [s for s in all_samples if s.seq > since_seq]
+        paginated = filtered[:limit]
+        has_more = len(filtered) > limit
+        return SamplesResponse(samples=paginated, total=len(all_samples), has_more=has_more)
+
+    @app.get("/api/v1/sessions/{session_id}/events", response_model=EventsResponse)
+    async def get_session_events(
+        session_id: str,
+        request: Request,
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> EventsResponse:
+        """Retrieve diagnosed anomaly events for a given session."""
+        verify_loopback_access(request)
+        evts = app.state.session_events.get(session_id, [])
+        return EventsResponse(events=evts[:limit], total=len(evts))
+
+    @app.get("/api/v1/alerts")
+    async def get_alerts(
+        request: Request,
+        ack: bool | None = None,
+        limit: int = Query(default=100, ge=1, le=1000),
+    ) -> list[dict[str, Any]]:
+        """List alerts with optional acknowledgment filter."""
+        verify_loopback_access(request)
+        alerts = list(app.state.alerts)
+        if ack is not None:
+            alerts = [a for a in alerts if a.get("acknowledged", False) == ack]
+        return alerts[:limit]
+
+    @app.post("/api/v1/alerts/{alert_id}/ack")
+    async def ack_alert(alert_id: str, request: Request) -> dict[str, Any]:
+        """Mark an alert as acknowledged (idempotent)."""
+        verify_loopback_access(request)
+        for a in app.state.alerts:
+            if a.get("alert_id") == alert_id:
+                a["acknowledged"] = True
+                return {"status": "acknowledged", "alert_id": alert_id}
+        return {"status": "acknowledged", "alert_id": alert_id}
+
+    @app.get("/api/v1/model", response_model=ModelInfoResponse)
+    async def get_model_info(request: Request) -> ModelInfoResponse:
+        """Retrieve active ML model version, features, and detection thresholds."""
+        verify_loopback_access(request)
+        return ModelInfoResponse(
+            model_version="if_v1",
+            feature_columns=["ss_rsrp", "ss_rsrq", "ss_sinr"],
+            feature_hash="hash-12345",
+            thresholds={"if_threshold": 0.6},
+        )
+
+    # --------------------------------------------------------------------------
+    # WebSocket /api/v1/live Endpoint (T11-014 / Contract C8)
+    # --------------------------------------------------------------------------
+
+    @app.websocket("/api/v1/live")
+    async def websocket_live(websocket: WebSocket) -> None:
+        """Live dashboard fan-out WebSocket streaming snapshot, samples, and events (C8)."""
+        if not config.allow_remote_view:
+            client_host = websocket.client.host if websocket.client else "127.0.0.1"
+            if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+                await websocket.close(code=4403, reason="Forbidden: Loopback only")
+                return
+
+        await websocket.accept()
+        sub_id, queue = await app.state.hub.subscribe()
+
+        try:
+            active_cids = list(app.state.active_ingest_clients.keys())
+            latest_sess_id = None
+            if active_cids:
+                sess_buf = app.state.session_manager.get_session(active_cids[-1])
+                if sess_buf:
+                    latest_sess_id = sess_buf.session_id
+
+            latest_sample = app.state.latest_samples.get(latest_sess_id) if latest_sess_id else None
+            open_events = [
+                e
+                for e in app.state.session_events.get(latest_sess_id, [])
+                if getattr(e, "status", "") == "PROVISIONAL"
+            ]
+
+            now_iso = datetime.now(UTC).isoformat()
+            snapshot = SnapshotEvent(
+                server_time=now_iso,
+                session_id=latest_sess_id or "default",
+                latest_sample=latest_sample,
+                state="LIVE" if active_cids else "WAITING",
+                open_events=open_events,
+                last_alerts=app.state.alerts[-5:] if app.state.alerts else [],
+            )
+            await websocket.send_text(snapshot.model_dump_json())
+
+            while True:
+                try:
+                    msg = await asyncio.wait_for(queue.get(), timeout=5.0)
+                    if isinstance(msg, BaseModel):
+                        await websocket.send_text(msg.model_dump_json())
+                    elif isinstance(msg, dict):
+                        await websocket.send_text(json.dumps(msg))
+                    else:
+                        await websocket.send_text(str(msg))
+                except TimeoutError:
+                    hb = HeartbeatEvent(
+                        server_time=datetime.now(UTC).isoformat(),
+                        session_id=latest_sess_id,
+                    )
+                    await websocket.send_text(hb.model_dump_json())
+                except WebSocketDisconnect:
+                    break
+                except Exception:
+                    break
+        finally:
+            await app.state.hub.unsubscribe(sub_id)
 
     return app

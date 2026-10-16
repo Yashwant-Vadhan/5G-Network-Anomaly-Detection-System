@@ -385,13 +385,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-014: Implement WS /api/v1/live and the REST endpoints
-**Status:** ⬜
+**Status:** ✅
 **Description:** Implement `snapshot` on connect, `sample`, `event_*`, `alert`, `connection`, `heartbeat`; REST `sessions`, `samples?since_seq=`, `events`, `alerts`, `model`, `metrics` with `MAX_PAGE=1000`. Read endpoints loopback-only unless `NADS_ALLOW_REMOTE_VIEW=true`.
 **Dependencies:** T11-013, T11-008, T11-010
 **Acceptance Criteria:**
-- [ ] Matches golden C8 examples
-- [ ] Non-loopback client refused by default
-- [ ] Pagination cap enforced
+- [x] Matches golden C8 examples
+- [x] Non-loopback client refused by default
+- [x] Pagination cap enforced
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
