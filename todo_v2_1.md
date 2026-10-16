@@ -406,12 +406,12 @@
 *Goal: One container serves the API and the React app; people can pair their own phone; free-tier deployments with limits and privacy controls.*
 
 #### T18-001: Public-mode configuration and start-up guards
-**Status:** ⬜
+**Status:** ✅
 **Description:** `NADS_MODE=local|public`; in public mode require `NADS_ALLOWED_ORIGINS`, force retention off, set caps; refuse to start (exit 2 with a fix hint) otherwise.
 **Dependencies:** T11-010, T10-004
 **Acceptance Criteria:**
-- [ ] Unsafe public config refuses to start
-- [ ] Mode printed in the start-up log without secrets
+- [x] Unsafe public config refuses to start
+- [x] Mode printed in the start-up log without secrets
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

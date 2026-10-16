@@ -12,14 +12,16 @@ import logging
 import os
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from ml.schema import ConfigError
 from streaming.metrics import get_stream_metrics
 from streaming.schema import (
     ErrorDetail,
@@ -40,6 +42,37 @@ class ServerConfig:
     ingest_token: str | None = None
     allow_lan: bool = False
     allow_remote_view: bool = False
+    mode: str = "local"  # "local" | "public"
+    allowed_origins: list[str] = field(default_factory=list)
+    retention_enabled: bool = True
+    max_sessions: int = 10
+    max_msgs_per_min: int = 120
+
+    def validate(self) -> None:
+        """Validate server configuration and startup security guards (T18-001)."""
+        mode_lower = self.mode.lower().strip()
+        if mode_lower not in ("local", "public"):
+            raise ConfigError(
+                f"Invalid NADS_MODE: '{self.mode}'. Must be 'local' or 'public'. "
+                "Fix: set NADS_MODE=local or NADS_MODE=public."
+            )
+
+        if mode_lower == "public":
+            if not self.allowed_origins:
+                raise ConfigError(
+                    "Public mode requires explicit NADS_ALLOWED_ORIGINS. "
+                    "Fix: set NADS_ALLOWED_ORIGINS=https://your-domain.com."
+                )
+            if any(o.strip() == "*" for o in self.allowed_origins):
+                raise ConfigError(
+                    "Wildcard '*' origin is forbidden in public mode. "
+                    "Fix: set NADS_ALLOWED_ORIGINS to an explicit domain list."
+                )
+            if self.retention_enabled:
+                raise ConfigError(
+                    "Live session retention must be disabled in public mode (Guardrail G29). "
+                    "Fix: set NADS_ENABLE_RETENTION=false."
+                )
 
     @classmethod
     def from_env(cls) -> ServerConfig:
@@ -57,13 +90,33 @@ class ServerConfig:
         except ValueError:
             port = 8000
 
-        return cls(
+        mode = os.environ.get("NADS_MODE", "local").strip().lower()
+
+        raw_origins = os.environ.get("NADS_ALLOWED_ORIGINS", "").strip()
+        origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+
+        retention_raw = os.environ.get("NADS_ENABLE_RETENTION")
+        if mode == "public":
+            retention_enabled = (
+                retention_raw.lower() in ("1", "true", "yes") if retention_raw else False
+            )
+        else:
+            retention_enabled = (
+                retention_raw.lower() not in ("0", "false", "no") if retention_raw else True
+            )
+
+        config = cls(
             host=os.environ.get("NADS_HOST", "127.0.0.1").strip(),
             port=port,
             ingest_token=token,
             allow_lan=allow_lan,
             allow_remote_view=allow_remote,
+            mode=mode,
+            allowed_origins=origins,
+            retention_enabled=retention_enabled,
         )
+        config.validate()
+        return config
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
@@ -116,6 +169,15 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
     """Factory creating and configuring the FastAPI streaming application."""
     if config is None:
         config = ServerConfig.from_env()
+    else:
+        config.validate()
+
+    logger.info(
+        "Starting 5G-NADS server in %s mode (lan=%s, retention=%s)",
+        config.mode.upper(),
+        config.allow_lan,
+        config.retention_enabled,
+    )
 
     app = FastAPI(
         title="5G-NADS Streaming API",
@@ -129,6 +191,15 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
+
+    if config.allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=config.allowed_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     # Error Handlers adhering strictly to Contract C8
     @app.exception_handler(HTTPException)

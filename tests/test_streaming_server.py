@@ -1,5 +1,6 @@
 """Unit tests for FastAPI streaming server, auth, and error handling (T11-010)."""
 
+import pytest
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
@@ -115,3 +116,50 @@ def test_generic_exception_never_leaks_traceback():
     assert "RuntimeError" not in resp.text
     assert "Traceback" not in resp.text
     assert secret not in resp.text
+
+
+def test_public_mode_unsafe_config_refuses_to_start():
+    """Unsafe public configuration refuses to start per T18-001."""
+    from ml.schema import ConfigError
+
+    # 1. Missing allowed origins in public mode
+    with pytest.raises(ConfigError, match="Public mode requires explicit NADS_ALLOWED_ORIGINS"):
+        ServerConfig(mode="public", allowed_origins=[], retention_enabled=False).validate()
+
+    # 2. Wildcard origin in public mode
+    with pytest.raises(ConfigError, match="Wildcard '\\*' origin is forbidden in public mode"):
+        ServerConfig(mode="public", allowed_origins=["*"], retention_enabled=False).validate()
+
+    # 3. Retention enabled in public mode
+    with pytest.raises(ConfigError, match="Live session retention must be disabled in public mode"):
+        ServerConfig(
+            mode="public",
+            allowed_origins=["https://dashboard.5g-nads.example.com"],
+            retention_enabled=True,
+        ).validate()
+
+
+def test_public_mode_safe_config_starts_and_logs(caplog: pytest.LogCaptureFixture):
+    """Safe public configuration starts cleanly and logs mode without secrets."""
+    import logging
+
+    secret_token = "secret-token-xyz-123"
+    config = ServerConfig(
+        mode="public",
+        allowed_origins=["https://dashboard.5g-nads.example.com"],
+        retention_enabled=False,
+        ingest_token=secret_token,
+    )
+
+    with caplog.at_level(logging.INFO, logger="streaming.server"):
+        app = create_app(config)
+
+    client = TestClient(app)
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+
+    # Mode is logged
+    log_text = caplog.text
+    assert "PUBLIC" in log_text
+    # Secret token is never logged
+    assert secret_token not in log_text
