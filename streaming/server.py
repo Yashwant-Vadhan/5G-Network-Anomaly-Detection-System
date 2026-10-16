@@ -8,29 +8,72 @@ following the Contracts C7 and C8 specifications.
 from __future__ import annotations
 
 import hmac
+import json
 import logging
 import os
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import (
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ml.schema import ConfigError
+from ml.schema import ConfigError, SchemaError
+from streaming.engine import StreamingEngine
+from streaming.event_tracker import EventTracker
+from streaming.hub import LiveHub
 from streaming.metrics import get_stream_metrics
 from streaming.schema import (
+    Ack,
     ErrorDetail,
+    ErrorMsg,
     ErrorResponse,
     HealthResponse,
+    HelloAck,
+    IngestHello,
+    IngestLimits,
+    IngestSample,
     MetricsResponse,
+    Pong,
 )
+from streaming.session_manager import SessionManager
+from streaming.store import LiveCaptureStore
 
 logger = logging.getLogger("streaming.server")
+
+
+class TokenBucket:
+    """Thread-safe token-bucket rate limiter for streaming messages."""
+
+    def __init__(self, rate: float, capacity: float) -> None:
+        self.rate = rate
+        self.capacity = capacity
+        self.tokens = capacity
+        self.last_check = time.monotonic()
+
+    def allow(self, cost: float = 1.0) -> bool:
+        now = time.monotonic()
+        elapsed = now - self.last_check
+        self.last_check = now
+        self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+        if self.tokens >= cost:
+            self.tokens -= cost
+            return True
+        return False
 
 
 @dataclass(frozen=True)
@@ -165,7 +208,12 @@ def verify_ingest_token(
     return provided_token
 
 
-def create_app(config: ServerConfig | None = None) -> FastAPI:
+def create_app(
+    config: ServerConfig | None = None,
+    session_manager: SessionManager | None = None,
+    engine: StreamingEngine | None = None,
+    hub: LiveHub | None = None,
+) -> FastAPI:
     """Factory creating and configuring the FastAPI streaming application."""
     if config is None:
         config = ServerConfig.from_env()
@@ -188,6 +236,16 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
 
     app.state.config = config
     app.state.start_time = time.time()
+    app.state.session_manager = session_manager or SessionManager()
+    if engine is not None:
+        app.state.engine = engine
+    else:
+        try:
+            app.state.engine = StreamingEngine(session_manager=app.state.session_manager)
+        except Exception:
+            app.state.engine = None
+    app.state.hub = hub or LiveHub()
+    app.state.active_ingest_clients: dict[str, WebSocket] = {}
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
@@ -276,5 +334,247 @@ def create_app(config: ServerConfig | None = None) -> FastAPI:
         """Report stream latency percentiles, drop counts, sequence gaps, and skew."""
         metrics = get_stream_metrics(session_id)
         return metrics.to_response()
+
+    # WebSocket Ingest Endpoint (T11-011 / Contract C7)
+    @app.websocket("/api/v1/ingest")
+    async def websocket_ingest(websocket: WebSocket) -> None:
+        """Contract C7 phone telemetry ingest WebSocket protocol handler."""
+        # 1. Authenticate connection if ingest_token is configured
+        if config.ingest_token:
+            auth_header = websocket.headers.get("authorization")
+            token = None
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header.split(" ", 1)[1].strip()
+            if not token:
+                token = websocket.query_params.get("token")
+
+            if not token or not hmac.compare_digest(
+                token.encode("utf-8"), config.ingest_token.encode("utf-8")
+            ):
+                await websocket.close(code=4401, reason="Unauthorized")
+                return
+
+        await websocket.accept()
+
+        client_id: str | None = None
+        session_id: str | None = None
+        device: str | None = None
+        store: LiveCaptureStore | None = None
+        tracker: EventTracker | None = None
+        last_seq_acked = 0
+        samples_since_last_ack = 0
+        last_ack_time = time.monotonic()
+
+        # Token-bucket rate limiter: max_msgs_per_min (default 120, rate=2/s, burst=120)
+        max_rate = float(config.max_msgs_per_min)
+        rate_limiter = TokenBucket(rate=max_rate / 60.0, capacity=max_rate)
+
+        try:
+            while True:
+                try:
+                    message_text = await websocket.receive_text()
+                except WebSocketDisconnect:
+                    break
+                except Exception:
+                    break
+
+                # Frame size limit: MAX_MESSAGE_BYTES = 8192 (close with 1009)
+                if len(message_text.encode("utf-8")) > 8192:
+                    await websocket.close(code=1009, reason="Message exceeds 8192 bytes")
+                    break
+
+                # Rate limiting check: return RATE_LIMITED error without closing
+                if not rate_limiter.allow():
+                    err = ErrorMsg(code="RATE_LIMITED", message="Rate limit exceeded", fatal=False)
+                    await websocket.send_text(err.model_dump_json())
+                    continue
+
+                try:
+                    raw_msg = json.loads(message_text)
+                except Exception:
+                    err = ErrorMsg(code="BAD_MESSAGE", message="Invalid JSON", fatal=False)
+                    await websocket.send_text(err.model_dump_json())
+                    continue
+
+                if not isinstance(raw_msg, dict):
+                    err = ErrorMsg(
+                        code="BAD_MESSAGE",
+                        message="Message must be a JSON object",
+                        fatal=False,
+                    )
+                    await websocket.send_text(err.model_dump_json())
+                    continue
+
+                msg_type = raw_msg.get("type")
+                schema_ver = raw_msg.get("schema_version", 2)
+                if schema_ver != 2:
+                    err = ErrorMsg(
+                        code="VERSION_MISMATCH",
+                        message=f"Unsupported schema_version {schema_ver}; expected 2",
+                        fatal=True,
+                    )
+                    await websocket.send_text(err.model_dump_json())
+                    await websocket.close(code=4426, reason="Unsupported schema version")
+                    break
+
+                if msg_type == "hello":
+                    try:
+                        hello = IngestHello.model_validate(raw_msg)
+                    except Exception as e:
+                        err = ErrorMsg(
+                            code="BAD_MESSAGE",
+                            message=f"Invalid hello message: {e}",
+                            fatal=False,
+                        )
+                        await websocket.send_text(err.model_dump_json())
+                        continue
+
+                    # Check for SESSION_CONFLICT (close code 4409)
+                    if hello.client_id in app.state.active_ingest_clients:
+                        err = ErrorMsg(
+                            code="SESSION_CONFLICT",
+                            message=f"Session conflict: active connection for {hello.client_id}",
+                            fatal=True,
+                        )
+                        await websocket.send_text(err.model_dump_json())
+                        await websocket.close(code=4409, reason="Session conflict")
+                        break
+
+                    client_id = hello.client_id
+                    device = hello.device
+                    app.state.active_ingest_clients[client_id] = websocket
+
+                    sess_mgr: SessionManager = app.state.session_manager
+                    if hello.resume_from_seq and hello.resume_from_seq > 0:
+                        sess_buf = sess_mgr.get_or_create_session(client_id, device)
+                        last_seq_acked = hello.resume_from_seq - 1
+                    else:
+                        sess_buf = sess_mgr.start_new_session(client_id, device)
+                        last_seq_acked = 0
+
+                    session_id = sess_buf.session_id
+
+                    # Live capture store for telemetry retention
+                    if config.retention_enabled:
+                        store = LiveCaptureStore(
+                            client_id=client_id,
+                            session_id=session_id,
+                            source="phone",
+                        )
+
+                    tracker = EventTracker(session_id=session_id, device=device)
+
+                    hello_ack = HelloAck(
+                        session_id=session_id,
+                        server_time=datetime.now(UTC).isoformat(),
+                        last_seq_acked=last_seq_acked,
+                        model_version="if_v1",
+                        limits=IngestLimits(
+                            max_message_bytes=8192,
+                            max_msgs_per_min=config.max_msgs_per_min,
+                        ),
+                    )
+                    await websocket.send_text(hello_ack.model_dump_json())
+
+                elif msg_type == "sample":
+                    try:
+                        sample = IngestSample.model_validate(raw_msg)
+                    except Exception as e:
+                        err = ErrorMsg(
+                            code="BAD_MESSAGE",
+                            message=f"Invalid sample message: {e}",
+                            fatal=False,
+                            seq=raw_msg.get("seq"),
+                        )
+                        await websocket.send_text(err.model_dump_json())
+                        continue
+
+                    # Idempotent re-ack if seq <= last_seq_acked
+                    if sample.seq <= last_seq_acked:
+                        re_ack = Ack(seq=sample.seq)
+                        await websocket.send_text(re_ack.model_dump_json())
+                        continue
+
+                    cid = client_id or sample.payload.device
+
+                    engine: StreamingEngine | None = app.state.engine
+                    if engine is not None:
+                        try:
+                            scored = engine.process(sample, client_id=cid)
+                        except SchemaError as e:
+                            err = ErrorMsg(
+                                code="SCHEMA_ERROR",
+                                message=str(e),
+                                fatal=False,
+                                seq=sample.seq,
+                            )
+                            await websocket.send_text(err.model_dump_json())
+                            continue
+                        except Exception as e:
+                            logger.error(
+                                "Error processing sample seq %d: %s", sample.seq, e, exc_info=True
+                            )
+                            err = ErrorMsg(
+                                code="INTERNAL",
+                                message="Internal error processing sample",
+                                fatal=False,
+                                seq=sample.seq,
+                            )
+                            await websocket.send_text(err.model_dump_json())
+                            continue
+                    else:
+                        scored = None
+
+                    if store is not None:
+                        store.append_sample(sample.payload)
+
+                    if tracker is not None and scored is not None:
+                        tracker.process_sample(scored)
+
+                    last_seq_acked = sample.seq
+                    samples_since_last_ack += 1
+                    now_m = time.monotonic()
+
+                    # Ack cadence: cumulative ack every 5 samples or 5s
+                    if samples_since_last_ack >= 5 or (now_m - last_ack_time) >= 5.0:
+                        ack = Ack(seq=last_seq_acked)
+                        await websocket.send_text(ack.model_dump_json())
+                        samples_since_last_ack = 0
+                        last_ack_time = now_m
+
+                elif msg_type == "ping":
+                    # Flush pending acks with pong
+                    if samples_since_last_ack > 0:
+                        ack = Ack(seq=last_seq_acked)
+                        await websocket.send_text(ack.model_dump_json())
+                        samples_since_last_ack = 0
+                        last_ack_time = time.monotonic()
+                    pong = Pong(server_time=datetime.now(UTC).isoformat())
+                    await websocket.send_text(pong.model_dump_json())
+
+                elif msg_type == "bye":
+                    if samples_since_last_ack > 0:
+                        ack = Ack(seq=last_seq_acked)
+                        await websocket.send_text(ack.model_dump_json())
+                    if tracker is not None:
+                        tracker.close_session()
+                    if store is not None:
+                        store.close(status="CLOSED")
+                    await websocket.close(code=1000, reason="Client bye")
+                    break
+
+                else:
+                    err = ErrorMsg(
+                        code="BAD_MESSAGE",
+                        message=f"Unknown message type '{msg_type}'",
+                        fatal=False,
+                    )
+                    await websocket.send_text(err.model_dump_json())
+
+        finally:
+            if client_id and client_id in app.state.active_ingest_clients:
+                del app.state.active_ingest_clients[client_id]
+            if store is not None and not store.is_closed:
+                store.close(status="INCOMPLETE")
 
     return app

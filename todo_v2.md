@@ -349,13 +349,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-011: Implement WS /api/v1/ingest
-**Status:** ⬜
+**Status:** ✅
 **Description:** hello/hello_ack, sample handling (coerce → engine → store → hub), cumulative `ack` every 5 samples or 5 s, `ping/pong`, `bye`, error closes with the C7 codes, `MAX_MESSAGE_BYTES` and token-bucket rate limit.
 **Dependencies:** T11-010, T11-003, T11-005, T11-009
 **Acceptance Criteria:**
-- [ ] All C7 message types handled per TECH_RULES_v2
-- [ ] Oversize frame closes with 1009
-- [ ] Rate limit returns RATE_LIMITED without closing
+- [x] All C7 message types handled per TECH_RULES_v2
+- [x] Oversize frame closes with 1009
+- [x] Rate limit returns RATE_LIMITED without closing
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
