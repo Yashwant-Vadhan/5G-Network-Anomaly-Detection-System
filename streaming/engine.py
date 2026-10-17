@@ -246,7 +246,9 @@ class StreamingEngine:
             timestamp=ts_str,
             device=str(curr_row.get("device", "device")),
             manufacturer=_clean_val(curr_row.get("manufacturer")),
-            android=_clean_val(curr_row.get("android")),
+            android=str(_clean_val(curr_row.get("android")))
+            if _clean_val(curr_row.get("android")) is not None
+            else None,
             operator=_clean_val(curr_row.get("operator")),
             network_type=_clean_val(curr_row.get("network_type")),
             deployment_mode=_clean_val(curr_row.get("deployment_mode")),

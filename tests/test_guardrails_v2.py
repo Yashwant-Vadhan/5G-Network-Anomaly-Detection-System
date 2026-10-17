@@ -18,15 +18,18 @@ def test_no_threshold_literals_in_streaming():
     assert exit_code == 0, "Hardcoded numeric threshold literals found in streaming/"
 
 
-@pytest.mark.xfail(strict=True, reason="Implementing task: T11-006")
 def test_g17_stream_batch_parity():
-    """Guardrail G17: Stream–batch parity.
+    """Guardrail G17: Stream–batch parity (T11-006).
 
     The streaming engine yields the same flags/types/severities and scores
     (tolerance 1e-6) as the batch pipeline for the same ordered samples.
     No duplicated feature/classification logic.
+
+    Delegates to :func:`tests.test_streaming_parity.TestSampleDataParity.test_ordered_delivery`.
     """
-    pytest.fail("Stub: G17 parity test is implemented in task T11-006.")
+    from tests.test_streaming_parity import TestSampleDataParity
+
+    TestSampleDataParity().test_ordered_delivery()
 
 
 @pytest.mark.xfail(strict=True, reason="Implementing task: T12-007")

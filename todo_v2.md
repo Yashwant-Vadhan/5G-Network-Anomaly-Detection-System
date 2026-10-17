@@ -289,7 +289,7 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-006: Write the stream–batch parity test (G17)
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/streaming/test_parity.py`: replay `data/sample/` and every `tests/fixtures/*_synthetic.csv` through the engine sample by sample and compare to the batch `detect()` / `pipelines.run_pipeline` output: flags, type, severity identical; `if_score`, `baseline_z_max` within 1e-6. Add variants: chunked delivery, shuffled arrival with correct timestamps.
 **Dependencies:** T11-005
 **Acceptance Criteria:**
