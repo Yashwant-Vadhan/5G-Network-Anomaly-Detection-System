@@ -113,12 +113,64 @@ def test_g25_edge_is_advisory_and_parity_gated():
     pytest.fail("Stub: G25 edge parity gating is implemented in task T12-016.")
 
 
-@pytest.mark.xfail(strict=True, reason="Implementing task: T13-005")
 def test_g26_secrets_and_payload_minimisation():
-    """Guardrail G26: Secrets and payload minimisation.
+    """Guardrail G26: Secrets and payload minimisation (T13-005).
 
     Token, SMTP, webhook URL only via env vars; .env ignored; external-channel
     payloads exclude raw measurements, IDs and PII by default; no precise
     location anywhere.
     """
-    pytest.fail("Stub: G26 payload minimisation is implemented in task T13-005.")
+    from ml.config import RAW_COLUMNS
+    from streaming.alerts.channels.email import format_email_body
+    from streaming.schema import AlertRecord
+
+    # 1. Verify .env is in .gitignore
+    gitignore = open(".gitignore", encoding="utf-8").read()
+    assert ".env" in gitignore
+
+    # 2. Verify no GPS/location columns in telemetry contracts
+    for col in RAW_COLUMNS:
+        assert "lat" not in col.lower()
+        assert "lon" not in col.lower()
+        assert "gps" not in col.lower()
+
+    # 3. Verify minimal alert payload for external channels
+    alert = AlertRecord(
+        alert_id="alt-test-g26",
+        created_at="2026-10-17T12:00:00+00:00",
+        event_id="evt-9999",
+        session_id="sess-1234",
+        source="phone",
+        kind="NEW",
+        severity="HIGH",
+        anomaly_type="LOW_RSRP",
+        event_status="FINAL",
+        title="Low RSRP Alert",
+        body="Signal degradation detected on cell.",
+        evidence=["ss_rsrp: -118 dBm below threshold"],
+    )
+
+    webhook_body = alert.to_webhook_body(include_evidence=False)
+    # Allowed minimal keys only
+    allowed_keys = {
+        "title",
+        "body",
+        "severity",
+        "anomaly_type",
+        "event_status",
+        "created_at",
+    }
+    assert set(webhook_body.keys()) == allowed_keys
+    # No raw telemetry or hardware identifiers
+    for forbidden in ("imei", "imsi", "ss_rsrp", "ss_sinr", "pci", "nci", "device"):
+        assert forbidden not in webhook_body
+
+    # 4. Verify minimal email plain-text body
+    email_text = format_email_body(alert, include_evidence=False)
+    assert "alt-test-g26" in email_text
+    assert "LOW_RSRP" in email_text
+    assert "Signal degradation detected" in email_text
+    for forbidden in ("imei", "imsi", "ss_rsrp", "pci", "nci"):
+        assert forbidden not in email_text.lower()
+
+

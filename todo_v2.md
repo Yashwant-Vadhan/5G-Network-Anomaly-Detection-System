@@ -754,13 +754,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-005: Implement the email channel
-**Status:** ⬜
+**Status:** ✅
 **Description:** `channels/email.py` using stdlib `smtplib` with STARTTLS (verify server requirements), env-only credentials (`NADS_ALERT_EMAIL_*`), 10 s timeout, plain-text body equal to the minimal subset; off by default.
 **Dependencies:** T13-003
 **Acceptance Criteria:**
-- [ ] No credentials in logs
-- [ ] Failure isolated
-- [ ] Dry-run mode prints the message
+- [x] No credentials in logs
+- [x] Failure isolated
+- [x] Dry-run mode prints the message
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
