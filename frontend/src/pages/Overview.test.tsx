@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Overview, formatVal, calcDelta } from './Overview';
 import { EventRecord } from '../types/contracts';
 
@@ -252,5 +252,218 @@ describe('Overview Component (T16-009)', () => {
     expect(calcDelta(-80, 2147483647)).toBeNull();
     expect(calcDelta(-75, -80, 1)).toBe('+5.0');
     expect(calcDelta(-85, -80, 1)).toBe('-5.0');
+  });
+
+  describe('Live Overview Extensions (T17-003)', () => {
+    const baseSample = {
+      device: 'Pixel 7',
+      operator: 'Jio',
+      network_type: '5G_NSA',
+      deployment_mode: 'NSA',
+      registered: true,
+      ss_rsrp: -85.0,
+      ss_rsrq: -11.0,
+      ss_sinr: 15.0,
+      pci: 42,
+      nci: 1234567,
+      nrarfcn: 632000,
+      is_anom: 0,
+      anomaly_type: 'NORMAL',
+      timestamp: '2024-05-01 10:00:00',
+    };
+
+    it('renders all six connection states correctly from mock data', () => {
+      // 1. WAITING (without sample)
+      const { unmount: u1 } = render(
+        <Overview currentSample={null} connectionState="WAITING" />
+      );
+      expect(screen.getByTestId('overview-waiting-state')).toBeInTheDocument();
+      expect(screen.getByText('Waiting for Initial Phone Stream')).toBeInTheDocument();
+      u1();
+
+      // 2. DISCONNECTED (without sample)
+      const { unmount: u2 } = render(
+        <Overview currentSample={null} connectionState="DISCONNECTED" />
+      );
+      expect(screen.getByTestId('overview-disconnected-state')).toBeInTheDocument();
+      expect(screen.getByText('Disconnected from Telemetry Server')).toBeInTheDocument();
+      u2();
+
+      // 3. RECONNECTING (with sample)
+      const { unmount: u3 } = render(
+        <Overview currentSample={baseSample} connectionState="RECONNECTING" />
+      );
+      expect(screen.getByTestId('reconnecting-banner')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Reconnecting to live telemetry stream/i)
+      ).toBeInTheDocument();
+      u3();
+
+      // 4. STALE (with sample)
+      const { unmount: u4 } = render(
+        <Overview
+          currentSample={baseSample}
+          connectionState="STALE"
+          sampleAgeText="45s ago"
+        />
+      );
+      expect(screen.getByTestId('stale-banner')).toBeInTheDocument();
+      expect(
+        screen.getByText(/STALE: Showing last known values/i)
+      ).toBeInTheDocument();
+      expect(screen.getByText('(last known)')).toBeInTheDocument();
+      u4();
+
+      // 5. LIVE (with sample)
+      const { unmount: u5 } = render(
+        <Overview currentSample={baseSample} connectionState="LIVE" />
+      );
+      expect(screen.getByText('Phone live stream')).toBeInTheDocument();
+      u5();
+
+      // 6. REPLAY-SOURCE (with sample)
+      const { unmount: u6 } = render(
+        <Overview currentSample={baseSample} connectionState="REPLAY-SOURCE" />
+      );
+      expect(screen.getByText('Replay / Demo')).toBeInTheDocument();
+      u6();
+    });
+
+    it('makes provisional and final events visibly and textually distinct', () => {
+      const provSample = {
+        ...baseSample,
+        is_anom: 1,
+        anomaly_type: 'SIGNAL_DEGRADATION',
+        severity: 'HIGH',
+        event_status: 'PROVISIONAL',
+        timestamp: '2024-05-01 10:10:00',
+      };
+
+      const provEvent: EventRecord = {
+        event_id: 'EVT-PROV',
+        session_id: 'session-1',
+        anomaly_type: 'SIGNAL_DEGRADATION',
+        max_severity: 'HIGH',
+        start: '2024-05-01 10:09:00',
+        end: '2024-05-01 10:11:00',
+        sample_count: 20,
+        ml: {},
+        signal: {},
+        cell: {},
+        network: {},
+        status: 'PROVISIONAL',
+        diagnosis: {
+          summary: 'Degradation developing across active cell sector.',
+        },
+        recommendation: {
+          kind: 'MONITORING',
+          text: 'Monitor signal recovery in next window.',
+        },
+      };
+
+      const { unmount } = render(
+        <Overview currentSample={provSample} events={[provEvent]} />
+      );
+
+      // Verify PROVISIONAL badge and prefix
+      expect(screen.getByTestId('provisional-badge')).toBeInTheDocument();
+      expect(screen.getByText('PROVISIONAL (open)')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Provisional — Degradation developing across active cell sector.'
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Provisional — Monitor signal recovery in next window.')
+      ).toBeInTheDocument();
+      unmount();
+
+      // Now verify FINAL event
+      const finalSample = {
+        ...baseSample,
+        is_anom: 1,
+        anomaly_type: 'SIGNAL_DEGRADATION',
+        severity: 'HIGH',
+        event_status: 'FINAL',
+        timestamp: '2024-05-01 10:10:00',
+      };
+
+      const finalEvent: EventRecord = {
+        ...provEvent,
+        event_id: 'EVT-FINAL',
+        status: 'FINAL',
+      };
+
+      render(<Overview currentSample={finalSample} events={[finalEvent]} />);
+
+      expect(screen.getByTestId('final-badge')).toBeInTheDocument();
+      expect(screen.getByText('FINAL (closed)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Degradation developing across active cell sector.')
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Provisional — Degradation/)
+      ).not.toBeInTheDocument();
+    });
+
+    it('renders active unacknowledged alert banner and handles acknowledge action', () => {
+      let acknowledgedId = '';
+      const handleAck = (id: string) => {
+        acknowledgedId = id;
+      };
+
+      const alert = {
+        id: 'ALT-101',
+        severity: 'CRITICAL',
+        summary: 'Critical coverage hole detected',
+        timestamp: '10:15:00',
+        acknowledged: false,
+      };
+
+      render(
+        <Overview
+          currentSample={baseSample}
+          activeAlert={alert}
+          onAcknowledgeAlert={handleAck}
+        />
+      );
+
+      expect(screen.getByTestId('overview-alert-banner')).toBeInTheDocument();
+      expect(screen.getByText('CRITICAL')).toBeInTheDocument();
+      expect(screen.getByText('Critical coverage hole detected')).toBeInTheDocument();
+      expect(
+        screen.getByText(/\(10:15:00 device local time\)/)
+      ).toBeInTheDocument();
+
+      const ackBtn = screen.getByTestId('acknowledge-alert-button');
+      fireEvent.click(ackBtn);
+
+      expect(acknowledgedId).toBe('ALT-101');
+      expect(screen.queryByTestId('overview-alert-banner')).not.toBeInTheDocument();
+    });
+
+    it('displays verbatim ML-only line when type is STATISTICAL_ONLY', () => {
+      const mlSample = {
+        ...baseSample,
+        is_anom: 1,
+        anomaly_type: 'STATISTICAL_ONLY',
+      };
+
+      render(<Overview currentSample={mlSample} />);
+
+      expect(screen.getByTestId('ml-only-banner')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Statistically unusual — no rule-based evidence (no alert)'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('labels timestamp as device local time without timezone', () => {
+      render(<Overview currentSample={baseSample} />);
+      expect(
+        screen.getByText(/device local time, no timezone recorded/)
+      ).toBeInTheDocument();
+    });
   });
 });

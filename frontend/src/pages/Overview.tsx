@@ -1,23 +1,44 @@
 /**
- * Overview Page Component (T16-009).
+ * Overview Page Component (T16-009 / T17-003).
  *
  * Implements:
  * - Status banner (anomaly rule from 1_Overview.py L47-52)
+ * - PROVISIONAL / FINAL badge (G23: open events labelled PROVISIONAL)
+ * - Provisional diagnosis / recommendation prefix ("Provisional — ")
+ * - Connection state rendering across all six states:
+ *   LIVE, STALE, RECONNECTING, WAITING, DISCONNECTED, REPLAY-SOURCE
+ * - STALE state: "Showing last known values" notification banner
+ * - Alert banner with Acknowledge button and severity chip
+ * - ML-only line: "Statistically unusual — no rule-based evidence (no alert)"
  * - Network & device state card (UNKNOWN displayed as 'Unknown (not exposed by this device)')
  * - Six metric cards with deltas that never truncate at 1280px or 375px
  * - Score block (separate baseline and IF scores, distinct ML-only flag)
- * - Event diagnosis, evidence list, and recommendations
- * - Clean empty state when no samples are loaded
+ * - Clean empty, waiting, and disconnected states
  * - Missing values displayed as '—', never 0
+ * - Timestamp labelled "device local time (no timezone recorded)"
  */
 
-import React from 'react';
-import { EventRecord } from '../types/contracts';
+import React, { useState } from 'react';
+import { EventRecord, ConnectionState } from '../types/contracts';
+
+export interface AlertRecord {
+  id?: string;
+  alert_id?: string;
+  severity?: string;
+  summary?: string;
+  message?: string;
+  timestamp?: string;
+  acknowledged?: boolean;
+}
 
 export interface OverviewProps {
   currentSample?: Record<string, unknown> | null;
   prevSample?: Record<string, unknown> | null;
   events?: EventRecord[];
+  connectionState?: ConnectionState;
+  sampleAgeText?: string;
+  activeAlert?: AlertRecord | null;
+  onAcknowledgeAlert?: (alertId: string) => void;
 }
 
 export function formatVal(
@@ -76,7 +97,62 @@ export const Overview: React.FC<OverviewProps> = ({
   currentSample,
   prevSample,
   events = [],
+  connectionState = 'REPLAY-SOURCE',
+  sampleAgeText,
+  activeAlert = null,
+  onAcknowledgeAlert,
 }) => {
+  const [alertDismissed, setAlertDismissed] = useState<boolean>(false);
+
+  // 1. Connection-specific empty or error states
+  if (connectionState === 'WAITING' && !currentSample) {
+    return (
+      <div
+        data-testid="overview-waiting-state"
+        style={{
+          padding: '48px 24px',
+          textAlign: 'center',
+          background: 'var(--color-surface)',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-muted)',
+        }}
+      >
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
+        <h3 style={{ fontSize: '18px', margin: '0 0 8px 0', color: 'var(--color-text)' }}>
+          Waiting for Initial Phone Stream
+        </h3>
+        <p style={{ fontSize: '14px', margin: 0 }}>
+          Connected to ingest server. Start collection on your Android device or pair via QR code.
+        </p>
+      </div>
+    );
+  }
+
+  if (connectionState === 'DISCONNECTED' && !currentSample) {
+    return (
+      <div
+        data-testid="overview-disconnected-state"
+        style={{
+          padding: '48px 24px',
+          textAlign: 'center',
+          background: 'var(--color-surface)',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-muted)',
+        }}
+      >
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚪</div>
+        <h3 style={{ fontSize: '18px', margin: '0 0 8px 0', color: 'var(--color-text)' }}>
+          Disconnected from Telemetry Server
+        </h3>
+        <p style={{ fontSize: '14px', margin: 0 }}>
+          No active connection. Check your network or verify the backend service is running.
+        </p>
+      </div>
+    );
+  }
+
   if (!currentSample) {
     return (
       <div
@@ -97,7 +173,7 @@ export const Overview: React.FC<OverviewProps> = ({
     );
   }
 
-  // 1. Anomaly Status & Severity (1_Overview.py L47-52)
+  // 2. Anomaly Status & Severity (1_Overview.py L47-52)
   let isAnom = Boolean(currentSample.is_anom);
   if (!isAnom) {
     const anomalyType = String(currentSample.anomaly_type || 'NORMAL');
@@ -109,7 +185,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
   const isStatisticalOnly = currentSample.anomaly_type === 'STATISTICAL_ONLY';
 
-  // 2. Metric Calculations
+  // 3. Metric Calculations
   const rsrpVal = currentSample.ss_rsrp;
   const prevRsrp = prevSample?.ss_rsrp;
   const rsrpDelta = calcDelta(rsrpVal, prevRsrp, 1);
@@ -126,7 +202,7 @@ export const Overview: React.FC<OverviewProps> = ({
   const nciVal = currentSample.nci;
   const nrarfcnVal = currentSample.nrarfcn;
 
-  // 3. Deployment Mode & Device State
+  // 4. Deployment Mode & Device State
   const depModeRaw = String(currentSample.deployment_mode || 'UNKNOWN');
   const depModeDisp =
     depModeRaw === 'UNKNOWN'
@@ -143,13 +219,13 @@ export const Overview: React.FC<OverviewProps> = ({
     regDisp = 'No';
   }
 
-  // 4. Score Block
+  // 5. Score Block
   const ifScore = currentSample.if_score;
   const zMax = currentSample.baseline_z_max;
   const baseFlag = Boolean(currentSample.baseline_flag);
   const ifFlag = Boolean(currentSample.if_flag);
 
-  // 5. Diagnostics & Matching Event
+  // 6. Diagnostics, Matching Event, and Provisional / Final Status
   const currTs = currentSample.timestamp ? String(currentSample.timestamp) : null;
   let matchingEvent: EventRecord | undefined = undefined;
   if (currTs && events.length > 0) {
@@ -160,13 +236,191 @@ export const Overview: React.FC<OverviewProps> = ({
     });
   }
 
+  const isProvisional =
+    currentSample.event_status === 'PROVISIONAL' ||
+    matchingEvent?.status === 'PROVISIONAL' ||
+    (isAnom && !matchingEvent?.end && currentSample.is_open === true);
+
+  const isFinal =
+    matchingEvent?.status === 'FINAL' ||
+    currentSample.event_status === 'FINAL';
+
   const anomType = String(currentSample.anomaly_type || 'NORMAL');
+
+  // Diagnosis, evidence, recommendation with provisional prefix if open
+  const diagData = matchingEvent?.diagnosis as Record<string, unknown> | undefined;
+  const rawDiagSummary = diagData ? String(diagData.summary || '') : '';
+  const diagSummary =
+    isProvisional && rawDiagSummary && !rawDiagSummary.startsWith('Provisional —')
+      ? `Provisional — ${rawDiagSummary}`
+      : rawDiagSummary;
+
+  const recData = matchingEvent?.recommendation as Record<string, unknown> | undefined;
+  const rawRecText = recData ? String(recData.text || '') : '';
+  const recText =
+    isProvisional && rawRecText && !rawRecText.startsWith('Provisional —')
+      ? `Provisional — ${rawRecText}`
+      : rawRecText || 'Continue standard monitoring.';
+
+  const handleAcknowledge = () => {
+    setAlertDismissed(true);
+    const alertId = activeAlert?.id || activeAlert?.alert_id || '';
+    if (onAcknowledgeAlert && alertId) {
+      onAcknowledgeAlert(alertId);
+    }
+  };
+
+  const hasUnackAlert =
+    Boolean(activeAlert) &&
+    !activeAlert?.acknowledged &&
+    !alertDismissed;
 
   return (
     <div
       data-testid="overview-page"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
     >
+      {/* Alert Banner (Conditional: Unacknowledged Alert) */}
+      {hasUnackAlert && activeAlert && (
+        <section
+          data-testid="overview-alert-banner"
+          role="alert"
+          style={{
+            padding: '12px 18px',
+            borderRadius: '8px',
+            backgroundColor: '#fee2e2',
+            border: '1px solid #ef4444',
+            color: '#991b1b',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              data-testid="alert-severity-chip"
+              style={{
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+              }}
+            >
+              {String(activeAlert.severity || 'CRITICAL').toUpperCase()}
+            </span>
+            <span style={{ fontSize: '14px', fontWeight: 600 }}>
+              {activeAlert.summary || activeAlert.message || 'Active network anomaly detected'}
+            </span>
+            {activeAlert.timestamp && (
+              <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                ({activeAlert.timestamp} device local time)
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              data-testid="acknowledge-alert-button"
+              onClick={handleAcknowledge}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: '1px solid #b91c1c',
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+              }}
+            >
+              Acknowledge
+            </button>
+            <a
+              href="#/events"
+              style={{
+                fontSize: '13px',
+                color: '#991b1b',
+                fontWeight: 600,
+                textDecoration: 'underline',
+              }}
+            >
+              Events & Alerts →
+            </a>
+          </div>
+        </section>
+      )}
+
+      {/* Reconnecting State Notification */}
+      {connectionState === 'RECONNECTING' && (
+        <div
+          data-testid="reconnecting-banner"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '6px',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            border: '1px solid #2563eb',
+            color: '#1d4ed8',
+            fontSize: '13px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>🔄</span>
+          <span>Reconnecting to live telemetry stream... attempting to resume session.</span>
+        </div>
+      )}
+
+      {/* STALE State Notification Banner */}
+      {connectionState === 'STALE' && (
+        <div
+          data-testid="stale-banner"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '6px',
+            backgroundColor: '#fef3c7',
+            border: '1px solid #d97706',
+            color: '#92400e',
+            fontSize: '13px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>⚠️</span>
+          <span>
+            STALE: Showing last known values
+            {sampleAgeText ? ` (last sample received ${sampleAgeText})` : ' (telemetry delayed)'}
+          </span>
+        </div>
+      )}
+
+      {/* ML-Only Statistical Notice Line (amber bordered) */}
+      {isStatisticalOnly && (
+        <div
+          data-testid="ml-only-banner"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '6px',
+            backgroundColor: '#fffbeb',
+            border: '1px solid #f59e0b',
+            color: '#b45309',
+            fontSize: '13px',
+            fontWeight: 600,
+          }}
+        >
+          Statistically unusual — no rule-based evidence (no alert)
+        </div>
+      )}
+
       {/* Row 1: Status Banner */}
       <section
         data-testid="status-banner"
@@ -186,11 +440,48 @@ export const Overview: React.FC<OverviewProps> = ({
           gap: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>
             {isAnom ? '⚠️ ANOMALY DETECTED' : '✅ NORMAL OPERATING CONDITIONS'}
           </h2>
+
+          {/* Provisional badge */}
+          {isProvisional && (
+            <span
+              data-testid="provisional-badge"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                border: '1px dashed #ffffff',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '12px',
+                letterSpacing: '0.05em',
+              }}
+            >
+              PROVISIONAL
+            </span>
+          )}
+
+          {/* Final badge */}
+          {isFinal && (
+            <span
+              data-testid="final-badge"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid #ffffff',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '12px',
+                letterSpacing: '0.05em',
+              }}
+            >
+              FINAL
+            </span>
+          )}
         </div>
+
         <span
           data-testid="severity-badge"
           style={{
@@ -228,13 +519,35 @@ export const Overview: React.FC<OverviewProps> = ({
         >
           <div
             style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              color: 'var(--color-text-muted)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            NETWORK & DEVICE STATE
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              NETWORK & DEVICE STATE
+            </span>
+            {connectionState === 'STALE' && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#d97706',
+                  backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                }}
+              >
+                (last known)
+              </span>
+            )}
           </div>
 
           <div style={{ fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -260,6 +573,17 @@ export const Overview: React.FC<OverviewProps> = ({
               <span style={{ fontWeight: 600 }}>Registered:</span>{' '}
               <span>{regDisp}</span>
             </div>
+            <div>
+              <span style={{ fontWeight: 600 }}>Source:</span>{' '}
+              <span>
+                {connectionState === 'REPLAY-SOURCE' ? 'Replay / Demo' : 'Phone live stream'}
+              </span>
+            </div>
+            {currTs && (
+              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                Time: {currTs} (device local time, no timezone recorded)
+              </div>
+            )}
           </div>
         </section>
 
@@ -278,13 +602,35 @@ export const Overview: React.FC<OverviewProps> = ({
         >
           <div
             style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              color: 'var(--color-text-muted)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            SIGNAL & CELL METRICS
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              SIGNAL & CELL METRICS
+            </span>
+            {connectionState === 'STALE' && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#d97706',
+                  backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                }}
+              >
+                (last known values)
+              </span>
+            )}
           </div>
 
           <div
@@ -510,13 +856,53 @@ export const Overview: React.FC<OverviewProps> = ({
         >
           <div
             style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              color: 'var(--color-text-muted)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
             }}
           >
-            DIAGNOSTICS & RECOMMENDATIONS
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              DIAGNOSTICS & RECOMMENDATIONS
+            </span>
+            {isProvisional && (
+              <span
+                data-testid="event-status-badge"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#d97706',
+                  backgroundColor: '#fef3c7',
+                  border: '1px dashed #d97706',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                PROVISIONAL (open)
+              </span>
+            )}
+            {isFinal && (
+              <span
+                data-testid="event-status-badge"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#16a34a',
+                  backgroundColor: '#dcfce7',
+                  border: '1px solid #16a34a',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                FINAL (closed)
+              </span>
+            )}
           </div>
 
           <div style={{ fontSize: '14px' }}>
@@ -524,24 +910,17 @@ export const Overview: React.FC<OverviewProps> = ({
             <code>{anomType}</code>
           </div>
 
-          {matchingEvent && matchingEvent.diagnosis ? (
+          {diagSummary ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div>
-                <strong>Diagnosis:</strong>{' '}
-                {String(
-                  (matchingEvent.diagnosis as Record<string, unknown>).summary ||
-                    'No summary available.'
-                )}
+                <strong>Diagnosis:</strong> <span>{diagSummary}</span>
               </div>
-              {Array.isArray((matchingEvent.diagnosis as Record<string, unknown>).evidence) && (
+              {Array.isArray(diagData?.evidence) && (
                 <div>
                   <strong>Evidence:</strong>
                   <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                    {(
-                      (matchingEvent.diagnosis as Record<string, unknown>)
-                        .evidence as string[]
-                    ).map((ev, i) => (
-                      <li key={i}>{ev}</li>
+                    {(diagData.evidence as string[]).map((ev, i) => (
+                      <li key={i}>{String(ev)}</li>
                     ))}
                   </ul>
                 </div>
@@ -556,20 +935,8 @@ export const Overview: React.FC<OverviewProps> = ({
                   fontSize: '13px',
                 }}
               >
-                💡 <strong>
-                  Recommendation [
-                  {String(
-                    (matchingEvent.recommendation as Record<string, unknown>)?.kind ||
-                      'MONITORING'
-                  )}
-                  ]:
-                </strong>{' '}
-                <span>
-                  {String(
-                    (matchingEvent.recommendation as Record<string, unknown>)?.text ||
-                      'Continue standard monitoring.'
-                  )}
-                </span>
+                💡 <strong>Recommendation [{String(recData?.kind || 'MONITORING')}]:</strong>{' '}
+                <span>{recText}</span>
               </div>
             </div>
           ) : anomType === 'NORMAL' ? (

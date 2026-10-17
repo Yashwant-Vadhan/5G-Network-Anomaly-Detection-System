@@ -314,12 +314,12 @@
 **Owner:** Sushil
 
 #### T17-003: Live Overview
-**Status:** ⬜
+**Status:** ✅
 **Description:** Reuse Overview with PROVISIONAL/FINAL badge, STALE 'showing last known values', ML-only line, alert banner with Acknowledge.
 **Dependencies:** T17-001, T16-009
 **Acceptance Criteria:**
-- [ ] All six states rendered from mock data
-- [ ] Provisional and final events visibly distinct
+- [x] All six states rendered from mock data
+- [x] Provisional and final events visibly distinct
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

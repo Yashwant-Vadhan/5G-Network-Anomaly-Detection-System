@@ -314,6 +314,7 @@ function AppContent() {
                   currentSample={currentSample}
                   prevSample={prevSample}
                   events={events}
+                  connectionState="REPLAY-SOURCE"
                 />
               }
             />
