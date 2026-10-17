@@ -196,13 +196,13 @@
 **Owner:** Yashwant
 
 #### T16-013: Build Events & Diagnosis
-**Status:** ⬜
+**Status:** ✅
 **Description:** Virtualised events table (365+ rows), type/severity filters, selected-event agent cards, event-window chart, JSON download; time labelled 'device local time (no timezone recorded)'.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] Filter counts equal the Streamlit page
-- [ ] Downloaded JSON validates against the C5 shape
-- [ ] Table stays responsive with 1,000 rows
+- [x] Filter counts equal the Streamlit page
+- [x] Downloaded JSON validates against the C5 shape
+- [x] Table stays responsive with 1,000 rows
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
