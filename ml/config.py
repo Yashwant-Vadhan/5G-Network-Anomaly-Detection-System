@@ -221,3 +221,36 @@ TICKET_TTL_SECONDS: int = 30
 # Ephemeral pairing code unambiguous alphabet (no 0/O, 1/I) and length
 PAIRING_CODE_ALPHABET: str = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 PAIRING_CODE_LENGTH: int = 8
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 / Hosted Ephemeral Sessions —
+# tune on non-evaluation data.
+# Maximum concurrent live ephemeral sessions hosted simultaneously across the server.
+MAX_LIVE_SESSIONS: int = 5
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 Abuse Controls —
+# tune on non-evaluation data.
+# Maximum live session creation requests allowed per client IP per window.
+MAX_SESSION_CREATIONS_PER_IP: int = 10
+SESSION_CREATION_WINDOW_SECONDS: int = 600
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 Abuse Controls —
+# tune on non-evaluation data.
+# Threshold of failed pairing attempts from an IP before triggering brute-force lockout.
+PAIRING_LOCKOUT_ATTEMPTS: int = 5
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 Abuse Controls —
+# tune on non-evaluation data.
+# Duration in seconds of brute-force lockout on pairing attempts for an offending IP.
+PAIRING_LOCKOUT_SECONDS: int = 900
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 Abuse Controls —
+# tune on non-evaluation data.
+# Maximum pairing attempt rate per client IP per window.
+MAX_PAIRING_ATTEMPTS_PER_IP: int = 10
+PAIRING_ATTEMPT_WINDOW_SECONDS: int = 60
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §C10 / Guardrail G29 —
+# tune on non-evaluation data.
+# Inactivity threshold in seconds after which an idle ephemeral live session is reaped (15 min).
+IDLE_SESSION_TIMEOUT_SECONDS: int = 900
+

@@ -37,11 +37,19 @@ from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ml.config import (
+    IDLE_SESSION_TIMEOUT_SECONDS,
+    MAX_LIVE_SESSIONS,
     MAX_MESSAGE_BYTES,
+    MAX_PAIRING_ATTEMPTS_PER_IP,
     MAX_SEQ_JUMP,
+    MAX_SESSION_CREATIONS_PER_IP,
+    PAIRING_ATTEMPT_WINDOW_SECONDS,
     PAIRING_CODE_ALPHABET,
     PAIRING_CODE_LENGTH,
     PAIRING_CODE_TTL_SECONDS,
+    PAIRING_LOCKOUT_ATTEMPTS,
+    PAIRING_LOCKOUT_SECONDS,
+    SESSION_CREATION_WINDOW_SECONDS,
     TICKET_TTL_SECONDS,
 )
 from ml.schema import ConfigError, SchemaError
@@ -122,6 +130,14 @@ class ServerConfig:
     max_sessions: int = 10
     max_msgs_per_min: int = 120
     require_live_auth: bool = False
+    max_live_sessions: int = MAX_LIVE_SESSIONS
+    max_session_creations_per_ip: int = MAX_SESSION_CREATIONS_PER_IP
+    session_creation_window_seconds: int = SESSION_CREATION_WINDOW_SECONDS
+    pairing_lockout_attempts: int = PAIRING_LOCKOUT_ATTEMPTS
+    pairing_lockout_seconds: int = PAIRING_LOCKOUT_SECONDS
+    max_pairing_attempts_per_ip: int = MAX_PAIRING_ATTEMPTS_PER_IP
+    pairing_attempt_window_seconds: int = PAIRING_ATTEMPT_WINDOW_SECONDS
+    idle_session_timeout_seconds: int = IDLE_SESSION_TIMEOUT_SECONDS
 
     def validate(self) -> None:
         """Validate server configuration and startup security guards (T18-001)."""
@@ -180,6 +196,20 @@ class ServerConfig:
                 retention_raw.lower() not in ("0", "false", "no") if retention_raw else True
             )
 
+        max_live_raw = os.environ.get("NADS_MAX_LIVE_SESSIONS", "").strip()
+        try:
+            max_live_sessions = int(max_live_raw) if max_live_raw else MAX_LIVE_SESSIONS
+        except ValueError:
+            max_live_sessions = MAX_LIVE_SESSIONS
+
+        idle_reaper_raw = os.environ.get("NADS_IDLE_SESSION_TIMEOUT_SECONDS", "").strip()
+        try:
+            idle_timeout = (
+                int(idle_reaper_raw) if idle_reaper_raw else IDLE_SESSION_TIMEOUT_SECONDS
+            )
+        except ValueError:
+            idle_timeout = IDLE_SESSION_TIMEOUT_SECONDS
+
         config = cls(
             host=os.environ.get("NADS_HOST", "127.0.0.1").strip(),
             port=port,
@@ -189,6 +219,8 @@ class ServerConfig:
             mode=mode,
             allowed_origins=origins,
             retention_enabled=retention_enabled,
+            max_live_sessions=max_live_sessions,
+            idle_session_timeout_seconds=idle_timeout,
         )
         config.validate()
         return config
@@ -245,6 +277,43 @@ def verify_ingest_token(
     return provided_token
 
 
+def reap_idle_sessions(app: FastAPI, now: datetime | None = None) -> list[str]:
+    """Reap live sessions idle past IDLE_SESSION_TIMEOUT_SECONDS (G29/T18-004)."""
+    if now is None:
+        now = datetime.now(UTC)
+    config: ServerConfig = getattr(app.state, "config", ServerConfig())
+    timeout = getattr(config, "idle_session_timeout_seconds", IDLE_SESSION_TIMEOUT_SECONDS)
+    cutoff = now - timedelta(seconds=timeout)
+    reaped: list[str] = []
+
+    active_sessions = getattr(app.state, "active_live_sessions", {})
+    for session_id, meta in list(active_sessions.items()):
+        last_active = meta.get("last_active_at") or meta.get("created_at")
+        if last_active is None:
+            continue
+        if last_active.tzinfo is None:
+            last_active = last_active.replace(tzinfo=UTC)
+        if last_active < cutoff:
+            active_sessions.pop(session_id, None)
+            code = meta.get("pairing_code")
+            if code and code in app.state.pairing_sessions:
+                del app.state.pairing_sessions[code]
+            token = meta.get("ingest_token")
+            if token and token in app.state.session_ingest_tokens:
+                del app.state.session_ingest_tokens[token]
+            tickets_to_del = [
+                t for t, (sid, _) in app.state.live_session_tickets.items() if sid == session_id
+            ]
+            for t in tickets_to_del:
+                del app.state.live_session_tickets[t]
+            app.state.session_samples.pop(session_id, None)
+            app.state.session_events.pop(session_id, None)
+            reaped.append(session_id)
+            logger.info("Reaped idle live session %s (last active: %s)", session_id, last_active)
+
+    return reaped
+
+
 def create_app(
     config: ServerConfig | None = None,
     session_manager: SessionManager | None = None,
@@ -292,6 +361,9 @@ def create_app(
     app.state.active_live_sessions: dict[str, dict[str, Any]] = {}
     app.state.session_ingest_tokens: dict[str, str] = {}
     app.state.live_session_tickets: dict[str, tuple[str, datetime]] = {}
+    app.state.ip_session_creations: dict[str, list[float]] = {}
+    app.state.pairing_failed_attempts: dict[str, list[float]] = {}
+    app.state.pairing_lockouts: dict[str, float] = {}
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
@@ -650,6 +722,10 @@ def create_app(
                         scored = None
 
                     if session_id:
+                        if session_id in app.state.active_live_sessions:
+                            app.state.active_live_sessions[session_id]["last_active_at"] = (
+                                datetime.now(UTC)
+                            )
                         if scored is not None:
                             app.state.latest_samples[session_id] = scored
                             if session_id not in app.state.session_samples:
@@ -881,8 +957,33 @@ def create_app(
         raise HTTPException(status_code=401, detail="Unauthorized viewer")
 
     @app.post("/api/v1/live-sessions", response_model=CreateLiveSessionResponse)
-    async def create_live_session(response: Response) -> CreateLiveSessionResponse:
+    async def create_live_session(
+        request: Request, response: Response
+    ) -> CreateLiveSessionResponse:
         """Initialize an ephemeral live session and return an 8-char pairing code (C10)."""
+        reap_idle_sessions(app)
+        if len(app.state.active_live_sessions) >= config.max_live_sessions:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Maximum live sessions ({config.max_live_sessions}) reached",
+            )
+
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        now_ts = time.time()
+        window = config.session_creation_window_seconds
+        creations = [
+            t
+            for t in app.state.ip_session_creations.get(client_ip, [])
+            if t > now_ts - window
+        ]
+        if len(creations) >= config.max_session_creations_per_ip:
+            raise HTTPException(
+                status_code=429,
+                detail="Session creation rate limit exceeded",
+            )
+        creations.append(now_ts)
+        app.state.ip_session_creations[client_ip] = creations
+
         session_id = f"live-{uuid.uuid4().hex[:12]}"
         pairing_code = "".join(
             secrets.choice(PAIRING_CODE_ALPHABET) for _ in range(PAIRING_CODE_LENGTH)
@@ -895,6 +996,7 @@ def create_app(
             "session_id": session_id,
             "pairing_code": pairing_code,
             "created_at": now,
+            "last_active_at": now,
             "expires_at": expires_at,
             "used": False,
             "client_id": None,
@@ -920,21 +1022,53 @@ def create_app(
         )
 
     @app.post("/api/v1/pair", response_model=PairResponse)
-    async def pair_device(payload: PairRequest) -> PairResponse:
+    async def pair_device(payload: PairRequest, request: Request) -> PairResponse:
         """Pair phone device using 8-character single-use pairing code (C10)."""
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        now_ts = time.time()
+
+        # Check brute-force lockout
+        lockout_until = app.state.pairing_lockouts.get(client_ip, 0.0)
+        if now_ts < lockout_until:
+            rem = int(lockout_until - now_ts)
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many failed pairing attempts. Locked out for {rem} seconds",
+            )
+
         code = payload.pairing_code.strip().upper()
         meta = app.state.pairing_sessions.get(code)
-        if meta is None:
-            raise HTTPException(status_code=404, detail="Pairing code not found")
+        now_dt = datetime.now(UTC)
 
-        if meta.get("used", False):
-            raise HTTPException(status_code=409, detail="Pairing code already used")
+        if meta is None or meta.get("used", False) or now_dt > meta["expires_at"]:
+            recent = [
+                t
+                for t in app.state.pairing_failed_attempts.get(client_ip, [])
+                if t > now_ts - config.pairing_lockout_seconds
+            ]
+            recent.append(now_ts)
+            app.state.pairing_failed_attempts[client_ip] = recent
 
-        if datetime.now(UTC) > meta["expires_at"]:
+            if len(recent) >= config.pairing_lockout_attempts:
+                app.state.pairing_lockouts[client_ip] = now_ts + config.pairing_lockout_seconds
+                raise HTTPException(
+                    status_code=429,
+                    detail=(
+                        f"Too many failed pairing attempts. "
+                        f"Locked out for {config.pairing_lockout_seconds} seconds"
+                    ),
+                )
+
+            if meta is None:
+                raise HTTPException(status_code=404, detail="Pairing code not found")
+            if meta.get("used", False):
+                raise HTTPException(status_code=409, detail="Pairing code already used")
             raise HTTPException(status_code=400, detail="Pairing code expired")
 
+        app.state.pairing_failed_attempts.pop(client_ip, None)
         meta["used"] = True
         meta["client_id"] = payload.client_id
+        meta["last_active_at"] = now_dt
         session_id = meta["session_id"]
 
         ingest_token = secrets.token_urlsafe(32)
@@ -959,6 +1093,9 @@ def create_app(
         verify_viewer_auth(request, session_id)
         if session_id not in app.state.active_live_sessions:
             raise HTTPException(status_code=404, detail="Session not found")
+
+        meta = app.state.active_live_sessions[session_id]
+        meta["last_active_at"] = datetime.now(UTC)
 
         ticket = secrets.token_urlsafe(24)
         expires_at = datetime.now(UTC) + timedelta(seconds=TICKET_TTL_SECONDS)

@@ -440,13 +440,13 @@
 **Owner:** Sushil
 
 #### T18-004: Limits and abuse controls
-**Status:** ⬜
+**Status:** ✅
 **Description:** `MAX_LIVE_SESSIONS`, per-IP session-creation and pairing-attempt rate limits, brute-force lockout on pairing codes, idle-session reaper (15 min), message/rate caps from C7.
 **Dependencies:** T18-002
 **Acceptance Criteria:**
-- [ ] Limits configurable in ml/config.py with origin comments
-- [ ] Lockout test passes
-- [ ] Reaper frees memory (test)
+- [x] Limits configurable in ml/config.py with origin comments
+- [x] Lockout test passes
+- [x] Reaper frees memory (test)
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
