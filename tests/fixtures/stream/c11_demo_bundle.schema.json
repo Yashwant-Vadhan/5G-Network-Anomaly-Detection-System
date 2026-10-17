@@ -15,7 +15,6 @@
         "cell_lookup": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -129,7 +128,6 @@
     },
     "events": {
       "items": {
-        "additionalProperties": true,
         "type": "object"
       },
       "title": "Events",
@@ -140,7 +138,6 @@
       "type": "string"
     },
     "model_meta": {
-      "additionalProperties": true,
       "title": "Model Meta",
       "type": "object"
     },
@@ -153,7 +150,6 @@
       "$ref": "#/$defs/BundlePrivacy"
     },
     "quality": {
-      "additionalProperties": true,
       "title": "Quality",
       "type": "object"
     },
@@ -178,7 +174,6 @@
     },
     "transitions": {
       "items": {
-        "additionalProperties": true,
         "type": "object"
       },
       "title": "Transitions",

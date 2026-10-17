@@ -1,0 +1,19 @@
+{
+  "description": "Response payload when tearing down a live session (Contract C10).",
+  "properties": {
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "status": {
+      "default": "deleted",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id"
+  ],
+  "title": "DeleteLiveSessionResponse",
+  "type": "object"
+}

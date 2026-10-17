@@ -343,3 +343,44 @@ export interface DemoBundle {
   quality: Record<string, unknown>;
   model_meta: Record<string, unknown>;
 }
+
+// ==============================================================================
+// Contract C10: Hosted Pairing & Ephemeral Session Lifecycle Models
+// ==============================================================================
+
+export interface IngestLimits {
+  max_message_bytes: number;
+  max_batch_size: number;
+  max_msgs_per_min: number;
+  max_burst_messages: number;
+}
+
+export interface CreateLiveSessionResponse {
+  session_id: string;
+  pairing_code: string;
+  expires_at: string;
+}
+
+export interface PairRequest {
+  pairing_code: string;
+  client_id: string;
+  app_version?: string;
+  schema_version?: number;
+}
+
+export interface PairResponse {
+  session_id: string;
+  ingest_token: string;
+  ws_url: string;
+  limits: IngestLimits;
+}
+
+export interface LiveSessionTicketResponse {
+  ticket: string;
+  expires_at: string;
+}
+
+export interface DeleteLiveSessionResponse {
+  status: string;
+  session_id: string;
+}

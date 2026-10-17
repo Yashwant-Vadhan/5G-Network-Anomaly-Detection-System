@@ -772,3 +772,58 @@ class DemoBundle(BaseModel):
     events: list[dict[str, Any]] = Field(default_factory=list)
     quality: dict[str, Any] = Field(default_factory=dict)
     model_meta: dict[str, Any] = Field(default_factory=dict)
+
+
+# ==============================================================================
+# Contract C10: Hosted Pairing & Ephemeral Session Lifecycle Models
+# ==============================================================================
+
+
+class CreateLiveSessionResponse(BaseModel):
+    """Response payload when initializing a live paired session (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    session_id: str
+    pairing_code: str = Field(..., min_length=8, max_length=8)
+    expires_at: str
+
+
+class PairRequest(BaseModel):
+    """Request payload from phone to pair with active session (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    pairing_code: str = Field(..., min_length=8, max_length=8)
+    client_id: str = Field(..., min_length=1, max_length=128)
+    app_version: str = Field(default="2.0.0", max_length=50)
+    schema_version: int = Field(default=SCHEMA_VERSION, ge=2, le=2)
+
+
+class PairResponse(BaseModel):
+    """Response payload returned to phone upon successful pairing (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    session_id: str
+    ingest_token: str
+    ws_url: str
+    limits: IngestLimits = Field(default_factory=IngestLimits)
+
+
+class LiveSessionTicketResponse(BaseModel):
+    """Single-use live WebSocket ticket for browser viewer (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    ticket: str
+    expires_at: str
+
+
+class DeleteLiveSessionResponse(BaseModel):
+    """Response payload when tearing down a live session (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    status: str = "deleted"
+    session_id: str

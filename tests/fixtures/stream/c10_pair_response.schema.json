@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "IngestLimits": {
+      "description": "Operational server limits negotiated during hello handshake.",
+      "properties": {
+        "max_message_bytes": {
+          "default": 8192,
+          "title": "Max Message Bytes",
+          "type": "integer"
+        },
+        "max_msgs_per_min": {
+          "default": 120,
+          "title": "Max Msgs Per Min",
+          "type": "integer"
+        }
+      },
+      "title": "IngestLimits",
+      "type": "object"
+    }
+  },
+  "description": "Response payload returned to phone upon successful pairing (Contract C10).",
+  "properties": {
+    "ingest_token": {
+      "title": "Ingest Token",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/IngestLimits"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "ws_url": {
+      "title": "Ws Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "ingest_token",
+    "ws_url"
+  ],
+  "title": "PairResponse",
+  "type": "object"
+}

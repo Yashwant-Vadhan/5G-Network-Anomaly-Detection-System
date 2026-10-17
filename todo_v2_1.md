@@ -417,13 +417,13 @@
 **Owner:** Sushil
 
 #### T18-002: Pairing and session API (Contract C10)
-**Status:** ⬜
+**Status:** ✅
 **Description:** `POST /api/v1/live-sessions`, `POST /api/v1/pair`, `POST /api/v1/live-sessions/{id}/ticket`, `DELETE /api/v1/live-sessions/{id}`; 8-char single-use pairing codes with 10 min TTL; per-session ingest token and viewer cookie; pydantic models + golden examples.
 **Dependencies:** T18-001, T10-005, T11-011
 **Acceptance Criteria:**
-- [ ] Code cannot be reused
-- [ ] Expired code rejected
-- [ ] Golden C10 examples committed
+- [x] Code cannot be reused
+- [x] Expired code rejected
+- [x] Golden C10 examples committed
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil

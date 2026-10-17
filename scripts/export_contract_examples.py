@@ -37,6 +37,8 @@ from streaming.schema import (  # noqa: E402
     BundleSamples,
     BundleSession,
     ConnectionEvent,
+    CreateLiveSessionResponse,
+    DeleteLiveSessionResponse,
     DemoBundle,
     DroppedEvent,
     ErrorDetail,
@@ -48,14 +50,18 @@ from streaming.schema import (  # noqa: E402
     HelloAck,
     IngestBye,
     IngestHello,
+    IngestLimits,
     IngestPing,
     IngestSample,
     LiveEventClosed,
     LiveEventOpen,
     LiveEventUpdate,
     LiveSampleEvent,
+    LiveSessionTicketResponse,
     MetricsResponse,
     ModelInfoResponse,
+    PairRequest,
+    PairResponse,
     Pong,
     SamplesResponse,
     ScoredSample,
@@ -476,6 +482,52 @@ def get_golden_definitions() -> list[dict[str, Any]]:
         {"name": "c9_alert_record", "model": AlertRecord, "example": alert_record},
         # Contract C11 Demo Bundle
         {"name": "c11_demo_bundle", "model": DemoBundle, "example": demo_bundle},
+        # Contract C10 Pairing and Session Lifecycle
+        {
+            "name": "c10_create_live_session_response",
+            "model": CreateLiveSessionResponse,
+            "example": CreateLiveSessionResponse(
+                session_id="live-abc123def456",
+                pairing_code="ABCDEFGH",
+                expires_at="2026-10-09T10:25:00Z",
+            ),
+        },
+        {
+            "name": "c10_pair_request",
+            "model": PairRequest,
+            "example": PairRequest(
+                pairing_code="ABCDEFGH",
+                client_id="phone-client-uuid-1234",
+                app_version="2.0.0",
+                schema_version=2,
+            ),
+        },
+        {
+            "name": "c10_pair_response",
+            "model": PairResponse,
+            "example": PairResponse(
+                session_id="live-abc123def456",
+                ingest_token="token-abc123xyz789",
+                ws_url="/api/v1/ingest",
+                limits=IngestLimits(),
+            ),
+        },
+        {
+            "name": "c10_live_session_ticket_response",
+            "model": LiveSessionTicketResponse,
+            "example": LiveSessionTicketResponse(
+                ticket="ticket-sec-token-123",
+                expires_at="2026-10-09T10:15:30Z",
+            ),
+        },
+        {
+            "name": "c10_delete_live_session_response",
+            "model": DeleteLiveSessionResponse,
+            "example": DeleteLiveSessionResponse(
+                status="deleted",
+                session_id="live-abc123def456",
+            ),
+        },
     ]
 
 
@@ -825,6 +877,47 @@ export interface DemoBundle {
   events: EventRecord[] | Record<string, unknown>[];
   quality: Record<string, unknown>;
   model_meta: Record<string, unknown>;
+}
+
+// ==============================================================================
+// Contract C10: Hosted Pairing & Ephemeral Session Lifecycle Models
+// ==============================================================================
+
+export interface IngestLimits {
+  max_message_bytes: number;
+  max_batch_size: number;
+  max_msgs_per_min: number;
+  max_burst_messages: number;
+}
+
+export interface CreateLiveSessionResponse {
+  session_id: string;
+  pairing_code: string;
+  expires_at: string;
+}
+
+export interface PairRequest {
+  pairing_code: string;
+  client_id: string;
+  app_version?: string;
+  schema_version?: number;
+}
+
+export interface PairResponse {
+  session_id: string;
+  ingest_token: string;
+  ws_url: string;
+  limits: IngestLimits;
+}
+
+export interface LiveSessionTicketResponse {
+  ticket: string;
+  expires_at: string;
+}
+
+export interface DeleteLiveSessionResponse {
+  status: string;
+  session_id: string;
 }
 """
 

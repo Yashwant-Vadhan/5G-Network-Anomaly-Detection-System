@@ -12,10 +12,11 @@ import hmac
 import json
 import logging
 import os
+import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import (
@@ -35,7 +36,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ml.config import MAX_MESSAGE_BYTES, MAX_SEQ_JUMP
+from ml.config import (
+    MAX_MESSAGE_BYTES,
+    MAX_SEQ_JUMP,
+    PAIRING_CODE_ALPHABET,
+    PAIRING_CODE_LENGTH,
+    PAIRING_CODE_TTL_SECONDS,
+    TICKET_TTL_SECONDS,
+)
 from ml.schema import ConfigError, SchemaError
 from streaming.connection import ConnectionTracker
 from streaming.engine import StreamingEngine
@@ -44,6 +52,8 @@ from streaming.hub import LiveHub
 from streaming.metrics import get_stream_metrics, reset_stream_metrics
 from streaming.schema import (
     Ack,
+    CreateLiveSessionResponse,
+    DeleteLiveSessionResponse,
     ErrorDetail,
     ErrorMsg,
     ErrorResponse,
@@ -59,8 +69,11 @@ from streaming.schema import (
     LiveEventOpen,
     LiveEventUpdate,
     LiveSampleEvent,
+    LiveSessionTicketResponse,
     MetricsResponse,
     ModelInfoResponse,
+    PairRequest,
+    PairResponse,
     Pong,
     SamplesResponse,
     ScoredSample,
@@ -219,6 +232,11 @@ def verify_ingest_token(
 
     provided_token = authorization.removeprefix("Bearer ").strip()
 
+    # Per-session ephemeral token check (Contract C10)
+    session_tokens = getattr(request.app.state, "session_ingest_tokens", {})
+    if provided_token in session_tokens:
+        return provided_token
+
     # hmac.compare_digest prevents timing side-channel attacks
     if not hmac.compare_digest(provided_token.encode("utf-8"), expected_token.encode("utf-8")):
         raise HTTPException(status_code=401, detail="Unauthorized: Invalid token")
@@ -269,6 +287,10 @@ def create_app(
     app.state.session_samples: dict[str, list[ScoredSample]] = {}
     app.state.session_events: dict[str, list[EventRecord]] = {}
     app.state.alerts: list[dict[str, Any]] = []
+    app.state.pairing_sessions: dict[str, dict[str, Any]] = {}
+    app.state.active_live_sessions: dict[str, dict[str, Any]] = {}
+    app.state.session_ingest_tokens: dict[str, str] = {}
+    app.state.live_session_tickets: dict[str, tuple[str, datetime]] = {}
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
@@ -371,9 +393,14 @@ def create_app(
             if not token:
                 token = websocket.query_params.get("token")
 
-            if not token or not hmac.compare_digest(
-                token.encode("utf-8"), config.ingest_token.encode("utf-8")
-            ):
+            session_tokens = getattr(websocket.app.state, "session_ingest_tokens", {})
+            is_valid_session_token = bool(token and token in session_tokens)
+            is_valid_global_token = bool(
+                token
+                and hmac.compare_digest(token.encode("utf-8"), config.ingest_token.encode("utf-8"))
+            )
+
+            if not (is_valid_session_token or is_valid_global_token):
                 await websocket.close(code=4401, reason="Unauthorized")
                 return
 
@@ -791,6 +818,148 @@ def create_app(
             feature_hash="hash-12345",
             thresholds={"if_threshold": 0.6},
         )
+
+    # --------------------------------------------------------------------------
+    # Contract C10: Hosted Pairing & Ephemeral Session Lifecycle API (T18-002)
+    # --------------------------------------------------------------------------
+
+    def verify_viewer_auth(request: Request, session_id: str) -> None:
+        """Check HttpOnly viewer cookie or bearer auth for session access (Contract C10)."""
+        cookie_session = request.cookies.get("nads_viewer_session")
+        if cookie_session == session_id:
+            return
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            if config.ingest_token and hmac.compare_digest(
+                token.encode("utf-8"), config.ingest_token.encode("utf-8")
+            ):
+                return
+            session_tokens = getattr(request.app.state, "session_ingest_tokens", {})
+            if session_tokens.get(token) == session_id or token == session_id:
+                return
+        raise HTTPException(status_code=401, detail="Unauthorized viewer")
+
+    @app.post("/api/v1/live-sessions", response_model=CreateLiveSessionResponse)
+    async def create_live_session(response: Response) -> CreateLiveSessionResponse:
+        """Initialize an ephemeral live session and return an 8-char pairing code (C10)."""
+        session_id = f"live-{uuid.uuid4().hex[:12]}"
+        pairing_code = "".join(
+            secrets.choice(PAIRING_CODE_ALPHABET) for _ in range(PAIRING_CODE_LENGTH)
+        )
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(seconds=PAIRING_CODE_TTL_SECONDS)
+        expires_at_iso = expires_at.isoformat()
+
+        session_meta = {
+            "session_id": session_id,
+            "pairing_code": pairing_code,
+            "created_at": now,
+            "expires_at": expires_at,
+            "used": False,
+            "client_id": None,
+            "ingest_token": None,
+        }
+        app.state.pairing_sessions[pairing_code] = session_meta
+        app.state.active_live_sessions[session_id] = session_meta
+
+        # Set HttpOnly viewer cookie scoped to session_id
+        response.set_cookie(
+            key="nads_viewer_session",
+            value=session_id,
+            httponly=True,
+            samesite="lax",
+            max_age=PAIRING_CODE_TTL_SECONDS * 6,
+            secure=False,
+            path="/",
+        )
+        return CreateLiveSessionResponse(
+            session_id=session_id,
+            pairing_code=pairing_code,
+            expires_at=expires_at_iso,
+        )
+
+    @app.post("/api/v1/pair", response_model=PairResponse)
+    async def pair_device(payload: PairRequest) -> PairResponse:
+        """Pair phone device using 8-character single-use pairing code (C10)."""
+        code = payload.pairing_code.strip().upper()
+        meta = app.state.pairing_sessions.get(code)
+        if meta is None:
+            raise HTTPException(status_code=404, detail="Pairing code not found")
+
+        if meta.get("used", False):
+            raise HTTPException(status_code=409, detail="Pairing code already used")
+
+        if datetime.now(UTC) > meta["expires_at"]:
+            raise HTTPException(status_code=400, detail="Pairing code expired")
+
+        meta["used"] = True
+        meta["client_id"] = payload.client_id
+        session_id = meta["session_id"]
+
+        ingest_token = secrets.token_urlsafe(32)
+        meta["ingest_token"] = ingest_token
+        app.state.session_ingest_tokens[ingest_token] = session_id
+
+        return PairResponse(
+            session_id=session_id,
+            ingest_token=ingest_token,
+            ws_url="/api/v1/ingest",
+            limits=IngestLimits(),
+        )
+
+    @app.post(
+        "/api/v1/live-sessions/{session_id}/ticket",
+        response_model=LiveSessionTicketResponse,
+    )
+    async def get_live_session_ticket(
+        session_id: str, request: Request
+    ) -> LiveSessionTicketResponse:
+        """Generate single-use WebSocket ticket (30s TTL) for viewer browser (C10)."""
+        verify_viewer_auth(request, session_id)
+        if session_id not in app.state.active_live_sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        ticket = secrets.token_urlsafe(24)
+        expires_at = datetime.now(UTC) + timedelta(seconds=TICKET_TTL_SECONDS)
+        app.state.live_session_tickets[ticket] = (session_id, expires_at)
+
+        return LiveSessionTicketResponse(
+            ticket=ticket,
+            expires_at=expires_at.isoformat(),
+        )
+
+    @app.delete(
+        "/api/v1/live-sessions/{session_id}",
+        response_model=DeleteLiveSessionResponse,
+    )
+    async def delete_live_session(
+        session_id: str, request: Request, response: Response
+    ) -> DeleteLiveSessionResponse:
+        """Teardown session and purge all in-memory telemetry immediately (G29/C10)."""
+        verify_viewer_auth(request, session_id)
+        meta = app.state.active_live_sessions.pop(session_id, None)
+        if meta is not None:
+            code = meta.get("pairing_code")
+            if code and code in app.state.pairing_sessions:
+                del app.state.pairing_sessions[code]
+            token = meta.get("ingest_token")
+            if token and token in app.state.session_ingest_tokens:
+                del app.state.session_ingest_tokens[token]
+
+        # Purge any tickets
+        tickets_to_del = [
+            t for t, (sid, _) in app.state.live_session_tickets.items() if sid == session_id
+        ]
+        for t in tickets_to_del:
+            del app.state.live_session_tickets[t]
+
+        # Purge in-memory telemetry (G29)
+        app.state.session_samples.pop(session_id, None)
+        app.state.session_events.pop(session_id, None)
+
+        response.delete_cookie(key="nads_viewer_session", path="/")
+        return DeleteLiveSessionResponse(status="deleted", session_id=session_id)
 
     # --------------------------------------------------------------------------
     # WebSocket /api/v1/live Endpoint (T11-014 / Contract C8)

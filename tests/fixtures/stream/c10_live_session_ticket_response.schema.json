@@ -1,0 +1,19 @@
+{
+  "description": "Single-use live WebSocket ticket for browser viewer (Contract C10).",
+  "properties": {
+    "expires_at": {
+      "title": "Expires At",
+      "type": "string"
+    },
+    "ticket": {
+      "title": "Ticket",
+      "type": "string"
+    }
+  },
+  "required": [
+    "ticket",
+    "expires_at"
+  ],
+  "title": "LiveSessionTicketResponse",
+  "type": "object"
+}

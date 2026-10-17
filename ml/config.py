@@ -210,3 +210,14 @@ ALERT_COOLDOWN_SECONDS: int = 300
 # Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Security & Boundary Rules —
 # Maximum allowed forward sequence jump to protect against memory/metrics manipulation.
 MAX_SEQ_JUMP: int = 100_000
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Contract C10 —
+# Ephemeral pairing code TTL (10 minutes).
+PAIRING_CODE_TTL_SECONDS: int = 600
+
+# Ephemeral WebSocket first-frame viewer ticket TTL (30 seconds).
+TICKET_TTL_SECONDS: int = 30
+
+# Ephemeral pairing code unambiguous alphabet (no 0/O, 1/I) and length
+PAIRING_CODE_ALPHABET: str = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+PAIRING_CODE_LENGTH: int = 8

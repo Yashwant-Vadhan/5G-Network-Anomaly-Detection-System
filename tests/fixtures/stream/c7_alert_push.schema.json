@@ -2,7 +2,6 @@
   "description": "Compact alert push notification sent from server to client (C7).",
   "properties": {
     "alert": {
-      "additionalProperties": true,
       "title": "Alert",
       "type": "object"
     },
