@@ -173,13 +173,13 @@
 **Owner:** Sushil
 
 #### T16-011: Build Signal Explorer
-**Status:** ⬜
+**Status:** ✅
 **Description:** Four stacked panels (RSRP, RSRQ, SINR, IF score with 0.60 line), flag overlay options (both / baseline / IF / hide), rolling-mean toggle, one-session-at-a-time with session tabs and prev/next plus an all-sessions overview strip, lines break at gaps and NA, zoom/pan, summary sentence, data-table expander.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] No line bridges two sessions or an NA gap
-- [ ] Anomaly markers use × shape plus tooltip text
-- [ ] Summary stats equal the Streamlit page's min/max/mean
+- [x] No line bridges two sessions or an NA gap
+- [x] Anomaly markers use × shape plus tooltip text
+- [x] Summary stats equal the Streamlit page's min/max/mean
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil

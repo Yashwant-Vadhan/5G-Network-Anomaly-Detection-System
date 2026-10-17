@@ -5,6 +5,7 @@ import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
 import { DemoBundle } from './types/contracts';
 import { Overview } from './pages/Overview';
+import { SignalExplorer } from './pages/SignalExplorer';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 
@@ -310,7 +311,8 @@ function AppContent() {
                 />
               }
             />
-            {PAGES.filter(p => p.path !== '/overview').map(p => (
+            <Route path="/signals" element={<SignalExplorer />} />
+            {PAGES.filter(p => p.path !== '/overview' && p.path !== '/signals').map(p => (
               <Route
                 key={p.path}
                 path={p.path}
