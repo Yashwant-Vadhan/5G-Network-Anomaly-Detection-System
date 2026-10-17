@@ -181,13 +181,16 @@ class LiveCaptureStore:
 
     @property
     def is_closed(self) -> bool:
-        """Return True if session has been finalized and closed."""
-        return self.status == "CLOSED"
+        """Return True if the store file has been finalized/closed."""
+        return self.status in ("CLOSED", "INCOMPLETE") or (
+            self._file is not None and self._file.closed
+        )
 
     def close(self, status: SessionStatus = "CLOSED") -> None:
         """Close capture file, fsync to disk, compute SHA-256, and finalize sidecar."""
         if self.status == "CLOSED":
             return
+
 
         self.status = status
         self.flush()

@@ -397,13 +397,14 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-015: Write the replay tool
-**Status:** ⬜
+**Status:** ✅
 **Description:** `scripts/replay_stream.py --csv --speed N --host --port --token`: send a C1 CSV through the ingest WebSocket honouring acks, assigning seq, setting session `source=replay`; clear error messages and exit code 2 on bad args.
 **Dependencies:** T11-011
 **Acceptance Criteria:**
-- [ ] Replays `data/sample/` at 1× and 20×
-- [ ] Respects acks (no unbounded flooding)
-- [ ] Session metadata shows `source=replay`
+- [x] Replays `data/sample/` at 1× and 20×
+- [x] Respects acks (no unbounded flooding)
+- [x] Session metadata shows `source=replay`
+
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant

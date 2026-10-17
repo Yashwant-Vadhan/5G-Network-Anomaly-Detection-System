@@ -404,6 +404,7 @@ def create_app(
     app.state.session_samples: dict[str, list[ScoredSample]] = {}
     app.state.session_raw_samples: dict[str, list[dict[str, Any]]] = {}
     app.state.session_events: dict[str, list[EventRecord]] = {}
+    app.state.session_sources: dict[str, str] = {}
     app.state.alerts: dict[str, AlertRecord] = {}
     app.state.alert_ack_attempts: dict[str, list[float]] = {}
     app.state.pairing_sessions: dict[str, dict[str, Any]] = {}
@@ -668,12 +669,16 @@ def create_app(
                         reset_stream_metrics(sess_buf.session_id)
                         session_id = sess_buf.session_id
 
+                    hello_src = getattr(hello, "source", None) or "phone"
+                    app.state.session_sources[session_id] = hello_src
+
+
                     # Live capture store for telemetry retention
                     if config.retention_enabled:
                         store = LiveCaptureStore(
                             client_id=client_id,
                             session_id=session_id,
-                            source="phone",
+                            source=hello_src,
                         )
 
                     tracker = EventTracker(session_id=session_id, device=device)
@@ -929,10 +934,11 @@ def create_app(
         for _cid, buf in sess_mgr._active_sessions.items():
             evts = app.state.session_events.get(buf.session_id, [])
             status = "CLOSED" if buf.is_closed else "OPEN"
+            src = app.state.session_sources.get(buf.session_id, "phone")
             summaries.append(
                 SessionSummary(
                     session_id=buf.session_id,
-                    source="phone",
+                    source=src,
                     status=status,
                     sample_count=len(buf),
                     event_count=len(evts),

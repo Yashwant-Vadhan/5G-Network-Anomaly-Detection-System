@@ -46,6 +46,9 @@ def validate_iso_with_tz(v: str, field_name: str = "timestamp") -> str:
 # ==============================================================================
 
 
+StreamSource = Literal["phone", "replay"]
+
+
 class EdgeHelloInfo(BaseModel):
     """Optional edge inference status reported during hello handshake."""
 
@@ -74,6 +77,8 @@ class IngestHello(BaseModel):
     queue_depth: int = Field(default=0, ge=0)
     dropped_from_queue: int = Field(default=0, ge=0)
     edge: EdgeHelloInfo | None = None
+    source: StreamSource = "phone"
+
 
 
 class EdgeSampleInfo(BaseModel):
