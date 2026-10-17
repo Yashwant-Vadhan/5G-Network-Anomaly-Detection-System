@@ -325,12 +325,12 @@
 **Owner:** Sushil
 
 #### T17-004: Live Signals
-**Status:** ⬜
+**Status:** ✅
 **Description:** Rolling 5/15/60 min window, gap bands, no interpolation, pause/resume, table fallback.
 **Dependencies:** T17-001, T16-011
 **Acceptance Criteria:**
-- [ ] No line crosses a gap
-- [ ] Pause freezes the view without losing data
+- [x] No line crosses a gap
+- [x] Pause freezes the view without losing data
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

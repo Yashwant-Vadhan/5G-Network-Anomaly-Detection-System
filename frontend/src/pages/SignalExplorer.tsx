@@ -1,23 +1,27 @@
 /**
- * Signal Explorer Page Component (T16-011).
+ * Signal Explorer Page Component (T16-011 / T17-004).
  *
  * Implements:
  * - Four stacked panels (RSRP, RSRQ, SINR, and IF score with 0.60 threshold line)
  * - Flag overlay toggles (both / baseline / IF / hide)
  * - Rolling-mean toggle and dashed overlay line
  * - One-session-at-a-time with session tabs and navigation
- * - Line segments break at gaps and NA values (never bridging missing points)
+ * - Line segments strictly break at gaps and NA values (never bridging missing points)
+ * - Shaded gap bands marking intervals with no data received (>15s)
+ * - Rolling 5 / 15 / 60 min window selector
+ * - Stream Pause / Resume freeze toggle without losing data
  * - Distinct '×' shape anomaly markers with tooltip
  * - Signal Summary sentence matching Streamlit min/max/mean
- * - Expandable data table with '—' fallbacks
+ * - Expandable data table fallback with '—' for missing values
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useData } from '../data/useData';
 import { useReplay } from '../data/ReplayContext';
 import { formatVal } from './Overview';
 
 export type FlagFilter = 'both' | 'baseline' | 'if' | 'none';
+export type RollingWindow = '5m' | '15m' | '60m' | 'all';
 
 export interface SignalSummaryStats {
   min: number;
@@ -75,6 +79,12 @@ export function formatSummary(
   );
 }
 
+interface GapInterval {
+  startIdx: number;
+  endIdx: number;
+  durationSec: number;
+}
+
 interface PanelProps {
   title: string;
   unit: string;
@@ -109,7 +119,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
   const innerW = width - padding.left - padding.right;
   const innerH = height - padding.top - padding.bottom;
 
-  const { points, rollingPoints, yMin, yMax, anomPoints } = useMemo(() => {
+  const { points, rollingPoints, yMin, yMax, anomPoints, gapBands } = useMemo(() => {
     let minVal = Infinity;
     let maxVal = -Infinity;
 
@@ -120,6 +130,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
 
     const pts: { idx: number; val: number | null; timestamp: string }[] = [];
     const anoms: { idx: number; val: number; timestamp: string; flags: string }[] = [];
+    const gaps: GapInterval[] = [];
 
     for (let i = 0; i < samples.length; i++) {
       const s = samples[i];
@@ -147,51 +158,64 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
 
       pts.push({ idx: i, val, timestamp: ts });
 
+      // Detect timestamp gaps (> 15s)
+      if (i > 0) {
+        const prevTs = new Date(String(samples[i - 1].timestamp || '')).getTime();
+        const currTs = new Date(ts).getTime();
+        if (!isNaN(prevTs) && !isNaN(currTs)) {
+          const diffSec = (currTs - prevTs) / 1000;
+          if (diffSec > 15) {
+            gaps.push({ startIdx: i - 1, endIdx: i, durationSec: diffSec });
+          }
+        }
+      }
+
       // Anomaly detection flags check
       const baseFlag = Boolean(s.baseline_flag);
       const ifFlag = Boolean(s.if_flag);
       let isFlagged = false;
-      let flagLabel = '';
+      const activeFlags: string[] = [];
 
       if (flagFilter === 'both' && (baseFlag || ifFlag)) {
         isFlagged = true;
-        flagLabel = baseFlag && ifFlag ? 'Both Flags' : baseFlag ? 'Baseline' : 'IF';
+        if (baseFlag) activeFlags.push('Baseline');
+        if (ifFlag) activeFlags.push('IF');
       } else if (flagFilter === 'baseline' && baseFlag) {
         isFlagged = true;
-        flagLabel = 'Baseline Flag';
+        activeFlags.push('Baseline');
       } else if (flagFilter === 'if' && ifFlag) {
         isFlagged = true;
-        flagLabel = 'IF Flag';
+        activeFlags.push('IF');
       }
 
       if (isFlagged && val !== null) {
-        anoms.push({ idx: i, val, timestamp: ts, flags: flagLabel });
+        anoms.push({
+          idx: i,
+          val,
+          timestamp: ts,
+          flags: activeFlags.join(' + '),
+        });
       }
     }
 
     if (minVal === Infinity) minVal = 0;
     if (maxVal === -Infinity) maxVal = 1;
-    if (minVal === maxVal) {
-      minVal -= 1;
-      maxVal += 1;
-    }
 
-    // Compute rolling points
+    // Rolling points
     const rollPts: { idx: number; val: number | null }[] = [];
-    if (showRolling && samples.length > 0) {
+    if (showRolling) {
+      const windowSize = 5;
       for (let i = 0; i < samples.length; i++) {
         let rVal: number | null = null;
         if (rollingField && samples[i][rollingField] !== undefined) {
           const rawR = samples[i][rollingField];
-          if (rawR !== null && !isNaN(Number(rawR))) {
-            rVal = Number(rawR);
-          }
+          const numR = Number(rawR);
+          if (!isNaN(numR)) rVal = numR;
         } else {
-          // Compute simple 5-point rolling window if not in bundle
-          const windowStart = Math.max(0, i - 4);
           let sum = 0;
           let count = 0;
-          for (let j = windowStart; j <= i; j++) {
+          const start = Math.max(0, i - windowSize + 1);
+          for (let j = start; j <= i; j++) {
             const v = pts[j].val;
             if (v !== null) {
               sum += v;
@@ -212,6 +236,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
       yMin: minVal,
       yMax: maxVal,
       anomPoints: anoms,
+      gapBands: gaps,
     };
   }, [samples, field, rollingField, thresholdLine, flagFilter, showRolling]);
 
@@ -227,16 +252,26 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
     return padding.left + (idx / (samples.length - 1)) * innerW;
   };
 
-  // Build SVG path string that breaks whenever a value is null (no bridging NA gaps!)
+  // Build SVG path string that breaks whenever a value is null OR across gaps
   const linePath = useMemo(() => {
     let d = '';
     let inSubpath = false;
 
-    for (const p of points) {
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
       if (p.val === null) {
         inSubpath = false;
         continue;
       }
+      // Check for timestamp gap from previous sample
+      if (i > 0) {
+        const prevTs = new Date(points[i - 1].timestamp).getTime();
+        const currTs = new Date(p.timestamp).getTime();
+        if (!isNaN(prevTs) && !isNaN(currTs) && (currTs - prevTs) / 1000 > 15) {
+          inSubpath = false;
+        }
+      }
+
       const x = getX(p.idx);
       const y = getY(p.val);
       if (!inSubpath) {
@@ -255,10 +290,18 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
     let d = '';
     let inSubpath = false;
 
-    for (const p of rollingPoints) {
+    for (let i = 0; i < rollingPoints.length; i++) {
+      const p = rollingPoints[i];
       if (p.val === null) {
         inSubpath = false;
         continue;
+      }
+      if (i > 0 && points[i] && points[i - 1]) {
+        const prevTs = new Date(points[i - 1].timestamp).getTime();
+        const currTs = new Date(points[i].timestamp).getTime();
+        if (!isNaN(prevTs) && !isNaN(currTs) && (currTs - prevTs) / 1000 > 15) {
+          inSubpath = false;
+        }
       }
       const x = getX(p.idx);
       const y = getY(p.val);
@@ -270,7 +313,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
       }
     }
     return d;
-  }, [rollingPoints, showRolling, yMin, yMax, samples.length]);
+  }, [rollingPoints, points, showRolling, yMin, yMax, samples.length]);
 
   return (
     <div
@@ -314,6 +357,28 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
         role="img"
         aria-label={`${title} time-series chart`}
       >
+        {/* Shaded Gap Bands (intervals > 15s) */}
+        {gapBands.map((gap, i) => {
+          const x1 = getX(gap.startIdx);
+          const x2 = getX(gap.endIdx);
+          const bandW = Math.max(x2 - x1, 6);
+          return (
+            <g key={i} data-testid="gap-band">
+              <rect
+                x={x1}
+                y={padding.top}
+                width={bandW}
+                height={innerH}
+                fill="rgba(148, 163, 184, 0.22)"
+                stroke="#94a3b8"
+                strokeWidth="1"
+                strokeDasharray="3,3"
+              />
+              <title>{`No data gap: ${Math.round(gap.durationSec)}s missing`}</title>
+            </g>
+          );
+        })}
+
         {/* Y Axis Grid Lines & Labels */}
         <line
           x1={padding.left}
@@ -483,11 +548,63 @@ export const SignalExplorer: React.FC = () => {
   const [flagFilter, setFlagFilter] = useState<FlagFilter>('both');
   const [showRolling, setShowRolling] = useState<boolean>(true);
   const [showTable, setShowTable] = useState<boolean>(false);
+  const [rollingWindow, setRollingWindow] = useState<RollingWindow>('all');
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
-  // Summaries
-  const rsrpSummary = useMemo(() => computeSummary(samples, 'ss_rsrp'), [samples]);
-  const rsrqSummary = useMemo(() => computeSummary(samples, 'ss_rsrq'), [samples]);
-  const sinrSummary = useMemo(() => computeSummary(samples, 'ss_sinr'), [samples]);
+  // Freeze snapshot when paused to avoid losing incoming data
+  const frozenSamplesRef = useRef<Record<string, unknown>[]>(samples);
+  useEffect(() => {
+    if (!isPaused) {
+      frozenSamplesRef.current = samples;
+    }
+  }, [samples, isPaused]);
+
+  const activeSamples = isPaused ? frozenSamplesRef.current : samples;
+
+  // Filter samples based on rolling window (5m, 15m, 60m, or all)
+  const windowedSamples = useMemo(() => {
+    if (rollingWindow === 'all' || activeSamples.length === 0) {
+      return activeSamples;
+    }
+
+    const windowSec =
+      rollingWindow === '5m' ? 300 : rollingWindow === '15m' ? 900 : 3600;
+
+    // Use latest timestamp
+    let maxTsMs = -Infinity;
+    for (const s of activeSamples) {
+      const ts = s.timestamp ? new Date(String(s.timestamp)).getTime() : NaN;
+      if (!isNaN(ts) && ts > maxTsMs) {
+        maxTsMs = ts;
+      }
+    }
+
+    if (maxTsMs === -Infinity) {
+      // Fallback: take last N points
+      const n = Math.min(activeSamples.length, windowSec);
+      return activeSamples.slice(-n);
+    }
+
+    const cutoffMs = maxTsMs - windowSec * 1000;
+    return activeSamples.filter(s => {
+      const ts = s.timestamp ? new Date(String(s.timestamp)).getTime() : NaN;
+      return isNaN(ts) || ts >= cutoffMs;
+    });
+  }, [activeSamples, rollingWindow]);
+
+  // Summaries computed over windowed samples
+  const rsrpSummary = useMemo(
+    () => computeSummary(windowedSamples, 'ss_rsrp'),
+    [windowedSamples]
+  );
+  const rsrqSummary = useMemo(
+    () => computeSummary(windowedSamples, 'ss_rsrq'),
+    [windowedSamples]
+  );
+  const sinrSummary = useMemo(
+    () => computeSummary(windowedSamples, 'ss_sinr'),
+    [windowedSamples]
+  );
 
   const activeSessionIdx = sessions.findIndex(s => s.session_id === selectedSessionId);
 
@@ -500,6 +617,15 @@ export const SignalExplorer: React.FC = () => {
   const handleNextSession = () => {
     if (activeSessionIdx >= 0 && activeSessionIdx < sessions.length - 1) {
       setSelectedSessionId(sessions[activeSessionIdx + 1].session_id);
+    }
+  };
+
+  const togglePause = () => {
+    if (!isPaused) {
+      frozenSamplesRef.current = samples;
+      setIsPaused(true);
+    } else {
+      setIsPaused(false);
     }
   };
 
@@ -608,8 +734,70 @@ export const SignalExplorer: React.FC = () => {
           </button>
         </div>
 
-        {/* Flag Filter & Rolling Mean Toggles */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        {/* Window Selector, Pause/Resume, Flag & Rolling Toggles */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          {/* Pause / Resume Button */}
+          <button
+            type="button"
+            data-testid="pause-resume-button"
+            onClick={togglePause}
+            aria-label={isPaused ? 'Resume live stream' : 'Pause live stream'}
+            style={{
+              padding: '4px 10px',
+              borderRadius: '4px',
+              border: isPaused ? '1px solid #16a34a' : '1px solid var(--color-border)',
+              background: isPaused ? 'rgba(22, 163, 74, 0.15)' : 'var(--color-bg)',
+              color: isPaused ? '#16a34a' : 'var(--color-text)',
+              fontWeight: 600,
+              fontSize: '12px',
+              cursor: 'pointer',
+            }}
+          >
+            {isPaused ? '▶️ Resume Stream' : '⏸️ Pause Stream'}
+          </button>
+
+          {isPaused && (
+            <span
+              data-testid="pause-badge"
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#d97706',
+                background: '#fef3c7',
+                padding: '2px 8px',
+                borderRadius: '4px',
+              }}
+            >
+              PAUSED (view frozen)
+            </span>
+          )}
+
+          {/* Rolling Window Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+              Window:
+            </span>
+            <select
+              value={rollingWindow}
+              onChange={e => setRollingWindow(e.target.value as RollingWindow)}
+              aria-label="Time Window Range"
+              style={{
+                padding: '4px 8px',
+                borderRadius: '4px',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                fontSize: '12px',
+              }}
+            >
+              <option value="all">All Session</option>
+              <option value="5m">Last 5 min</option>
+              <option value="15m">Last 15 min</option>
+              <option value="60m">Last 60 min</option>
+            </select>
+          </div>
+
+          {/* Flags Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
               Flags:
@@ -682,7 +870,7 @@ export const SignalExplorer: React.FC = () => {
           unit="dBm"
           field="ss_rsrp"
           rollingField="rolling_mean_ss_rsrp"
-          samples={samples}
+          samples={windowedSamples}
           flagFilter={flagFilter}
           showRolling={showRolling}
           color="#0284c7"
@@ -696,7 +884,7 @@ export const SignalExplorer: React.FC = () => {
           unit="dB"
           field="ss_rsrq"
           rollingField="rolling_mean_ss_rsrq"
-          samples={samples}
+          samples={windowedSamples}
           flagFilter={flagFilter}
           showRolling={showRolling}
           color="#16a34a"
@@ -710,7 +898,7 @@ export const SignalExplorer: React.FC = () => {
           unit="dB"
           field="ss_sinr"
           rollingField="rolling_mean_ss_sinr"
-          samples={samples}
+          samples={windowedSamples}
           flagFilter={flagFilter}
           showRolling={showRolling}
           color="#9333ea"
@@ -723,7 +911,7 @@ export const SignalExplorer: React.FC = () => {
           title="Anomaly Score (Isolation Forest)"
           unit="Score"
           field="if_score"
-          samples={samples}
+          samples={windowedSamples}
           flagFilter={flagFilter}
           showRolling={false}
           thresholdLine={0.6}
@@ -733,7 +921,7 @@ export const SignalExplorer: React.FC = () => {
         />
       </div>
 
-      {/* Data Table Expander */}
+      {/* Data Table Expander (Tabular Fallback) */}
       <section
         style={{
           background: 'var(--color-surface)',
@@ -743,6 +931,7 @@ export const SignalExplorer: React.FC = () => {
         }}
       >
         <button
+          data-testid="toggle-table-button"
           onClick={() => setShowTable(prev => !prev)}
           style={{
             width: '100%',
@@ -759,7 +948,7 @@ export const SignalExplorer: React.FC = () => {
             alignItems: 'center',
           }}
         >
-          <span>📋 Show Data Table ({samples.length} rows)</span>
+          <span>📋 Show Data Table Fallback ({windowedSamples.length} rows)</span>
           <span>{showTable ? '▲ Collapse' : '▼ Expand'}</span>
         </button>
 
@@ -773,6 +962,7 @@ export const SignalExplorer: React.FC = () => {
             }}
           >
             <table
+              aria-label="Signal metrics tabular fallback"
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
@@ -795,7 +985,7 @@ export const SignalExplorer: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {samples.map((s, idx) => (
+                {windowedSamples.map((s, idx) => (
                   <tr
                     key={idx}
                     style={{

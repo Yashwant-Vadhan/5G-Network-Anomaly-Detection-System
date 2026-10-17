@@ -206,4 +206,74 @@ describe('Signal Explorer Component (T16-011)', () => {
     const dashes = screen.getAllByText('—');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
+
+  describe('Live Signals Extensions (T17-004)', () => {
+    it('renders shaded gap bands and ensures no line crosses a gap', () => {
+      const samplesWithTimeGap = [
+        { timestamp: '2024-05-01 10:00:00', ss_rsrp: -80 },
+        { timestamp: '2024-05-01 10:00:05', ss_rsrp: -82 },
+        // 45-second gap (> 15s SESSION_GAP_SECONDS)
+        { timestamp: '2024-05-01 10:00:50', ss_rsrp: -88 },
+        { timestamp: '2024-05-01 10:00:55', ss_rsrp: -90 },
+      ];
+
+      const { container } = render(
+        <SignalChartPanel
+          title="SS-RSRP"
+          unit="dBm"
+          field="ss_rsrp"
+          samples={samplesWithTimeGap}
+          flagFilter="none"
+          showRolling={false}
+          activeSampleIndex={0}
+          onSelectSample={() => {}}
+        />
+      );
+
+      // Verify shaded gap band is rendered
+      const gapBands = screen.getAllByTestId('gap-band');
+      expect(gapBands.length).toBe(1);
+
+      // Verify no line segment bridges across the gap (requires 2 separate subpaths)
+      const path = container.querySelector('path');
+      expect(path).toBeInTheDocument();
+      const d = path!.getAttribute('d') || '';
+      const mCommands = (d.match(/M\s/g) || []).length;
+      expect(mCommands).toBe(2);
+    });
+
+    it('pause button freezes the view without losing data and resume unfreezes', () => {
+      renderSignalExplorer();
+
+      const pauseBtn = screen.getByTestId('pause-resume-button');
+      expect(pauseBtn).toHaveTextContent('⏸️ Pause Stream');
+      expect(screen.queryByTestId('pause-badge')).not.toBeInTheDocument();
+
+      // Click pause
+      fireEvent.click(pauseBtn);
+      expect(screen.getByTestId('pause-badge')).toBeInTheDocument();
+      expect(pauseBtn).toHaveTextContent('▶️ Resume Stream');
+
+      // Click resume
+      fireEvent.click(pauseBtn);
+      expect(screen.queryByTestId('pause-badge')).not.toBeInTheDocument();
+      expect(pauseBtn).toHaveTextContent('⏸️ Pause Stream');
+    });
+
+    it('rolling window selector allows selecting 5m, 15m, 60m windows', () => {
+      renderSignalExplorer();
+
+      const windowSelect = screen.getByLabelText(/Time Window Range/i);
+      expect(windowSelect).toBeInTheDocument();
+
+      fireEvent.change(windowSelect, { target: { value: '5m' } });
+      expect((windowSelect as HTMLSelectElement).value).toBe('5m');
+
+      fireEvent.change(windowSelect, { target: { value: '15m' } });
+      expect((windowSelect as HTMLSelectElement).value).toBe('15m');
+
+      fireEvent.change(windowSelect, { target: { value: 'all' } });
+      expect((windowSelect as HTMLSelectElement).value).toBe('all');
+    });
+  });
 });
