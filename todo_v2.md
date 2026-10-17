@@ -704,13 +704,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 *Goal: Evidence-gated alerts and the Live mode pages from DESIGN_v2.*
 
 #### T13-001: Implement the alert policy as a pure function
-**Status:** ⬜
+**Status:** ✅
 **Description:** `streaming/alerts/policy.py: decide(event_state, history, config) -> AlertDecision`. Rules 1–3 from TECH_RULES_v2: type not in {NORMAL, STATISTICAL_ONLY, CELL_TRANSITION, NETWORK_STATE_TRANSITION}, ≥1 agent with rule evidence, and (persistence ≥ `ALERT_MIN_PERSISTENCE_SAMPLES` or severity ≥ `ALERT_MIN_SEVERITY`). Return one of the five fixed `reason` strings.
 **Dependencies:** T11-007
 **Acceptance Criteria:**
-- [ ] No I/O or clock access inside
-- [ ] `STATISTICAL_ONLY` (ML-only) → 'ML-only (no rule evidence)'
-- [ ] Cell/network change alone never alerts (G6/G21)
+- [x] No I/O or clock access inside
+- [x] `STATISTICAL_ONLY` (ML-only) → 'ML-only (no rule evidence)'
+- [x] Cell/network change alone never alerts (G6/G21)
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

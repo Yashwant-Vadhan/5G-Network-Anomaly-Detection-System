@@ -4,3 +4,7 @@ Encapsulates deterministic policy decision logic, alert state deduplication,
 cooldown timers, and multi-channel notification dispatchers across in-app,
 phone, webhook, and email destinations.
 """
+
+from streaming.alerts.policy import decide, has_agent_rule_evidence
+
+__all__ = ["decide", "has_agent_rule_evidence"]
