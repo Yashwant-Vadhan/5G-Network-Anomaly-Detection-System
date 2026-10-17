@@ -728,13 +728,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-003: Implement the dispatcher and in-app channel
-**Status:** ⬜
+**Status:** ✅
 **Description:** `dispatcher.py` fans out to channels with per-channel timeout, one retry, exception isolation, `delivery[]` recording; `in_app.py` publishes C9 to the hub and appends to `data/live/alerts.jsonl`. Alert text comes from `agents.text_renderer` templates.
 **Dependencies:** T13-002, T11-013, T10-007
 **Acceptance Criteria:**
-- [ ] A raising channel never reaches the engine
-- [ ] `alerts.jsonl` has one valid C9 per line
-- [ ] No LLM import on this path (G13)
+- [x] A raising channel never reaches the engine
+- [x] `alerts.jsonl` has one valid C9 per line
+- [x] No LLM import on this path (G13)
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
