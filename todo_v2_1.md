@@ -291,13 +291,13 @@
 *Goal: Live and recorded data flow through the same React components, with honest connection state, alerts and pairing.*
 
 #### T17-001: Live data source and connection state machine
-**Status:** ⬜
+**Status:** ✅
 **Description:** WebSocket client with first-frame `auth` message and ticket, REST resync on `dropped`/reconnect, state machine LIVE/STALE/RECONNECTING/DISCONNECTED/WAITING/REPLAY, backoff, typed events from C8.
 **Dependencies:** T11-014, T18-003, T16-008
 **Acceptance Criteria:**
-- [ ] Reconnect resyncs without duplicates
-- [ ] Ticket never appears in a URL
-- [ ] Unit tests with a fake socket
+- [x] Reconnect resyncs without duplicates
+- [x] Ticket never appears in a URL
+- [x] Unit tests with a fake socket
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
