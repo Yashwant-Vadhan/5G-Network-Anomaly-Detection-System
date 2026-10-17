@@ -457,13 +457,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T11-020: Implement stale detection and clock-skew flagging
-**Status:** ⬜
+**Status:** ✅
 **Description:** Server-side `connection` state machine (LIVE/STALE/RECONNECTING/WAITING) from last-sample age and socket state using `STALE_AFTER_SECONDS`; skew estimate between `sent_at` and `received_at`, flag above `CLOCK_SKEW_WARN_SECONDS` without altering timestamps.
 **Dependencies:** T11-011, T11-018
 **Acceptance Criteria:**
-- [ ] State transitions tested with an injectable clock
-- [ ] Skewed fixture raises the flag, data unchanged
-- [ ] `connection` events published to the hub
+- [x] State transitions tested with an injectable clock
+- [x] Skewed fixture raises the flag, data unchanged
+- [x] `connection` events published to the hub
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil

@@ -37,6 +37,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from ml.config import MAX_MESSAGE_BYTES
 from ml.schema import ConfigError, SchemaError
+from streaming.connection import ConnectionTracker
 from streaming.engine import StreamingEngine
 from streaming.event_tracker import EventTracker
 from streaming.hub import LiveHub
@@ -262,6 +263,7 @@ def create_app(
         except Exception:
             app.state.engine = None
     app.state.hub = hub or LiveHub()
+    app.state.connection_tracker = ConnectionTracker(hub=app.state.hub)
     app.state.active_ingest_clients: dict[str, WebSocket] = {}
     app.state.latest_samples: dict[str, ScoredSample] = {}
     app.state.session_samples: dict[str, list[ScoredSample]] = {}
@@ -502,6 +504,12 @@ def create_app(
                         ),
                     )
                     await websocket.send_text(hello_ack.model_dump_json())
+                    hello_src = getattr(hello, "source", None) or "phone"
+                    conn_ev = app.state.connection_tracker.on_connect(
+                        client_id=client_id, session_id=session_id, source=hello_src
+                    )
+                    if app.state.hub is not None:
+                        await app.state.hub.broadcast(conn_ev, session_id=session_id)
 
                 elif msg_type == "sample":
                     try:
@@ -573,6 +581,14 @@ def create_app(
                         else:
                             get_stream_metrics(session_id).record_sample({"seq": sample.seq})
 
+                        conn_ev, _skew_flag = app.state.connection_tracker.on_sample(
+                            session_id=session_id,
+                            sent_at=sample.sent_at,
+                            received_at=datetime.now(UTC),
+                        )
+                        if conn_ev is not None and app.state.hub is not None:
+                            await app.state.hub.broadcast(conn_ev, session_id=session_id)
+
                     if store is not None:
                         store.append_sample(sample.payload)
 
@@ -629,6 +645,10 @@ def create_app(
                         tracker.close_session()
                     if store is not None:
                         store.close(status="CLOSED")
+                    if session_id:
+                        close_ev = app.state.connection_tracker.on_session_close(session_id)
+                        if app.state.hub is not None:
+                            await app.state.hub.broadcast(close_ev, session_id=session_id)
                     await websocket.close(code=1000, reason="Client bye")
                     break
 
@@ -643,6 +663,10 @@ def create_app(
         finally:
             if client_id and client_id in app.state.active_ingest_clients:
                 del app.state.active_ingest_clients[client_id]
+            if session_id:
+                disc_ev = app.state.connection_tracker.on_disconnect(client_id, session_id)
+                if app.state.hub is not None:
+                    await app.state.hub.broadcast(disc_ev, session_id=session_id)
             if store is not None and not store.is_closed:
                 store.close(status="INCOMPLETE")
 
@@ -779,12 +803,13 @@ def create_app(
                 if getattr(e, "status", "") == "PROVISIONAL"
             ]
 
+            cur_state, _ = app.state.connection_tracker.get_state(latest_sess_id)
             now_iso = datetime.now(UTC).isoformat()
             snapshot = SnapshotEvent(
                 server_time=now_iso,
                 session_id=latest_sess_id or "default",
                 latest_sample=latest_sample,
-                state="LIVE" if active_cids else "WAITING",
+                state=cur_state,
                 open_events=open_events,
                 last_alerts=app.state.alerts[-5:] if app.state.alerts else [],
             )
@@ -800,6 +825,10 @@ def create_app(
                     else:
                         await websocket.send_text(str(msg))
                 except TimeoutError:
+                    stale_events = app.state.connection_tracker.check_stale()
+                    for st_ev in stale_events:
+                        if app.state.hub is not None:
+                            await app.state.hub.broadcast(st_ev, session_id=st_ev.session_id)
                     hb = HeartbeatEvent(
                         server_time=datetime.now(UTC).isoformat(),
                         session_id=latest_sess_id,
