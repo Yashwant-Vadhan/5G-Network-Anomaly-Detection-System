@@ -303,12 +303,12 @@
 **Owner:** Sushil
 
 #### T17-002: Connection chip and live announcements
-**Status:** ⬜
+**Status:** ✅
 **Description:** Chip with state, icon, word and sample age on every page; `aria-live="polite"` announcements on state change (debounced); alert announcements.
 **Dependencies:** T17-001
 **Acceptance Criteria:**
-- [ ] Chip text not colour-only
-- [ ] Flapping link announces at most once per 30 s
+- [x] Chip text not colour-only
+- [x] Flapping link announces at most once per 30 s
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

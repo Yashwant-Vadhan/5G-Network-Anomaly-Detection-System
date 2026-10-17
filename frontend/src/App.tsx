@@ -9,6 +9,7 @@ import { SignalExplorer } from './pages/SignalExplorer';
 import { EventsDiagnosis } from './pages/EventsDiagnosis';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
+import { ConnectionChip } from './components/ConnectionChip';
 
 function AppContent() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -78,6 +79,10 @@ function AppContent() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <ConnectionChip
+            state="REPLAY-SOURCE"
+            lastSampleTime={currentSample?.timestamp as string}
+          />
           <button
             onClick={toggleTheme}
             aria-label="Toggle light and dark theme"
