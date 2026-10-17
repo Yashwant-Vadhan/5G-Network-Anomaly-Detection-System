@@ -5,7 +5,9 @@ alerts, phone push notifications over WebSocket, outbound HTTP webhooks,
 and email alerts via standard library SMTP.
 """
 
+from streaming.alerts.channels.email import EmailChannel
 from streaming.alerts.channels.in_app import InAppChannel
+from streaming.alerts.channels.phone import PhoneChannel
 from streaming.alerts.channels.webhook import WebhookChannel
 
-__all__ = ["InAppChannel", "WebhookChannel"]
+__all__ = ["EmailChannel", "InAppChannel", "PhoneChannel", "WebhookChannel"]

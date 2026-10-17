@@ -766,13 +766,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T13-006: Implement the phone-notification channel (server side)
-**Status:** ⬜
+**Status:** ✅
 **Description:** `channels/phone.py`: send C7 `alert` (compact C9) to the live ingest connection of the event's session; if the phone is disconnected, mark delivery `SKIPPED` (no queueing in v2).
 **Dependencies:** T13-003, T11-011
 **Acceptance Criteria:**
-- [ ] Delivery status recorded
-- [ ] No message sent to other clients
-- [ ] LOW severity not pushed by default
+- [x] Delivery status recorded
+- [x] No message sent to other clients
+- [x] LOW severity not pushed by default
 **Estimated Effort:** 30 min
 **Assigned To:** Backend
 **Owner:** Yashwant
