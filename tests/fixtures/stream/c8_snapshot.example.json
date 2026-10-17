@@ -64,6 +64,7 @@
     {
       "alert_decision": {
         "alerted": true,
+        "kind": null,
         "reason": "Alert triggered"
       },
       "anomaly_type": "PERSISTENT_POOR_QUALITY",

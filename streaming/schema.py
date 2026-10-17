@@ -282,6 +282,9 @@ SessionStatus = Literal["OPEN", "CLOSED", "INCOMPLETE"]
 StreamSource = Literal["phone", "replay"]
 
 
+AlertKind = Literal["NEW", "ESCALATION", "RESOLVED"]
+
+
 class AlertDecision(BaseModel):
     """Decision record indicating whether an event fired an alert and why."""
 
@@ -289,6 +292,7 @@ class AlertDecision(BaseModel):
 
     alerted: bool
     reason: AlertDecisionReason
+    kind: AlertKind | None = None
 
 
 class ScoredSample(BaseModel):
@@ -630,7 +634,6 @@ class ErrorResponse(BaseModel):
 # Contract C9: Alert Models & Log Format (alerts.jsonl, webhooks, alert events)
 # ==============================================================================
 
-AlertKind = Literal["NEW", "ESCALATION", "RESOLVED"]
 DeliveryStatus = Literal["OK", "FAILED", "SKIPPED"]
 
 

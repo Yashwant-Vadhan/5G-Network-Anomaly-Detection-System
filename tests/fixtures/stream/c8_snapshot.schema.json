@@ -7,6 +7,23 @@
           "title": "Alerted",
           "type": "boolean"
         },
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "NEW",
+                "ESCALATION",
+                "RESOLVED"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
         "reason": {
           "enum": [
             "Alert triggered",

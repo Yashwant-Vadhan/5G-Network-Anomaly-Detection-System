@@ -716,13 +716,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-002: Add cooldown, escalation and resolution
-**Status:** ⬜
+**Status:** ✅
 **Description:** Extend `decide` / a small state object: cooldown per `(session, anomaly_type)` using `ALERT_COOLDOWN_SECONDS`; `ESCALATION` only when severity rises; `RESOLVED` only after a delivered NEW/ESCALATION and event close.
 **Dependencies:** T13-001
 **Acceptance Criteria:**
-- [ ] Cooldown tested with an injectable clock
-- [ ] No duplicate NEW after reconnect
-- [ ] RESOLVED never sent without a prior delivered alert
+- [x] Cooldown tested with an injectable clock
+- [x] No duplicate NEW after reconnect
+- [x] RESOLVED never sent without a prior delivered alert
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
