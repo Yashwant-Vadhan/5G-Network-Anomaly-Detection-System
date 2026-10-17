@@ -244,6 +244,44 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class OriginEnforcementMiddleware(BaseHTTPMiddleware):
+    """Enforce Origin allow-list for HTTP requests (T18-006)."""
+
+    def __init__(
+        self, app: Any, allowed_origins: list[str], is_public: bool = False
+    ) -> None:
+        super().__init__(app)
+        self.allowed_origins = set(allowed_origins)
+        self.is_public = is_public
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        origin = request.headers.get("origin")
+        if origin:
+            if self.allowed_origins and origin not in self.allowed_origins:
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "error": {
+                            "code": "FORBIDDEN",
+                            "message": f"Origin '{origin}' is not allowed",
+                            "correlation_id": get_correlation_id(request),
+                        }
+                    },
+                )
+        elif self.is_public and request.method == "OPTIONS":
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": {
+                        "code": "FORBIDDEN",
+                        "message": "Origin header required for preflight in public mode",
+                        "correlation_id": get_correlation_id(request),
+                    }
+                },
+            )
+        return await call_next(request)
+
+
 def get_correlation_id(request: Request) -> str:
     """Extract correlation ID from request state or generate a fallback."""
     return getattr(request.state, "correlation_id", f"corr-{uuid.uuid4().hex[:12]}")
@@ -382,6 +420,11 @@ def create_app(
             allow_methods=["*"],
             allow_headers=["*"],
         )
+        app.add_middleware(
+            OriginEnforcementMiddleware,
+            allowed_origins=config.allowed_origins,
+            is_public=(config.mode == "public"),
+        )
 
     # Error Handlers adhering strictly to Contract C8
     @app.exception_handler(HTTPException)
@@ -463,6 +506,13 @@ def create_app(
     @app.websocket("/api/v1/ingest")
     async def websocket_ingest(websocket: WebSocket) -> None:
         """Contract C7 phone telemetry ingest WebSocket protocol handler."""
+        # 0. Check Origin allow-list if present (T18-006)
+        origin = websocket.headers.get("origin")
+        if config.allowed_origins and origin:
+            if origin not in config.allowed_origins:
+                await websocket.close(code=4403, reason="Forbidden: Origin not allowed")
+                return
+
         # 1. Authenticate connection if ingest_token is configured or session token provided
         connected_session_id: str | None = None
         auth_header = websocket.headers.get("authorization")
@@ -1199,6 +1249,18 @@ def create_app(
     @app.websocket("/api/v1/live")
     async def websocket_live(websocket: WebSocket) -> None:
         """Live dashboard fan-out WebSocket streaming snapshot, samples, and events (C8)."""
+        # Origin allow-list check (T18-006)
+        origin = websocket.headers.get("origin")
+        if config.allowed_origins:
+            if origin and origin not in config.allowed_origins:
+                await websocket.close(code=4403, reason="Forbidden: Origin not allowed")
+                return
+            if config.mode == "public" and not origin:
+                await websocket.close(
+                    code=4403, reason="Forbidden: Origin header required in public mode"
+                )
+                return
+
         if not config.allow_remote_view:
             client_host = websocket.client.host if websocket.client else "127.0.0.1"
             if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):

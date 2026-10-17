@@ -463,12 +463,12 @@
 **Owner:** Sushil
 
 #### T18-006: Origin and CORS enforcement
-**Status:** ⬜
+**Status:** ✅
 **Description:** Allow-list applied to HTTP CORS and WebSocket `Origin` checks; deny by default in public mode.
 **Dependencies:** T18-001
 **Acceptance Criteria:**
-- [ ] Disallowed origin refused for REST and WS
-- [ ] Test covers both
+- [x] Disallowed origin refused for REST and WS
+- [x] Test covers both
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil
