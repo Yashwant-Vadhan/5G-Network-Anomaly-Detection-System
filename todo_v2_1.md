@@ -532,12 +532,12 @@
 **Owner:** Yashwant
 
 #### T18-012: Write docs/privacy.md and the shared consent text
-**Status:** ⬜
+**Status:** ✅
 **Description:** What is collected, what is not, that cell identifiers can reveal approximate location, retention (none by default), platform logs outside our control, how to end a session; one text file reused by the website and the phone app.
 **Dependencies:** T18-002
 **Acceptance Criteria:**
-- [ ] Reviewed by both authors
-- [ ] Matches actual payload fields (C7)
+- [x] Reviewed by both authors
+- [x] Matches actual payload fields (C7)
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
