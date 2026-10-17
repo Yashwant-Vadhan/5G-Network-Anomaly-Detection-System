@@ -35,7 +35,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ml.config import MAX_MESSAGE_BYTES
+from ml.config import MAX_MESSAGE_BYTES, MAX_SEQ_JUMP
 from ml.schema import ConfigError, SchemaError
 from streaming.connection import ConnectionTracker
 from streaming.engine import StreamingEngine
@@ -515,11 +515,17 @@ def create_app(
                     try:
                         sample = IngestSample.model_validate(raw_msg)
                     except Exception as e:
+                        raw_seq = raw_msg.get("seq")
+                        safe_seq = (
+                            raw_seq
+                            if isinstance(raw_seq, int) and not isinstance(raw_seq, bool)
+                            else None
+                        )
                         err = ErrorMsg(
                             code="BAD_MESSAGE",
                             message=f"Invalid sample message: {e}",
                             fatal=False,
-                            seq=raw_msg.get("seq"),
+                            seq=safe_seq,
                         )
                         await websocket.send_text(err.model_dump_json())
                         continue
@@ -530,6 +536,20 @@ def create_app(
                             get_stream_metrics(session_id).record_sample({"seq": sample.seq})
                         re_ack = Ack(seq=sample.seq)
                         await websocket.send_text(re_ack.model_dump_json())
+                        continue
+
+                    # Enforce seq jump cap to avoid memory/metrics manipulation (T14-002)
+                    if sample.seq - last_seq_acked > MAX_SEQ_JUMP:
+                        err = ErrorMsg(
+                            code="BAD_MESSAGE",
+                            message=(
+                                f"Sequence jump too large "
+                                f"({sample.seq - last_seq_acked} > {MAX_SEQ_JUMP})"
+                            ),
+                            fatal=False,
+                            seq=sample.seq,
+                        )
+                        await websocket.send_text(err.model_dump_json())
                         continue
 
                     cid = client_id or sample.payload.device

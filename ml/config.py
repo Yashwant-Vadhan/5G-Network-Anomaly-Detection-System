@@ -206,3 +206,7 @@ ALERT_MIN_SEVERITY: str = "MEDIUM"
 # tune on non-evaluation data.
 # Cooldown window in seconds before repeating an alert of the same anomaly type within a session.
 ALERT_COOLDOWN_SECONDS: int = 300
+
+# Origin: proposed in `docs/planning/TECH_RULES_v2.md` §Security & Boundary Rules —
+# Maximum allowed forward sequence jump to protect against memory/metrics manipulation.
+MAX_SEQ_JUMP: int = 100_000

@@ -955,12 +955,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T14-002: Harden input handling with fuzz-style tests
-**Status:** ⬜
+**Status:** ✅
 **Description:** Property-based/fuzz tests over C7 messages (random types, huge strings, extreme seq jumps vs the cap, NaN/inf numbers, wrong dtypes); server must answer BAD_MESSAGE/SCHEMA_ERROR, never crash.
 **Dependencies:** T11-011
 **Acceptance Criteria:**
-- [ ] No unhandled exception in 1,000 random messages
-- [ ] `seq` jump cap enforced
+- [x] No unhandled exception in 1,000 random messages
+- [x] `seq` jump cap enforced
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
