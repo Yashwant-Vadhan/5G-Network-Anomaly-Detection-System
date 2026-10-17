@@ -7,6 +7,7 @@ following the Contracts C7 and C8 specifications.
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import csv
 import hmac
@@ -15,6 +16,7 @@ import json
 import logging
 import os
 import secrets
+import sys
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -171,6 +173,21 @@ class ServerConfig:
                 raise ConfigError(
                     "Live session retention must be disabled in public mode (Guardrail G29). "
                     "Fix: set NADS_ENABLE_RETENTION=false."
+                )
+
+        # Bind policy (T11-019 / Guardrail G20):
+        # Default 127.0.0.1; non-loopback requires allow_lan and a non-empty ingest_token
+        is_loopback = self.host in ("127.0.0.1", "localhost", "::1")
+        if not is_loopback:
+            if not self.allow_lan:
+                raise ConfigError(
+                    f"Binding to non-loopback host '{self.host}' requires --allow-lan "
+                    "(or NADS_ALLOW_LAN=true). Fix: pass --allow-lan or bind to 127.0.0.1."
+                )
+            if not self.ingest_token:
+                raise ConfigError(
+                    f"Binding to non-loopback host '{self.host}' requires a non-empty "
+                    "NADS_INGEST_TOKEN. Fix: set NADS_INGEST_TOKEN=<token> or pass --token=<token>."
                 )
 
     @classmethod
@@ -379,6 +396,14 @@ def create_app(
         config.allow_lan,
         config.retention_enabled,
     )
+    enabled_channels = ["in_app"]
+    if os.environ.get("NADS_ALERT_WEBHOOK_URL"):
+        enabled_channels.append("webhook")
+    if os.environ.get("NADS_ALERT_EMAIL_HOST"):
+        enabled_channels.append("email")
+    if os.environ.get("NADS_ALERT_PHONE_SMS"):
+        enabled_channels.append("phone")
+    logger.info("Enabled alert channels: %s", ", ".join(enabled_channels))
 
     app = FastAPI(
         title="5G-NADS Streaming API",
@@ -1469,3 +1494,134 @@ def create_app(
             await app.state.hub.unsubscribe(sub_id)
 
     return app
+
+
+def parse_server_args(args: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI options for the streaming server with documentation for every flag."""
+    parser = argparse.ArgumentParser(
+        description="5G-NADS Streaming Ingest and Telemetry Server.",
+        prog="python -m streaming.server",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=os.environ.get("NADS_HOST", "127.0.0.1").strip(),
+        help="Host address to bind the streaming server (default: 127.0.0.1 or NADS_HOST)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("NADS_PORT", "8000")),
+        help="Port to bind the streaming server (default: 8000 or NADS_PORT)",
+    )
+    parser.add_argument(
+        "--allow-lan",
+        action="store_true",
+        default=os.environ.get("NADS_ALLOW_LAN", "false").lower() in ("1", "true", "yes"),
+        help="Allow binding to LAN/external interfaces; requires a non-empty ingest token",
+    )
+    parser.add_argument(
+        "--allow-remote-view",
+        action="store_true",
+        default=os.environ.get("NADS_ALLOW_REMOTE_VIEW", "false").lower() in ("1", "true", "yes"),
+        help="Allow remote viewers to access read/live endpoints without loopback restriction",
+    )
+    parser.add_argument(
+        "--token",
+        type=str,
+        default=os.environ.get("NADS_INGEST_TOKEN", "").strip() or None,
+        help="Bearer authentication token for phone telemetry ingest",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default=os.environ.get("NADS_MODE", "local").strip().lower(),
+        choices=["local", "public"],
+        help="Server deployment mode: 'local' (development) or 'public' (cloud deployment)",
+    )
+    parser.add_argument(
+        "--allowed-origins",
+        type=str,
+        default=os.environ.get("NADS_ALLOWED_ORIGINS", "").strip(),
+        help="Comma-separated list of allowed CORS origins (required in public mode)",
+    )
+    parser.add_argument(
+        "--retention",
+        type=str,
+        default=None,
+        help=(
+            "Enable live telemetry capture to disk ('true' or 'false', "
+            "default: true in local, false in public)"
+        ),
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Logging level (default: INFO)",
+    )
+    return parser.parse_args(args)
+
+
+def main(args: list[str] | None = None) -> int:
+    """CLI entry point for running the streaming server with bind policy enforcement."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+    try:
+        ns = parse_server_args(args)
+    except SystemExit as e:
+        return e.code if isinstance(e.code, int) else 2
+
+    # Enforce bind policy: non-loopback requires --allow-lan and non-empty token
+    is_loopback = ns.host in ("127.0.0.1", "localhost", "::1")
+    if not is_loopback:
+        if not ns.allow_lan:
+            sys.stderr.write(
+                f"Error: Non-loopback host '{ns.host}' requires --allow-lan flag.\n"
+                "Fix: pass --allow-lan to enable non-loopback binding, or bind to 127.0.0.1.\n"
+            )
+            return 2
+        if not ns.token:
+            sys.stderr.write(
+                f"Error: Non-loopback host '{ns.host}' requires a non-empty NADS_INGEST_TOKEN.\n"
+                "Fix: set NADS_INGEST_TOKEN=<token> or pass --token=<token>.\n"
+            )
+            return 2
+
+    raw_origins = [o.strip() for o in ns.allowed_origins.split(",") if o.strip()]
+    if ns.retention is not None:
+        retention_enabled = ns.retention.lower() in ("1", "true", "yes")
+    elif ns.mode == "public":
+        retention_enabled = False
+    else:
+        retention_enabled = True
+
+    config = ServerConfig(
+        host=ns.host,
+        port=ns.port,
+        ingest_token=ns.token,
+        allow_lan=ns.allow_lan,
+        allow_remote_view=ns.allow_remote_view,
+        mode=ns.mode,
+        allowed_origins=raw_origins,
+        retention_enabled=retention_enabled,
+    )
+
+    try:
+        config.validate()
+    except ConfigError as e:
+        sys.stderr.write(f"Configuration error: {e}\n")
+        return 2
+
+    app = create_app(config)
+    import uvicorn
+
+    uvicorn.run(app, host=config.host, port=config.port, log_level=ns.log_level.lower())
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

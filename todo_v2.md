@@ -446,13 +446,14 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-019: Add the server CLI with the bind policy
-**Status:** ⬜
+**Status:** ✅
 **Description:** `python -m streaming.server --host --port --allow-lan`; default `127.0.0.1`; non-loopback requires `--allow-lan` and a non-empty `NADS_INGEST_TOKEN` or exit code 2 with a one-line fix hint. Wire `make serve`.
 **Dependencies:** T11-010
 **Acceptance Criteria:**
-- [ ] Empty token + 0.0.0.0 refuses to start
-- [ ] `--help` documents every flag
-- [ ] Startup log lists enabled channels without secrets
+- [x] Empty token + 0.0.0.0 refuses to start
+- [x] `--help` documents every flag
+- [x] Startup log lists enabled channels without secrets
+
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Yashwant

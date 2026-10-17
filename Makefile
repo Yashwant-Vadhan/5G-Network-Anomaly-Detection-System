@@ -83,7 +83,7 @@ token:
 
 serve:
 	@echo "Starting 5G-NADS streaming server on 127.0.0.1:8000..."
-	$(PYTHON) -m uvicorn streaming.server:create_app --factory --host 127.0.0.1 --port 8000
+	$(PYTHON) -m streaming.server --host 127.0.0.1 --port 8000
 
 CSV ?= $(SAMPLE_DIR)/5G_measurements_Samsung_Indoor-Movement.csv
 replay:
@@ -92,7 +92,7 @@ replay:
 
 demo-live:
 	@echo "Running demo-live: starting streaming server..."
-	$(PYTHON) -m uvicorn streaming.server:create_app --factory --host 127.0.0.1 --port 8000
+	$(PYTHON) -m streaming.server --host 127.0.0.1 --port 8000
 
 # Guardrail G7 & G22: raw and live data are immutable. This recipe touches $(PROCESSED_DIR)
 # and nothing else; the guard below aborts if that path is empty or resolves inside
