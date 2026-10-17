@@ -346,12 +346,12 @@
 **Owner:** Sushil
 
 #### T17-006: Live Events & Alerts
-**Status:** ⬜
+**Status:** ✅
 **Description:** Events table with status and 'alerted? (reason)', agent cards, alerts table, per-channel status, acknowledge via API.
 **Dependencies:** T17-001, T16-013, T13-007
 **Acceptance Criteria:**
-- [ ] Reason strings are the five fixed values
-- [ ] Ack persists across reload
+- [x] Reason strings are the five fixed values
+- [x] Ack persists across reload
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
