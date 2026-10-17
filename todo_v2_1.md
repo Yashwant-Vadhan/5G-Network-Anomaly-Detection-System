@@ -137,13 +137,13 @@
 **Owner:** Sushil
 
 #### T16-008: Data layer: bundle loader, version check, filters, global state
-**Status:** ⬜
+**Status:** ✅
 **Description:** Load and validate the bundle (version, required keys), expose typed selectors for device/operator/session, current sample, events, transitions; error state with fix text for a missing/invalid bundle (no stack traces).
 **Dependencies:** T16-005, T16-007
 **Acceptance Criteria:**
-- [ ] Invalid bundle shows a readable error
-- [ ] Selectors unit-tested
-- [ ] No score/flag is recomputed (G30)
+- [x] Invalid bundle shows a readable error
+- [x] Selectors unit-tested
+- [x] No score/flag is recomputed (G30)
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

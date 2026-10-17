@@ -3,6 +3,49 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
 import { PAGES } from './constants/pages';
+import { DemoBundle } from './types/contracts';
+
+const mockBundle: DemoBundle = {
+  bundle_version: 1,
+  generated_at: '2026-10-12T10:00:00Z',
+  model_version: '1.0.0',
+  source: 'sample',
+  privacy: {
+    cell_ids: 'hashed',
+    time: 'device-local, no timezone',
+    salt_hash: 'a1b2c3d4e5f60718',
+    cell_lookup: {},
+  },
+  quality: { clean_rows: 3, dropped: 0, total_raw: 3 },
+  model_meta: { contamination: 0.05, model_name: 'if_v1' },
+  sessions: [
+    {
+      session_id: 'redmi-1',
+      device: 'Redmi 13 5G',
+      operator: 'Airtel',
+      start: '2026-10-09 11:00:00',
+      end: '2026-10-09 11:05:00',
+      n: 24,
+    },
+    {
+      session_id: 'samsung-1',
+      device: 'Samsung Galaxy S21',
+      operator: 'Jio',
+      start: '2026-10-09 10:15:00',
+      end: '2026-10-09 10:15:06',
+      n: 3,
+    },
+  ],
+  samples: {
+    columns: ['timestamp', 'session_id', 'ss_rsrp'],
+    rows: [
+      ['2026-10-09 11:00:00', 'redmi-1', -85.0],
+      ['2026-10-09 10:15:00', 'samsung-1', -95.0],
+    ],
+  },
+  transitions: [],
+  events: [],
+};
 
 describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   beforeEach(() => {
@@ -13,7 +56,7 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   it('renders unified brand header with mode label and no deploy chrome', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     expect(screen.getByText('5G-NADS')).toBeInTheDocument();
@@ -24,7 +67,7 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   it('renders all page navigation links', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     const nav = screen.getByRole('navigation', { name: /primary navigation/i });
@@ -36,7 +79,7 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   it('renders research prototype notice in footer per G31', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     expect(screen.getByText(/Academic research prototype/i)).toBeInTheDocument();
@@ -46,7 +89,7 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   it('toggles and persists theme in localStorage', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     const themeBtn = screen.getByLabelText(/Toggle light and dark theme/i);
@@ -64,7 +107,7 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
   it('supports keyboard navigation to every route', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     const nav = screen.getByRole('navigation', { name: /primary navigation/i });
@@ -78,13 +121,16 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
     });
   });
 
-  it('renders filters area placeholder', () => {
+  it('renders filters area with device, operator, and session controls (T16-008)', () => {
     render(
       <HashRouter>
-        <App />
+        <App initialBundle={mockBundle} />
       </HashRouter>
     );
     expect(screen.getByLabelText(/filters and session controls/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Filter by device/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Filter by operator/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Select session/i)).toBeInTheDocument();
+    expect(screen.getByText(/Active Subset:/i)).toBeInTheDocument();
   });
 });
-
