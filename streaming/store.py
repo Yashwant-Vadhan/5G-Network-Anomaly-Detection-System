@@ -179,6 +179,11 @@ class LiveCaptureStore:
         digest = compute_sha256(self.csv_path) if self.csv_path.exists() else None
         self._write_meta(sha256_digest=digest)
 
+    @property
+    def is_closed(self) -> bool:
+        """Return True if session has been finalized and closed."""
+        return self.status == "CLOSED"
+
     def close(self, status: SessionStatus = "CLOSED") -> None:
         """Close capture file, fsync to disk, compute SHA-256, and finalize sidecar."""
         if self.status == "CLOSED":

@@ -944,12 +944,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 *Goal: Everything measured honestly, attacked, documented, and tagged v2.0.0.*
 
 #### T14-001: Auth and abuse tests for ingest and live APIs
-**Status:** ⬜
+**Status:** ✅
 **Description:** Tests: wrong/missing token, replayed seq, oversize frame, malformed JSON, flood, second connection same `client_id`, non-loopback read request, token absent from logs (log-scan). Map to G19/G20.
 **Dependencies:** T11-011, T11-014
 **Acceptance Criteria:**
-- [ ] Each abuse case in TECH_RULES_v2 has a test
-- [ ] Log-scan test finds no token/URL
+- [x] Each abuse case in TECH_RULES_v2 has a test
+- [x] Log-scan test finds no token/URL
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
