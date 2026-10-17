@@ -357,12 +357,12 @@
 **Owner:** Sushil
 
 #### T17-007: Stream Health page
-**Status:** ⬜
+**Status:** ✅
 **Description:** Latency percentiles with the 'no latency guarantee' footnote, gaps, drops, queue depth, clock skew, model/hash, edge divergence (only if enabled).
 **Dependencies:** T17-001, T11-018
 **Acceptance Criteria:**
-- [ ] Numbers shown exactly as served by /metrics
-- [ ] Footnote present
+- [x] Numbers shown exactly as served by /metrics
+- [x] Footnote present
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil

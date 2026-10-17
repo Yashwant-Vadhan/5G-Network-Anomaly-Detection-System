@@ -7,6 +7,7 @@ import { DemoBundle } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
 import { EventsDiagnosis } from './pages/EventsDiagnosis';
+import { StreamHealth } from './pages/StreamHealth';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 import { ConnectionChip } from './components/ConnectionChip';
@@ -320,8 +321,13 @@ function AppContent() {
             />
             <Route path="/signals" element={<SignalExplorer />} />
             <Route path="/events" element={<EventsDiagnosis />} />
+            <Route path="/stream-health" element={<StreamHealth />} />
             {PAGES.filter(
-              p => p.path !== '/overview' && p.path !== '/signals' && p.path !== '/events'
+              p =>
+                p.path !== '/overview' &&
+                p.path !== '/signals' &&
+                p.path !== '/events' &&
+                p.path !== '/stream-health'
             ).map(p => (
               <Route
                 key={p.path}
