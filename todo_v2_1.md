@@ -543,12 +543,12 @@
 **Owner:** Sushil
 
 #### T18-013: Security tests for pairing, tickets and limits
-**Status:** ⬜
+**Status:** ✅
 **Description:** Abuse cases: guessing codes, reusing codes/tickets, cross-session token use, flooding session creation, oversize frames, wrong origin, token/code/query string absent from logs.
 **Dependencies:** T18-004, T18-003
 **Acceptance Criteria:**
-- [ ] Each case automated
-- [ ] Log-scan test passes
+- [x] Each case automated
+- [x] Log-scan test passes
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
