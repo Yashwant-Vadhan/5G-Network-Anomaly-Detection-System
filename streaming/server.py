@@ -8,7 +8,9 @@ following the Contracts C7 and C8 specifications.
 from __future__ import annotations
 
 import asyncio
+import csv
 import hmac
+import io
 import json
 import logging
 import os
@@ -49,7 +51,9 @@ from ml.config import (
     PAIRING_CODE_TTL_SECONDS,
     PAIRING_LOCKOUT_ATTEMPTS,
     PAIRING_LOCKOUT_SECONDS,
+    RAW_COLUMNS,
     SESSION_CREATION_WINDOW_SECONDS,
+    SESSION_MAX_ROWS,
     TICKET_TTL_SECONDS,
 )
 from ml.schema import ConfigError, SchemaError
@@ -307,6 +311,7 @@ def reap_idle_sessions(app: FastAPI, now: datetime | None = None) -> list[str]:
             for t in tickets_to_del:
                 del app.state.live_session_tickets[t]
             app.state.session_samples.pop(session_id, None)
+            app.state.session_raw_samples.pop(session_id, None)
             app.state.session_events.pop(session_id, None)
             reaped.append(session_id)
             logger.info("Reaped idle live session %s (last active: %s)", session_id, last_active)
@@ -355,6 +360,7 @@ def create_app(
     app.state.active_ingest_clients: dict[str, WebSocket] = {}
     app.state.latest_samples: dict[str, ScoredSample] = {}
     app.state.session_samples: dict[str, list[ScoredSample]] = {}
+    app.state.session_raw_samples: dict[str, list[dict[str, Any]]] = {}
     app.state.session_events: dict[str, list[EventRecord]] = {}
     app.state.alerts: list[dict[str, Any]] = []
     app.state.pairing_sessions: dict[str, dict[str, Any]] = {}
@@ -457,29 +463,30 @@ def create_app(
     @app.websocket("/api/v1/ingest")
     async def websocket_ingest(websocket: WebSocket) -> None:
         """Contract C7 phone telemetry ingest WebSocket protocol handler."""
-        # 1. Authenticate connection if ingest_token is configured
+        # 1. Authenticate connection if ingest_token is configured or session token provided
         connected_session_id: str | None = None
+        auth_header = websocket.headers.get("authorization")
+        token = None
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+        if not token:
+            token = websocket.query_params.get("token")
+
+        session_tokens = getattr(websocket.app.state, "session_ingest_tokens", {})
+        is_valid_session_token = bool(token and token in session_tokens)
+        is_valid_global_token = bool(
+            config.ingest_token
+            and token
+            and hmac.compare_digest(token.encode("utf-8"), config.ingest_token.encode("utf-8"))
+        )
+
         if config.ingest_token:
-            auth_header = websocket.headers.get("authorization")
-            token = None
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header.split(" ", 1)[1].strip()
-            if not token:
-                token = websocket.query_params.get("token")
-
-            session_tokens = getattr(websocket.app.state, "session_ingest_tokens", {})
-            is_valid_session_token = bool(token and token in session_tokens)
-            is_valid_global_token = bool(
-                token
-                and hmac.compare_digest(token.encode("utf-8"), config.ingest_token.encode("utf-8"))
-            )
-
             if not (is_valid_session_token or is_valid_global_token):
                 await websocket.close(code=4401, reason="Unauthorized")
                 return
 
-            if is_valid_session_token and token:
-                connected_session_id = session_tokens.get(token)
+        if is_valid_session_token and token:
+            connected_session_id = session_tokens.get(token)
 
         await websocket.accept()
 
@@ -726,11 +733,18 @@ def create_app(
                             app.state.active_live_sessions[session_id]["last_active_at"] = (
                                 datetime.now(UTC)
                             )
+                        # Store raw sample for C1 CSV export (bounded buffer, T18-005)
+                        raw_buf = app.state.session_raw_samples.setdefault(session_id, [])
+                        if len(raw_buf) >= SESSION_MAX_ROWS:
+                            raw_buf.pop(0)
+                        raw_buf.append(sample.payload.model_dump(mode="python"))
+
                         if scored is not None:
                             app.state.latest_samples[session_id] = scored
-                            if session_id not in app.state.session_samples:
-                                app.state.session_samples[session_id] = []
-                            app.state.session_samples[session_id].append(scored)
+                            scored_buf = app.state.session_samples.setdefault(session_id, [])
+                            if len(scored_buf) >= SESSION_MAX_ROWS:
+                                scored_buf.pop(0)
+                            scored_buf.append(scored)
                             get_stream_metrics(session_id).record_sample(scored)
 
                             # Fan-out live sample to dashboard subscribers
@@ -1133,10 +1147,50 @@ def create_app(
 
         # Purge in-memory telemetry (G29)
         app.state.session_samples.pop(session_id, None)
+        app.state.session_raw_samples.pop(session_id, None)
         app.state.session_events.pop(session_id, None)
 
         response.delete_cookie(key="nads_viewer_session", path="/")
         return DeleteLiveSessionResponse(status="deleted", session_id=session_id)
+
+    @app.get("/api/v1/live-sessions/{session_id}/export.csv")
+    async def export_live_session_csv(
+        session_id: str, request: Request
+    ) -> Response:
+        """Export in-memory session telemetry as C1 CSV with viewer auth (T18-005/G29)."""
+        verify_viewer_auth(request, session_id)
+        if session_id not in app.state.active_live_sessions:
+            raise HTTPException(status_code=404, detail="Live session not found")
+
+        raw_samples = app.state.session_raw_samples.get(session_id)
+        if raw_samples is None:
+            raw_samples = app.state.session_samples.get(session_id, [])
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(RAW_COLUMNS)
+
+        for s in raw_samples:
+            data = s if isinstance(s, dict) else s.model_dump(mode="python")
+            row = []
+            for col in RAW_COLUMNS:
+                val = data.get(col)
+                if val is None:
+                    row.append("")
+                elif isinstance(val, bool):
+                    row.append("True" if val else "False")
+                else:
+                    row.append(str(val))
+            writer.writerow(row)
+
+        csv_content = output.getvalue()
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="live_{session_id}.csv"',
+            },
+        )
 
     # --------------------------------------------------------------------------
     # WebSocket /api/v1/live Endpoint (T11-014 / Contract C8)

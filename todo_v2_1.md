@@ -452,12 +452,12 @@
 **Owner:** Sushil
 
 #### T18-005: Ephemeral session store and CSV export endpoint
-**Status:** ⬜
+**Status:** ✅
 **Description:** In-memory bounded session buffers deleted at session end; `GET /api/v1/live-sessions/{id}/export.csv` (viewer auth) returns C1-format CSV; nothing written to disk when retention is off (G29).
 **Dependencies:** T18-002, T11-009
 **Acceptance Criteria:**
-- [ ] Disk scan after a session finds no live data in public mode
-- [ ] Export equals samples received
+- [x] Disk scan after a session finds no live data in public mode
+- [x] Export equals samples received
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
