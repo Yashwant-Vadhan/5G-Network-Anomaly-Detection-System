@@ -799,13 +799,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T13-009: Alert tests: policy negatives, cooldown, channel failure
-**Status:** ⬜
+**Status:** ✅
 **Description:** `tests/streaming/test_alerts.py`: ML-only, low RSRP only, low SINR only, UNKNOWN only, cell change only, 5G→LTE only → no alert; cooldown/escalation/resolve; webhook timeout and email failure do not affect in-app delivery.
 **Dependencies:** T13-002, T13-003
 **Acceptance Criteria:**
-- [ ] All negative cases from v1 list covered (G21)
-- [ ] Property-style test over fixtures
-- [ ] Coverage on alerts/ ≥85%
+- [x] All negative cases from v1 list covered (G21)
+- [x] Property-style test over fixtures
+- [x] Coverage on alerts/ ≥85%
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil

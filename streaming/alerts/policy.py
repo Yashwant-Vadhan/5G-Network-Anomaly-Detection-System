@@ -27,6 +27,7 @@ SEVERITY_ORDER: dict[str, int] = {
     "LOW": 1,
     "MEDIUM": 2,
     "HIGH": 3,
+    "CRITICAL": 4,
 }
 
 # Non-alerting transition and normal anomaly types (G6, G21)
@@ -35,6 +36,9 @@ TRANSITION_TYPES: frozenset[str] = frozenset(
         "NORMAL",
         "CELL_TRANSITION",
         "NETWORK_STATE_TRANSITION",
+        "CELL_RESELECTION",
+        "HANDOVER",
+        "BEAM_SWITCH",
     }
 )
 
@@ -255,7 +259,10 @@ def decide(
     if anomaly_type == "STATISTICAL_ONLY":
         return AlertDecision(alerted=False, reason="ML-only (no rule evidence)", kind=None)
 
-    # Rule 1b: Normal states and transition-only events never alert (G6, G21)
+    # Rule 1b: Normal states, unknown types, and transition-only events never alert (G6, G21)
+    if anomaly_type in ("UNKNOWN", "NONE"):
+        return AlertDecision(alerted=False, reason="ML-only (no rule evidence)", kind=None)
+
     if anomaly_type in TRANSITION_TYPES:
         return AlertDecision(alerted=False, reason="Transition only", kind=None)
 
