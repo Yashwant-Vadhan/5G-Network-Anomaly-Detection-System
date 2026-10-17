@@ -121,6 +121,7 @@ class ServerConfig:
     retention_enabled: bool = True
     max_sessions: int = 10
     max_msgs_per_min: int = 120
+    require_live_auth: bool = False
 
     def validate(self) -> None:
         """Validate server configuration and startup security guards (T18-001)."""
@@ -385,6 +386,7 @@ def create_app(
     async def websocket_ingest(websocket: WebSocket) -> None:
         """Contract C7 phone telemetry ingest WebSocket protocol handler."""
         # 1. Authenticate connection if ingest_token is configured
+        connected_session_id: str | None = None
         if config.ingest_token:
             auth_header = websocket.headers.get("authorization")
             token = None
@@ -403,6 +405,9 @@ def create_app(
             if not (is_valid_session_token or is_valid_global_token):
                 await websocket.close(code=4401, reason="Unauthorized")
                 return
+
+            if is_valid_session_token and token:
+                connected_session_id = session_tokens.get(token)
 
         await websocket.accept()
 
@@ -496,19 +501,38 @@ def create_app(
                     app.state.active_ingest_clients[client_id] = websocket
 
                     sess_mgr: SessionManager = app.state.session_manager
-                    if hello.resume_from_seq and hello.resume_from_seq > 0:
+                    if connected_session_id:
+                        req_sid = raw_msg.get("session_id")
+                        if req_sid and req_sid != connected_session_id:
+                            err = ErrorMsg(
+                                code="UNAUTHORIZED",
+                                message="Session mismatch: token cannot write to another session",
+                                fatal=True,
+                            )
+                            await websocket.send_text(err.model_dump_json())
+                            await websocket.close(code=4401, reason="Session mismatch")
+                            break
+                        session_id = connected_session_id
+                        sess_buf = sess_mgr.get_or_create_session(
+                            client_id=client_id,
+                            device=device,
+                            session_id=connected_session_id,
+                        )
+                        last_seq_acked = 0
+                        reset_stream_metrics(session_id)
+                    elif hello.resume_from_seq and hello.resume_from_seq > 0:
                         sess_buf = sess_mgr.get_or_resume_session(
                             client_id=client_id,
                             device=device,
                             resume_from_seq=hello.resume_from_seq,
                         )
                         last_seq_acked = hello.resume_from_seq - 1
+                        session_id = sess_buf.session_id
                     else:
                         sess_buf = sess_mgr.start_new_session(client_id, device)
                         last_seq_acked = 0
                         reset_stream_metrics(sess_buf.session_id)
-
-                    session_id = sess_buf.session_id
+                        session_id = sess_buf.session_id
 
                     # Live capture store for telemetry retention
                     if config.retention_enabled:
@@ -539,6 +563,22 @@ def create_app(
                         await app.state.hub.broadcast(conn_ev, session_id=session_id)
 
                 elif msg_type == "sample":
+                    if connected_session_id:
+                        msg_sid = raw_msg.get("session_id")
+                        p_data = raw_msg.get("payload")
+                        p_sid = p_data.get("session_id") if isinstance(p_data, dict) else None
+                        if (msg_sid and msg_sid != connected_session_id) or (
+                            p_sid and p_sid != connected_session_id
+                        ):
+                            err = ErrorMsg(
+                                code="UNAUTHORIZED",
+                                message="Session mismatch: token cannot write to another session",
+                                fatal=True,
+                            )
+                            await websocket.send_text(err.model_dump_json())
+                            await websocket.close(code=4401, reason="Session mismatch")
+                            break
+
                     try:
                         sample = IngestSample.model_validate(raw_msg)
                     except Exception as e:
@@ -975,6 +1015,53 @@ def create_app(
                 return
 
         await websocket.accept()
+
+        auth_session_id: str | None = None
+        if config.require_live_auth or config.mode == "public":
+            try:
+                auth_frame_text = await asyncio.wait_for(
+                    websocket.receive_text(), timeout=5.0
+                )
+            except TimeoutError:
+                await websocket.close(
+                    code=4401, reason="Auth timeout: first-frame ticket required within 5s"
+                )
+                return
+            except WebSocketDisconnect:
+                return
+
+            try:
+                frame_dict = json.loads(auth_frame_text)
+            except Exception:
+                await websocket.close(code=4401, reason="Unauthorized: Malformed auth frame")
+                return
+
+            if not isinstance(frame_dict, dict) or frame_dict.get("type") != "auth":
+                await websocket.close(
+                    code=4401, reason="Unauthorized: First frame must have type 'auth'"
+                )
+                return
+
+            ticket_str = frame_dict.get("ticket")
+            if not ticket_str or not isinstance(ticket_str, str):
+                await websocket.close(code=4401, reason="Unauthorized: Missing ticket")
+                return
+
+            # Single-use pop
+            ticket_record = app.state.live_session_tickets.pop(ticket_str, None)
+            if ticket_record is None:
+                await websocket.close(
+                    code=4401, reason="Unauthorized: Invalid or reused ticket"
+                )
+                return
+
+            sess_id, exp_dt = ticket_record
+            if datetime.now(UTC) > exp_dt:
+                await websocket.close(code=4401, reason="Unauthorized: Expired ticket")
+                return
+
+            auth_session_id = sess_id
+
         sub_id, queue = await app.state.hub.subscribe()
 
         try:
@@ -985,18 +1072,21 @@ def create_app(
                 if sess_buf:
                     latest_sess_id = sess_buf.session_id
 
-            latest_sample = app.state.latest_samples.get(latest_sess_id) if latest_sess_id else None
+            target_sess_id = auth_session_id or latest_sess_id
+            latest_sample = (
+                app.state.latest_samples.get(target_sess_id) if target_sess_id else None
+            )
             open_events = [
                 e
-                for e in app.state.session_events.get(latest_sess_id, [])
+                for e in app.state.session_events.get(target_sess_id, [])
                 if getattr(e, "status", "") == "PROVISIONAL"
             ]
 
-            cur_state, _ = app.state.connection_tracker.get_state(latest_sess_id)
+            cur_state, _ = app.state.connection_tracker.get_state(target_sess_id)
             now_iso = datetime.now(UTC).isoformat()
             snapshot = SnapshotEvent(
                 server_time=now_iso,
-                session_id=latest_sess_id or "default",
+                session_id=target_sess_id or "default",
                 latest_sample=latest_sample,
                 state=cur_state,
                 open_events=open_events,
@@ -1007,6 +1097,16 @@ def create_app(
             while True:
                 try:
                     msg = await asyncio.wait_for(queue.get(), timeout=5.0)
+                    if auth_session_id:
+                        msg_sid = (
+                            getattr(msg, "session_id", None)
+                            if isinstance(msg, BaseModel)
+                            else msg.get("session_id")
+                            if isinstance(msg, dict)
+                            else None
+                        )
+                        if msg_sid is not None and msg_sid != auth_session_id:
+                            continue
                     if isinstance(msg, BaseModel):
                         await websocket.send_text(msg.model_dump_json())
                     elif isinstance(msg, dict):

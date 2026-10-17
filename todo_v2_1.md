@@ -429,12 +429,12 @@
 **Owner:** Sushil
 
 #### T18-003: Per-session WebSocket authentication
-**Status:** ⬜
+**Status:** ✅
 **Description:** Ingest accepts only that session's bearer token; live endpoint requires the first-frame `auth` ticket within 5 s (single-use, 30 s); wrong or missing auth closes with the C7 code; no token in logs.
 **Dependencies:** T18-002
 **Acceptance Criteria:**
-- [ ] Token for session A cannot write to session B
-- [ ] Late or reused ticket rejected
+- [x] Token for session A cannot write to session B
+- [x] Late or reused ticket rejected
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
