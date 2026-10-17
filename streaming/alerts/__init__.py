@@ -5,7 +5,15 @@ cooldown timers, and multi-channel notification dispatchers across in-app,
 phone, webhook, and email destinations.
 """
 
+from streaming.alerts.channels.in_app import InAppChannel
+from streaming.alerts.channels.webhook import WebhookChannel
 from streaming.alerts.dispatcher import AlertDispatcher
 from streaming.alerts.policy import decide, has_agent_rule_evidence
 
-__all__ = ["AlertDispatcher", "decide", "has_agent_rule_evidence"]
+__all__ = [
+    "AlertDispatcher",
+    "InAppChannel",
+    "WebhookChannel",
+    "decide",
+    "has_agent_rule_evidence",
+]

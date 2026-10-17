@@ -740,13 +740,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-004: Implement the webhook channel
-**Status:** ⬜
+**Status:** ✅
 **Description:** `channels/webhook.py` with httpx: POST the minimal `to_webhook_body()` JSON, 5 s timeout, one retry, URL from `NADS_ALERT_WEBHOOK_URL`, never logged; off unless the env var is set; `--dry-run` prints the payload instead of sending.
 **Dependencies:** T13-003
 **Acceptance Criteria:**
-- [ ] Payload equals the minimal subset (G26)
-- [ ] Timeout recorded as FAILED, pipeline unaffected
-- [ ] URL absent from all logs
+- [x] Payload equals the minimal subset (G26)
+- [x] Timeout recorded as FAILED, pipeline unaffected
+- [x] URL absent from all logs
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

@@ -6,6 +6,6 @@ and email alerts via standard library SMTP.
 """
 
 from streaming.alerts.channels.in_app import InAppChannel
+from streaming.alerts.channels.webhook import WebhookChannel
 
-__all__ = ["InAppChannel"]
-
+__all__ = ["InAppChannel", "WebhookChannel"]
