@@ -776,12 +776,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T13-007: Implement alert acknowledgement
-**Status:** ⬜
+**Status:** ✅
 **Description:** `POST /api/v1/alerts/{alert_id}/ack` idempotent, rate-limited, sets `acknowledged_at`, appends an ack record to `alerts.jsonl`, publishes an `alert` update.
 **Dependencies:** T13-003, T11-014
 **Acceptance Criteria:**
-- [ ] Second ack returns 200 without a second record
-- [ ] Unknown id → 404 with C8 error body
+- [x] Second ack returns 200 without a second record
+- [x] Unknown id → 404 with C8 error body
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil

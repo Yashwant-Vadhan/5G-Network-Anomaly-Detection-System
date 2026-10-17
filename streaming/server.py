@@ -39,6 +39,7 @@ from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ml.config import (
+    DATA_DIR,
     IDLE_SESSION_TIMEOUT_SECONDS,
     MAX_LIVE_SESSIONS,
     MAX_MESSAGE_BYTES,
@@ -64,6 +65,7 @@ from streaming.hub import LiveHub
 from streaming.metrics import get_stream_metrics, reset_stream_metrics
 from streaming.schema import (
     Ack,
+    AlertRecord,
     CreateLiveSessionResponse,
     DeleteLiveSessionResponse,
     ErrorDetail,
@@ -92,6 +94,8 @@ from streaming.schema import (
     SessionListResponse,
     SessionSummary,
     SnapshotEvent,
+    deserialize_alert_jsonl,
+    serialize_alert_jsonl,
 )
 from streaming.session_manager import SessionManager
 from streaming.store import LiveCaptureStore
@@ -400,7 +404,8 @@ def create_app(
     app.state.session_samples: dict[str, list[ScoredSample]] = {}
     app.state.session_raw_samples: dict[str, list[dict[str, Any]]] = {}
     app.state.session_events: dict[str, list[EventRecord]] = {}
-    app.state.alerts: list[dict[str, Any]] = []
+    app.state.alerts: dict[str, AlertRecord] = {}
+    app.state.alert_ack_attempts: dict[str, list[float]] = {}
     app.state.pairing_sessions: dict[str, dict[str, Any]] = {}
     app.state.active_live_sessions: dict[str, dict[str, Any]] = {}
     app.state.session_ingest_tokens: dict[str, str] = {}
@@ -965,28 +970,102 @@ def create_app(
         evts = app.state.session_events.get(session_id, [])
         return EventsResponse(events=evts[:limit], total=len(evts))
 
-    @app.get("/api/v1/alerts")
+    @app.get("/api/v1/alerts", response_model=list[AlertRecord])
     async def get_alerts(
         request: Request,
+        since: str | None = None,
         ack: bool | None = None,
         limit: int = Query(default=100, ge=1, le=1000),
-    ) -> list[dict[str, Any]]:
-        """List alerts with optional acknowledgment filter."""
+        offset: int = Query(default=0, ge=0),
+    ) -> list[AlertRecord]:
+        """List alerts with optional acknowledgment and timestamp filter (C8/C9)."""
         verify_loopback_access(request)
-        alerts = list(app.state.alerts)
-        if ack is not None:
-            alerts = [a for a in alerts if a.get("acknowledged", False) == ack]
-        return alerts[:limit]
+        alerts_file = DATA_DIR / "live" / "alerts.jsonl"
+        if alerts_file.exists():
+            for line in alerts_file.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    try:
+                        rec = deserialize_alert_jsonl(line)
+                        app.state.alerts[rec.alert_id] = rec
+                    except Exception:
+                        pass
 
-    @app.post("/api/v1/alerts/{alert_id}/ack")
-    async def ack_alert(alert_id: str, request: Request) -> dict[str, Any]:
-        """Mark an alert as acknowledged (idempotent)."""
+        result = list(app.state.alerts.values())
+        if ack is not None:
+            result = [
+                a for a in result
+                if (a.acknowledged_at is not None) == ack
+            ]
+        if since is not None:
+            result = [a for a in result if a.created_at >= since]
+        return result[offset : offset + limit]
+
+    @app.post("/api/v1/alerts/{alert_id}/ack", response_model=AlertRecord)
+    async def ack_alert(alert_id: str, request: Request) -> AlertRecord:
+        """Mark an alert as acknowledged (idempotent, Contract C8/C9, T13-007)."""
         verify_loopback_access(request)
-        for a in app.state.alerts:
-            if a.get("alert_id") == alert_id:
-                a["acknowledged"] = True
-                return {"status": "acknowledged", "alert_id": alert_id}
-        return {"status": "acknowledged", "alert_id": alert_id}
+
+        # Rate limiting: 60 ack requests per minute per IP
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        now_ts = time.time()
+        recent = [
+            t
+            for t in app.state.alert_ack_attempts.get(client_ip, [])
+            if t > now_ts - 60.0
+        ]
+        if len(recent) >= 60:
+            raise HTTPException(
+                status_code=429,
+                detail="Alert acknowledgement rate limit exceeded",
+            )
+        recent.append(now_ts)
+        app.state.alert_ack_attempts[client_ip] = recent
+
+        # Find alert in memory or in alerts.jsonl
+        if alert_id not in app.state.alerts:
+            alerts_file = DATA_DIR / "live" / "alerts.jsonl"
+            if alerts_file.exists():
+                for line in alerts_file.read_text(encoding="utf-8").splitlines():
+                    if line.strip():
+                        try:
+                            rec = deserialize_alert_jsonl(line)
+                            app.state.alerts[rec.alert_id] = rec
+                        except Exception:
+                            pass
+
+        if alert_id not in app.state.alerts:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Alert '{alert_id}' not found",
+            )
+
+        alert = app.state.alerts[alert_id]
+
+        # Idempotent: second ack returns 200 without appending a second record
+        if alert.acknowledged_at is not None:
+            return alert
+
+        now_iso = datetime.now(UTC).isoformat()
+        alert.acknowledged_at = now_iso
+
+        # Append ack record to alerts.jsonl
+        alerts_file = DATA_DIR / "live" / "alerts.jsonl"
+        alerts_file.parent.mkdir(parents=True, exist_ok=True)
+        with alerts_file.open("a", encoding="utf-8") as f:
+            f.write(serialize_alert_jsonl(alert))
+
+        # Publish alert update over LiveHub
+        if app.state.hub is not None:
+            alert_ev = {
+                "type": "alert",
+                "schema_version": 2,
+                "server_time": now_iso,
+                "session_id": alert.session_id,
+                "alert": alert.model_dump(mode="json"),
+            }
+            await app.state.hub.broadcast(alert_ev, session_id=alert.session_id)
+
+        return alert
 
     @app.get("/api/v1/model", response_model=ModelInfoResponse)
     async def get_model_info(request: Request) -> ModelInfoResponse:
