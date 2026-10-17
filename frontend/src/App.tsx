@@ -5,6 +5,8 @@ import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
 import { DemoBundle } from './types/contracts';
 import { Overview } from './pages/Overview';
+import { ReplayProvider, useReplay } from './data/ReplayContext';
+import { ReplayPlayer } from './components/ReplayPlayer';
 
 function AppContent() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -37,22 +39,7 @@ function AppContent() {
     setSelectedSessionId,
   } = useData();
 
-  const [currentSampleIndex, setCurrentSampleIndex] = useState<number>(0);
-
-  useEffect(() => {
-    if (currentSampleIndex >= samples.length && samples.length > 0) {
-      setCurrentSampleIndex(0);
-    }
-  }, [samples, currentSampleIndex]);
-
-  const currentSample =
-    samples.length > 0 && currentSampleIndex < samples.length
-      ? samples[currentSampleIndex]
-      : null;
-  const prevSample =
-    currentSampleIndex > 0 && currentSampleIndex < samples.length
-      ? samples[currentSampleIndex - 1]
-      : null;
+  const { currentSample, prevSample } = useReplay();
 
   return (
     <div
@@ -306,6 +293,11 @@ function AppContent() {
             )}
           </section>
 
+          {/* Replay Player Controls (T16-010) */}
+          <div style={{ marginBottom: '20px' }}>
+            <ReplayPlayer />
+          </div>
+
           <Routes>
             <Route path="/" element={<Navigate to="/overview" replace />} />
             <Route
@@ -384,7 +376,9 @@ export interface AppProps {
 export default function App({ initialBundle, bundleUrl }: AppProps = {}) {
   return (
     <DataProvider initialBundle={initialBundle} bundleUrl={bundleUrl}>
-      <AppContent />
+      <ReplayProvider>
+        <AppContent />
+      </ReplayProvider>
     </DataProvider>
   );
 }

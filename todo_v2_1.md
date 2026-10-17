@@ -161,13 +161,13 @@
 **Owner:** Sushil
 
 #### T16-010: Build the replay player
-**Status:** ⬜
+**Status:** ✅
 **Description:** Play/pause, speed 1×/5×/20×, scrubber; current sample drives Overview; keyboard operable; pauses at end.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] Speed changes take effect immediately
-- [ ] Scrubber and keyboard arrows move one sample
-- [ ] State survives page navigation
+- [x] Speed changes take effect immediately
+- [x] Scrubber and keyboard arrows move one sample
+- [x] State survives page navigation
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Sushil
