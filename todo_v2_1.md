@@ -252,12 +252,12 @@
 **Owner:** Sushil
 
 #### T16-018: Data-parity test (frontend vs Python)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Test that numbers rendered for fixed samples/events equal the Python outputs (bundle values vs `scores.csv` rows, event counts, quality counts).
 **Dependencies:** T16-004, T16-013
 **Acceptance Criteria:**
-- [ ] 10 samples and 5 events checked field by field
-- [ ] Fails if the builder changes a value
+- [x] 10 samples and 5 events checked field by field
+- [x] Fails if the builder changes a value
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
