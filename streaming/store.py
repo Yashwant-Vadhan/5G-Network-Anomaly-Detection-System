@@ -51,7 +51,7 @@ class LiveCaptureStore:
         self,
         client_id: str,
         session_id: str,
-        base_dir: str | Path = DEFAULT_LIVE_DIR,
+        base_dir: str | Path | None = None,
         source: StreamSource = "phone",
         start_time: datetime | str | None = None,
         initial_status: SessionStatus = "OPEN",
@@ -59,7 +59,8 @@ class LiveCaptureStore:
         self.client_id = client_id
         self.session_id = session_id
         self.source: StreamSource = source
-        self.base_dir = Path(base_dir).resolve()
+        resolved_base = DEFAULT_LIVE_DIR if base_dir is None else base_dir
+        self.base_dir = Path(resolved_base).resolve()
 
         # Enforce Guardrails G7 / G22: Never write to or under data/raw
         self._validate_path_safety(self.base_dir)

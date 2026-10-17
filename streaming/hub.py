@@ -25,12 +25,16 @@ class Subscriber:
 
     def __init__(self, sub_id: str, queue_size: int) -> None:
         self.sub_id = sub_id
+        try:
+            self.loop: asyncio.AbstractEventLoop | None = asyncio.get_running_loop()
+        except RuntimeError:
+            self.loop = None
         self.queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=queue_size)
         self.dropped_count: int = 0
         self.has_pending_drop_event: bool = False
 
-    def push(self, message: Any, session_id: str | None = None) -> None:
-        """Push message to subscriber queue, dropping oldest if queue is full."""
+    def _do_push(self, message: Any, session_id: str | None = None) -> None:
+        """Internal bounded queue push logic."""
         if self.queue.full():
             # Slow subscriber backpressure: drop oldest item
             try:
@@ -72,6 +76,18 @@ class Subscriber:
                 self.queue.put_nowait(message)
             except asyncio.QueueFull:
                 pass
+
+    def push(self, message: Any, session_id: str | None = None) -> None:
+        """Push message to subscriber queue, thread-safely waking its event loop."""
+        try:
+            cur_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            cur_loop = None
+
+        if self.loop is None or cur_loop == self.loop or not self.loop.is_running():
+            self._do_push(message, session_id)
+        else:
+            self.loop.call_soon_threadsafe(self._do_push, message, session_id)
 
 
 class LiveHub:

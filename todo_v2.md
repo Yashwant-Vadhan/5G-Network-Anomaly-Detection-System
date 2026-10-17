@@ -422,13 +422,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T11-017: Integration test: replay → server → live subscriber
-**Status:** ⬜
+**Status:** ✅
 **Description:** Using the FastAPI test client: connect a live subscriber, replay the sample via the real ingest handler, assert `snapshot`, `sample`, `event_open/closed` ordering, live-capture CSV equals input, and batch-on-capture equals live results.
 **Dependencies:** T11-014, T11-015
 **Acceptance Criteria:**
-- [ ] Test is deterministic (injectable clock)
-- [ ] Live-vs-batch-on-capture comparison passes
-- [ ] Runs in CI under a minute
+- [x] Test is deterministic (injectable clock)
+- [x] Live-vs-batch-on-capture comparison passes
+- [x] Runs in CI under a minute
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
