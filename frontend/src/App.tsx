@@ -4,6 +4,7 @@ import { PAGES } from './constants/pages';
 import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
 import { DemoBundle } from './types/contracts';
+import { Overview } from './pages/Overview';
 
 function AppContent() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -30,10 +31,28 @@ function AppContent() {
     selectedSessionId,
     currentSession,
     samples,
+    events,
     setSelectedDevice,
     setSelectedOperator,
     setSelectedSessionId,
   } = useData();
+
+  const [currentSampleIndex, setCurrentSampleIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (currentSampleIndex >= samples.length && samples.length > 0) {
+      setCurrentSampleIndex(0);
+    }
+  }, [samples, currentSampleIndex]);
+
+  const currentSample =
+    samples.length > 0 && currentSampleIndex < samples.length
+      ? samples[currentSampleIndex]
+      : null;
+  const prevSample =
+    currentSampleIndex > 0 && currentSampleIndex < samples.length
+      ? samples[currentSampleIndex - 1]
+      : null;
 
   return (
     <div
@@ -289,7 +308,17 @@ function AppContent() {
 
           <Routes>
             <Route path="/" element={<Navigate to="/overview" replace />} />
-            {PAGES.map(p => (
+            <Route
+              path="/overview"
+              element={
+                <Overview
+                  currentSample={currentSample}
+                  prevSample={prevSample}
+                  events={events}
+                />
+              }
+            />
+            {PAGES.filter(p => p.path !== '/overview').map(p => (
               <Route
                 key={p.path}
                 path={p.path}

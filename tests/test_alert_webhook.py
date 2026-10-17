@@ -146,7 +146,7 @@ def test_webhook_url_absent_from_all_logs(monkeypatch: Any) -> None:
     webhook_logger.addHandler(handler)
     webhook_logger.setLevel(logging.DEBUG)
 
-    secret_url = "https://hooks.slack.com/services/T00/B00/ULTRA_SECRET_TOKEN_999"
+    secret_url = "https://api.internal.network/webhooks/v1/ULTRA_SECRET_TOKEN_999"
 
     # Simulate server 500 error from webhook endpoint
     async def _mock_error_post(*args: Any, **kwargs: Any) -> httpx.Response:
@@ -174,6 +174,6 @@ def test_webhook_url_absent_from_all_logs(monkeypatch: Any) -> None:
         # Verify secret URL and its components are completely absent from logs
         assert secret_url not in emitted_logs
         assert "ULTRA_SECRET_TOKEN_999" not in emitted_logs
-        assert "services/T00/B00" not in emitted_logs
+        assert "webhooks/v1" not in emitted_logs
     finally:
         webhook_logger.removeHandler(handler)

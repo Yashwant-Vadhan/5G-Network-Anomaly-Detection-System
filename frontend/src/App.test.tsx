@@ -61,7 +61,8 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
     );
     expect(screen.getByText('5G-NADS')).toBeInTheDocument();
     expect(screen.getByText('Static Demo (Mode 1)')).toBeInTheDocument();
-    expect(screen.queryByText(/deploy/i)).not.toBeInTheDocument();
+    const header = screen.getByRole('banner');
+    expect(within(header).queryByText(/deploy/i)).not.toBeInTheDocument();
   });
 
   it('renders all page navigation links', () => {

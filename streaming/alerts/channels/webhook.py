@@ -74,7 +74,7 @@ class WebhookChannel:
                         json=payload,
                         headers={"Content-Type": "application/json"},
                     )
-                    if 200 <= resp.status_code < 300:
+                    if resp.is_success:
                         return AlertDelivery(
                             channel=self.name,
                             status="OK",

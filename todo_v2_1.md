@@ -149,13 +149,13 @@
 **Owner:** Sushil
 
 #### T16-009: Build the Overview page
-**Status:** ⬜
+**Status:** ✅
 **Description:** Status banner (anomaly rule from `1_Overview.py` L47–52), network & device card (UNKNOWN shown as 'Unknown (not exposed by this device)'), six metric cards with deltas that never truncate, score block (baseline and IF separate, ML-only distinct), event label, diagnosis/evidence/recommendation, empty state; caption without 'Real-time'.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] Values for 5 sample rows equal the Streamlit page
-- [ ] No ellipsis truncation at 1280 px and 375 px
-- [ ] `—` shown for missing, never 0
+- [x] Values for 5 sample rows equal the Streamlit page
+- [x] No ellipsis truncation at 1280 px and 375 px
+- [x] `—` shown for missing, never 0
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Sushil
