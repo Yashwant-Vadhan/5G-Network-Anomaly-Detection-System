@@ -141,13 +141,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T10-009: Create guardrail test stubs for G17–G26
-**Status:** ⬜
+**Status:** ✅
 **Description:** Create `tests/test_guardrails_v2.py` with one test function per G17–G26 (docstring quotes the rule), marked `xfail(strict=True)` with the task ID that will implement it. Add the grep check: no numeric threshold literals in `streaming/` outside config.
 **Dependencies:** T10-001
 **Acceptance Criteria:**
-- [ ] Ten stubs exist and are listed by `pytest -v`
-- [ ] Each stub names its implementing task
-- [ ] Grep check runs in `make lint`
+- [x] Ten stubs exist and are listed by `pytest -v`
+- [x] Each stub names its implementing task
+- [x] Grep check runs in `make lint`
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant

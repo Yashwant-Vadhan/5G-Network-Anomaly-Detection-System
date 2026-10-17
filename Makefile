@@ -43,6 +43,8 @@ setup:
 lint:
 	@echo "ruff check ."
 	$(PYTHON) -m ruff check .
+	@echo "checking for numeric threshold literals in streaming/ (T10-009)"
+	$(PYTHON) scripts/check_no_literal_thresholds.py
 
 format:
 	@echo "ruff format ."

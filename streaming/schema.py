@@ -12,6 +12,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from ml.config import MAX_MESSAGE_BYTES, MAX_MSGS_PER_MIN
+
 SCHEMA_VERSION: int = 2
 
 # Error codes for Contract C7 / C8
@@ -190,8 +192,8 @@ class IngestLimits(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    max_message_bytes: int = 8192
-    max_msgs_per_min: int = 120
+    max_message_bytes: int = MAX_MESSAGE_BYTES
+    max_msgs_per_min: int = MAX_MSGS_PER_MIN
 
 
 class HelloAck(BaseModel):

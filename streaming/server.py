@@ -35,6 +35,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from ml.config import MAX_MESSAGE_BYTES
 from ml.schema import ConfigError, SchemaError
 from streaming.engine import StreamingEngine
 from streaming.event_tracker import EventTracker
@@ -398,9 +399,10 @@ def create_app(
                 except Exception:
                     break
 
-                # Frame size limit: MAX_MESSAGE_BYTES = 8192 (close with 1009)
-                if len(message_text.encode("utf-8")) > 8192:
-                    await websocket.close(code=1009, reason="Message exceeds 8192 bytes")
+                # Frame size limit: MAX_MESSAGE_BYTES (close with 1009)
+                if len(message_text.encode("utf-8")) > MAX_MESSAGE_BYTES:
+                    reason_msg = f"Message exceeds {MAX_MESSAGE_BYTES} bytes"
+                    await websocket.close(code=1009, reason=reason_msg)
                     break
 
                 # Rate limiting check: return RATE_LIMITED error without closing
@@ -495,7 +497,7 @@ def create_app(
                         last_seq_acked=last_seq_acked,
                         model_version="if_v1",
                         limits=IngestLimits(
-                            max_message_bytes=8192,
+                            max_message_bytes=MAX_MESSAGE_BYTES,
                             max_msgs_per_min=config.max_msgs_per_min,
                         ),
                     )
