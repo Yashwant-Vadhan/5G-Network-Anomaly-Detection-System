@@ -410,3 +410,46 @@ def test_g26_secrets_and_payload_minimisation() -> None:
     assert "Signal degradation detected" in email_text
     for forbidden in ("imei", "imsi", "ss_rsrp", "pci", "nci"):
         assert forbidden not in email_text.lower()
+
+
+def test_g1_prime_collector_measurement_path_has_no_ml_or_edge_dependencies() -> None:
+    """Guardrail G1′: Collector measurement path ≠ ML (TECH_RULES_v2.md).
+
+    The collector's measurement and CSV logging code has no ML imports
+    and no dependency on edge-inference; the pipeline reads only CSV/C7.
+    """
+    android_dir = Path("android-collector")
+    if not android_dir.exists():
+        pytest.skip("android-collector directory not present")
+
+    forbidden_patterns = [
+        re.compile(r"^\s*import\s+org\.tensorflow", re.IGNORECASE),
+        re.compile(r"^\s*import\s+ai\.onnxruntime", re.IGNORECASE),
+        re.compile(r"^\s*import\s+org\.pytorch", re.IGNORECASE),
+        re.compile(r"^\s*import\s+com\.google\.ai\.edge", re.IGNORECASE),
+        re.compile(r"^\s*import\s+.*edge_inference", re.IGNORECASE),
+        re.compile(r"^\s*import\s+.*edgeinference", re.IGNORECASE),
+    ]
+
+    source_files = list(android_dir.rglob("*.kt")) + list(android_dir.rglob("*.java"))
+    assert len(source_files) > 0, "No Android collector source files found"
+
+    for src_file in source_files:
+        if "edge-inference" in src_file.parts or "edge_inference" in src_file.parts:
+            continue
+        text = src_file.read_text(encoding="utf-8", errors="replace")
+        for line_num, line in enumerate(text.splitlines(), 1):
+            for pat in forbidden_patterns:
+                assert not pat.search(line), (
+                    f"Guardrail G1′ violation: forbidden ML/edge import found in "
+                    f"{src_file}:{line_num}: {line.strip()}"
+                )
+
+    for gradle_file in android_dir.rglob("build.gradle*"):
+        text = gradle_file.read_text(encoding="utf-8", errors="replace")
+        if "app" in gradle_file.parts:
+            assert "edge-inference" not in text.lower(), (
+                f"Guardrail G1′ violation: edge-inference referenced in "
+                f"{gradle_file}"
+            )
+

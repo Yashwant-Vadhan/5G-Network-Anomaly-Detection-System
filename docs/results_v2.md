@@ -252,9 +252,12 @@ were safely suppressed from triggering notifications:
 
 ## 7. Soak Test & Memory Boundedness Results (T14-007)
 
-> Task: `T14-007` (2-hour soak test at 1x and accelerated rate).
+> Task: `T14-007` (2-hour soak test and memory boundedness verification).
 > Evaluated: 2026-10-18T10:42:57.673707+00:00
+> Run Profile: Accelerated Replay (418.96 s wall-clock time at ~5.7× rate).
 > Telemetry: 2400 continuous frames (2.0 hours simulated at ~3.0 s intervals).
+> Note on 1× Run: This benchmark reports the accelerated 2-hour equivalent replay.
+> An unaccelerated 1× real-time run (2.0 h wall-clock time) is tracked in `todo_v2.md` (🔄).
 
 ### A. Test Execution & Resource Boundedness Summary
 
