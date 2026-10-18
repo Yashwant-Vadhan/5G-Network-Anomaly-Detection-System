@@ -219,12 +219,12 @@
 **Owner:** Yashwant
 
 #### T16-015: Build About & Limitations and the privacy note
-**Status:** ⬜
+**Status:** ✅
 **Description:** Description, v2 non-claims (12 items from PRD_v2), research-prototype statement, dataset summary (two phones, one operator), model metadata, privacy note on cell identifiers, links.
 **Dependencies:** T16-007
 **Acceptance Criteria:**
-- [ ] No 'real-time' claim anywhere
-- [ ] All non-claims present
+- [x] No 'real-time' claim anywhere
+- [x] All non-claims present
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend
 **Owner:** Yashwant

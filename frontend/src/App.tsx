@@ -10,6 +10,7 @@ import { CellsNetwork } from './pages/CellsNetwork';
 import { EventsDiagnosis } from './pages/EventsDiagnosis';
 import { StreamHealth } from './pages/StreamHealth';
 import { DataQuality } from './pages/DataQuality';
+import { About } from './pages/About';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 import { ConnectionChip } from './components/ConnectionChip';
@@ -326,6 +327,7 @@ function AppContent() {
             <Route path="/events" element={<EventsDiagnosis />} />
             <Route path="/stream-health" element={<StreamHealth />} />
             <Route path="/data-quality" element={<DataQuality />} />
+            <Route path="/about" element={<About />} />
             {PAGES.filter(
               p =>
                 p.path !== '/overview' &&
@@ -333,7 +335,8 @@ function AppContent() {
                 p.path !== '/cells' &&
                 p.path !== '/events' &&
                 p.path !== '/stream-health' &&
-                p.path !== '/data-quality'
+                p.path !== '/data-quality' &&
+                p.path !== '/about'
             ).map(p => (
               <Route
                 key={p.path}
