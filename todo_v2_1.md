@@ -565,12 +565,12 @@
 **Owner:** Yashwant
 
 #### T18-015: Write docs/deployment.md
-**Status:** ⬜
+**Status:** ✅
 **Description:** Runbook for all three modes, env vars, free-tier caveats, rollback, cost watching, how to take the public site down.
 **Dependencies:** T18-011
 **Acceptance Criteria:**
-- [ ] A teammate can redeploy from the doc
-- [ ] Caveats cite dated sources
+- [x] A teammate can redeploy from the doc
+- [x] Caveats cite dated sources
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil
