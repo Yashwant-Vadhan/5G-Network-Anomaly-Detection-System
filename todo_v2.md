@@ -1037,12 +1037,12 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Sushil
 
 #### T14-009: Recovery test matrix
-**Status:** ⬜
+**Status:** ✅
 **Description:** Automated/manual cases: Wi-Fi drop, server restart mid-session, dashboard restart, phone sleep, duplicate seq, slow subscriber; record observed behaviour and any data loss counts.
 **Dependencies:** T12-004, T11-012
 **Acceptance Criteria:**
-- [ ] Each case has expected/observed result
-- [ ] Loss, if any, is counted and explained
+- [x] Each case has expected/observed result
+- [x] Loss, if any, is counted and explained
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil

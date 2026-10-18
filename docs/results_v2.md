@@ -291,3 +291,50 @@ were safely suppressed from triggering notifications:
 | 2400 | 2.0 h | 204.11 MB | 205.57 MB | +14.34 MB | 2400 | 1 | 97.2% |
 
 ---
+
+## 8. Recovery Test Matrix Results (T14-009)
+
+> Task: `T14-009` (Recovery test matrix across 6 failure and reconnection scenarios).  
+> Evaluated: 2026-10-18T11:26:18.920309+00:00  
+> Report: `docs/recovery_matrix.md` and `docs/recovery_matrix_results.json`.  
+
+### A. Recovery Scenarios & Data Loss Accounting
+
+| ID | Failure Scenario | Fault Injected | Data Loss | Status |
+|:---|:---|:---|:---:|:---:|
+| **REC-001** | Wi-Fi Drop & Resume | Drops after seq 5; reconnect with resume | 0 | **PASS** |
+| **REC-002** | Server Restart | Process reboot mid-stream; reconnect with resume | 0 | **PASS** |
+| **REC-003** | Dashboard Restart | Live subscriber drops mid-stream; resyncs REST | 0 | **PASS** |
+| **REC-004** | Phone Sleep & Wake | 15s gap (>10s threshold) during screen sleep | 0 | **PASS** |
+| **REC-005** | Duplicate Seq | Client re-sends seq=3 after cumulative ack | 0 | **PASS** |
+| **REC-006** | Slow Subscriber | 6 frames pushed to subscriber with queue cap 3 | 3* | **PASS** |
+
+*\*Note on REC-006: 3 oldest frames dropped from slow subscriber fan-out buffer only.*  
+*Ingest pipeline and persistent storage experienced zero data loss.*
+
+### B. Summary of Key Resilience Findings
+
+1. **Session Continuity Across Drops (REC-001):**
+   Reconnection with `resume_from_seq` seamlessly rebinds to the active in-memory buffer within the
+   600-second window, preserving session ID and contiguous sample indices without gaps.
+
+2. **Clean State Reset on Reboot (REC-002):**
+   Stateless server reboot initializes without deadlock, accepts resume requests from mobile
+   clients, sets acknowledgement state honestly, and continues receiving telemetry.
+
+3. **Viewer Decoupling (REC-003):**
+   Dashboard WebSocket connections are strictly passive consumers. Browser disconnects and page
+   refreshes cause zero degradation or sample drops in the active ingest pipeline.
+
+4. **Honest Stale Detection (REC-004):**
+   Gaps exceeding `STALE_AFTER_SECONDS=10.0` accurately transition the state badge to `STALE`
+   without fabricating data or misclassifying idle periods as anomalies.
+
+5. **Idempotent Duplicate Protection (REC-005):**
+   Retransmissions ($\text{seq} \le \text{last\_seq\_acked}$) immediately receive idempotent
+   acknowledgements and increment duplicate metrics without double-counting rows in scoring.
+
+6. **Bounded Queue Backpressure (REC-006):**
+   Slow dashboard subscribers drop oldest unrendered frames and receive `DroppedEvent` notices,
+   preventing slow client sockets from causing upstream memory exhaustion or pipeline blocks.
+

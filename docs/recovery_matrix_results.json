@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-10-18T11:26:22.481968+00:00",
+  "total_scenarios": 6,
+  "passed_scenarios": 6,
+  "scenarios": [
+    {
+      "id": "REC-001",
+      "name": "Wi-Fi Drop & Reconnect",
+      "fault": "Abrupt socket disconnect after seq=5; reconnect with resume_from_seq=6",
+      "expected": "Session continuity (same session_id), last_seq_acked=5, 10 samples total",
+      "observed": "Same session: True, last_seq_acked=5, stored=10 samples",
+      "data_loss": 0,
+      "passed": true
+    },
+    {
+      "id": "REC-002",
+      "name": "Server Restart Mid-Session",
+      "fault": "Server process reboots mid-stream; client resumes with resume_from_seq=6",
+      "expected": "Server starts cleanly, accepts resume sequence, acknowledges seq 10",
+      "observed": "Pre-reboot session=samsung-sm-a156e-1, reboot_last_acked=5, post-reboot ack=10",
+      "data_loss": 0,
+      "passed": true
+    },
+    {
+      "id": "REC-003",
+      "name": "Dashboard Subscriber Restart",
+      "fault": "Viewer disconnects while ingest streams; re-queries REST on reconnect",
+      "expected": "Ingest pipeline unaffected; 0 samples dropped; full backlog accessible",
+      "observed": "First received seq=1, final ingest ack=5, resynced samples=5",
+      "data_loss": 0,
+      "passed": true
+    },
+    {
+      "id": "REC-004",
+      "name": "Phone Sleep & Wake Transition",
+      "fault": "15s telemetry gap while phone screen sleeps; sample sent upon wake",
+      "expected": "Connection transitions LIVE -> STALE (>10s) -> LIVE upon next sample",
+      "observed": "Initial=LIVE, post-sleep=STALE (age=15.0s), post-wake=LIVE",
+      "data_loss": 0,
+      "passed": true
+    },
+    {
+      "id": "REC-005",
+      "name": "Duplicate Seq Retransmission",
+      "fault": "Client re-sends seq=3 after receiving cumulative ack 5",
+      "expected": "Idempotent immediate ack for seq=3; duplicate recorded; 5 unique rows stored",
+      "observed": "Ack returned=True, duplicate metric=1, stored rows=5",
+      "data_loss": 0,
+      "passed": true
+    },
+    {
+      "id": "REC-006",
+      "name": "Slow Subscriber Backpressure",
+      "fault": "6 broadcast frames pushed to slow subscriber with queue capacity 3",
+      "expected": "Bounded queue cap enforced (<=3); oldest dropped; DroppedEvent emitted",
+      "observed": "Queue size=3, DroppedEvent emitted=True",
+      "data_loss": 3,
+      "loss_explanation": "Oldest frames dropped for slow subscriber only; ingest unaffected",
+      "passed": true
+    }
+  ]
+}
