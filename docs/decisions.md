@@ -116,6 +116,7 @@
   1. **Static Demo**: React SPA + pre-packaged demo bundle (`demo-bundle.json.gz`), hosted on GitHub Pages or Vercel (no backend needed).
   2. **Local Live**: React SPA + local FastAPI server via `make serve` or single container (laptop-only, loopback/USB `adb reverse`).
   3. **Hosted Live**: Hosted FastAPI server (e.g., Azure Container Apps) + React SPA, allowing ephemeral phone pairing over the public web.
+- **adb-link note**: adb reverse tcp:8000 tcp:8000 verified on Redmi 13 5G (2406ERN9CI) by Yashwant: phone Chrome loaded http://localhost:8000 served from the laptop. Samsung SM-A156E: pending.
 - **Alternatives considered**:
   - Separate codebases for demo vs production: rejected due to maintenance burden and parity drift.
   - Mandatory backend server for all deployments: rejected because reviewers require zero-install, instant evaluation via public static link.
