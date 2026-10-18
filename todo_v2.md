@@ -990,12 +990,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T14-005: Privacy audit of payloads and logs
-**Status:** ⬜
+**Status:** ✅
 **Description:** Inspect C7/C8/C9 samples, server logs, `data/live/` files, webhook/email payloads and Android logs for tokens, hardware identifiers, location or PII; fix findings; record the checklist.
 **Dependencies:** T11-011, T12-002
 **Acceptance Criteria:**
-- [ ] Checklist committed with results
-- [ ] No PII or hardware IDs found, or fixed and re-checked
+- [x] Checklist committed with results
+- [x] No PII or hardware IDs found, or fixed and re-checked
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
