@@ -1059,13 +1059,15 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Yashwant
 
 #### T14-011: Evaluate streaming detection latency
-**Status:** ⬜
-**Description:** Replay the v1 labelled windows; for baseline and IF measure delay from labelled event start to first flag, first provisional event and first alert; report counts and uncertainty; no tuning on evaluation labels.
+**Status:** ✅
+**Description:** Replay the v1 labelled windows; for baseline and IF measure delay
+from labelled event start to first flag, first provisional event and first alert;
+report counts and uncertainty; no tuning on evaluation labels.
 **Dependencies:** T13-008, T11-015
 **Acceptance Criteria:**
-- [ ] Both methods reported with label counts
-- [ ] Small-sample caveats stated
-- [ ] States plainly if IF does not beat baseline
+- [x] Both methods reported with label counts
+- [x] Small-sample caveats stated
+- [x] States plainly if IF does not beat baseline
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Yashwant

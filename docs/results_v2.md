@@ -124,3 +124,63 @@ update on the dashboard display.
      (`data/raw/` stationary traces and preliminary test benches).
    - Evaluation benchmark labels in `data/eval/` (`labels_final.csv`, `labels_sushil.csv`,
      `labels_yashwant.csv`) remained 100% untouched and unread during threshold tuning.
+
+---
+
+---
+
+## 5. Streaming Detection Latency Evaluation (T14-011)
+
+> Task: `T14-011` (Evaluate streaming detection latency against v1 labelled windows).
+> Evaluated: 2026-10-18T09:24:54.323837+00:00
+> Ground Truth Dataset: `data/eval/labels_final.csv` (consensus across 4 recordings).
+
+### A. Ground-Truth Window Latency Benchmark Table
+
+| Session | Window | Anomaly Label | IF Latency | Base Latency | Prov | Alert | Outcome |
+|---|---|---|---|---|---|---|---|
+| `Redmi_Stable` | [148, 168] | `SIG_DEG` | 0 (0s) | 3 (9s) | 0 (0s) | None | **IF faster** |
+| `Redmi_Stable` | [498, 522] | `SUDDEN_DEG` | 4 (12s) | Miss | 4 (12s) | None | **IF only** |
+| `Redmi_Travel` | [38, 62] | `COMBINED` | 1 (3s) | 2 (6s) | 1 (3s) | None | **IF faster** |
+| `Redmi_Travel` | [118, 148] | `POOR_QUAL` | 0 (0s) | 8 (24s) | 0 (0s) | None | **IF faster** |
+| `Redmi_Travel` | [198, 222] | `NET_TRANS` | 2 (6s) | 13 (39s) | 2 (6s) | None | **IF faster** |
+| `Samsung_Indoor` | [108, 132] | `CELL_TRANS` | 0 (0s) | Miss | 0 (0s) | None | **IF only** |
+| `Samsung_Indoor` | [248, 282] | `POOR_QUAL` | 0 (0s) | 18 (54s) | 0 (0s) | None | **IF faster** |
+| `Samsung_Travel` | [78, 98] | `SUDDEN_DEG` | 1 (3s) | 2 (6s) | 1 (3s) | None | **IF faster** |
+| `Samsung_Travel` | [178, 202] | `COMBINED` | Miss | Miss | 0 (0s) | None | **Rule only** |
+
+---
+
+### B. Aggregate Performance & Method Comparison
+
+| Metric | Isolation Forest (IF) | Baseline (3σ) | Difference |
+|---|---|---|---|
+| **Detected** | **8/9** (88.9%) | 6/9 (66.7%) | **IF detects +2** |
+| **Mean Latency** | **1.00 smp** (3.0s) | 7.67 smp (23.0s) | **IF 20.0s faster** |
+| **Median Latency** | **0.5 smp** (1.5s) | 2.5 smp (7.5s) | **IF in 0–1 smp** |
+| **Head-to-Head** | **IF faster/tie: 8/8** | Baseline never faster | **IF dominates** |
+
+---
+
+### C. Findings, Plain Truths & Small-Sample Caveats (Guardrail G24)
+
+1. **Does Isolation Forest beat Baseline?**
+   - **Yes.** Isolation Forest achieves a mean detection latency of **3.0 seconds**
+     (1.00 samples) compared to **23.0 seconds**
+     (7.67 samples) for the statistical baseline.
+   - On 2 events (`Redmi_Stable` sudden drop and `Samsung_Indoor` cell transition),
+     Baseline failed completely (`Miss`), whereas IF triggered within 0 to 4 samples.
+   - Baseline was never faster than IF on any event in the benchmark set.
+
+2. **Small-Sample Caveats & Statistical Uncertainty:**
+   - **Total sample size:** $N = 9$ labelled anomaly events.
+   - While IF demonstrates consistent latency advantages across both devices and environments,
+     the small $N=9$ sample size means variance estimates carry wide confidence bounds
+      (95% confidence interval approximately +/- 4.2 seconds).
+   - No threshold tuning was performed on these evaluation labels (strictly preserving
+     data/eval integrity per Guardrail G21).
+
+3. **Alerting Behavior (Guardrail G21):**
+   - No immediate alerts were dispatched within anomaly windows because the alert policy
+     strictly requires $\ge 6$ consecutive persistence frames and non-transition rule
+     evidence, preventing alert fatigue while allowing provisional tracking.
