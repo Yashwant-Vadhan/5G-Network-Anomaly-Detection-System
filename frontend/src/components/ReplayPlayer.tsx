@@ -106,7 +106,7 @@ export const ReplayPlayer: React.FC = () => {
           <button
             onClick={stepBackward}
             disabled={currentIndex <= 0}
-            aria-label="Previous sample"
+            aria-label="Prev / Previous sample"
             style={{
               padding: '6px 10px',
               borderRadius: '4px',

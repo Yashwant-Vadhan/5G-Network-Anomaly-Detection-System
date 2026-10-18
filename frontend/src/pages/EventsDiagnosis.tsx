@@ -579,7 +579,10 @@ export const EventsDiagnosis: React.FC<EventsDiagnosisProps> = ({
               <svg
                 viewBox="0 0 600 70"
                 style={{ width: '100%', height: '70px', overflow: 'visible' }}
+                role="img"
+                aria-label="Event window SS-RSRP telemetry sparkline"
               >
+                <desc>Visual sparkline showing SS-RSRP signal span across the event window.</desc>
                 {eventWindowSamples.map((pt, i) => {
                   const x = (i / Math.max(1, eventWindowSamples.length - 1)) * 580 + 10;
                   const y = pt.val !== null ? Math.max(5, Math.min(65, -pt.val * 0.5 - 20)) : 35;

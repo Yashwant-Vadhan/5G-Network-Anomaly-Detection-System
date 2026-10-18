@@ -4,6 +4,7 @@ Usage: python scripts/next_tasks.py Yashwant|Sushil [todo_v2.md todo_v2_1.md]
 Eligible = status ⬜/🔄, owner matches, every dependency ✅, not Human-only/UNCLEAR/Optional,
 not edge (T12-011..T12-018), not Phase 15. Run `git pull --rebase` first."""
 import re, sys
+sys.stdout.reconfigure(encoding="utf-8")
 owner = sys.argv[1] if len(sys.argv) > 1 else sys.exit(__doc__)
 files = sys.argv[2:] or ["todo_v2.md", "todo_v2_1.md"]
 T = {}

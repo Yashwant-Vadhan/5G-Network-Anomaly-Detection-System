@@ -441,7 +441,10 @@ export function CellsNetwork({
             data-testid="cell-step-chart"
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             style={{ width: '100%', height: 'auto', display: 'block' }}
+            role="img"
+            aria-label={`Cell identifier step chart tracking ${activeChart.toUpperCase()}`}
           >
+            <desc>{`Cell identifier step chart displaying temporal changes in ${activeChart.toUpperCase()} across ${allSamples.length} telemetry samples.`}</desc>
             {/* Grid & Categorical Level Labels */}
             {categoricalLevels.map((level, idx) => {
               const y =

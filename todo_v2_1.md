@@ -230,12 +230,12 @@
 **Owner:** Yashwant
 
 #### T16-016: Accessibility pass
-**Status:** ⬜
+**Status:** ✅
 **Description:** Keyboard order and focus, ARIA labels, `aria-live` for state changes, one-sentence chart summaries, colour not the only signal, reduced-motion, contrast re-check; record results.
 **Dependencies:** T16-009, T16-011, T16-012, T16-013, T16-014
 **Acceptance Criteria:**
-- [ ] Checklist committed
-- [ ] Automated axe-style scan has no serious issues (tool to be chosen and verified)
+- [x] Checklist committed (docs/accessibility_checklist.md)
+- [x] Automated axe-style scan has no serious issues (axe-core test suite in frontend/src/accessibility.test.tsx)
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant

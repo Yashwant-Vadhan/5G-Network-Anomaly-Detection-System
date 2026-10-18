@@ -211,7 +211,7 @@ describe('LiveClient Connection State Machine & Auth (T17-001)', () => {
       },
     ];
 
-    const mockFetch = vi.fn().mockImplementation(async (_url: string) => {
+    const mockFetch = vi.fn().mockImplementation(async () => {
       return {
         ok: true,
         json: async () => ({ samples: mockSamples }),

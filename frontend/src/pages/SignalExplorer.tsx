@@ -357,6 +357,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
         role="img"
         aria-label={`${title} time-series chart`}
       >
+        <desc>{`${title} time-series chart showing ${points.length} measurements in ${unit} ranging from ${yMin.toFixed(1)} to ${yMax.toFixed(1)}.`}</desc>
         {/* Shaded Gap Bands (intervals > 15s) */}
         {gapBands.map((gap, i) => {
           const x1 = getX(gap.startIdx);
@@ -676,7 +677,7 @@ export const SignalExplorer: React.FC = () => {
           <button
             onClick={handlePrevSession}
             disabled={activeSessionIdx <= 0}
-            aria-label="Previous session"
+            aria-label="Prev session"
             style={{
               padding: '4px 8px',
               borderRadius: '4px',
@@ -741,7 +742,7 @@ export const SignalExplorer: React.FC = () => {
             type="button"
             data-testid="pause-resume-button"
             onClick={togglePause}
-            aria-label={isPaused ? 'Resume live stream' : 'Pause live stream'}
+            aria-label={isPaused ? 'Resume Stream' : 'Pause Stream'}
             style={{
               padding: '4px 10px',
               borderRadius: '4px',
