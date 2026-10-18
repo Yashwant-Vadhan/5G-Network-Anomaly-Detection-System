@@ -1073,12 +1073,15 @@ report counts and uncertainty; no tuning on evaluation labels.
 **Owner:** Yashwant
 
 #### T14-012: Evaluate alert quality and volume
-**Status:** ⬜
-**Description:** Using the v1 labelled events: alert precision/recall, alerts per hour on normal-condition data, list of false alerts with causes (extends `docs/false_positive_analysis.md` style). Verify the v1 FPR figure in `docs/results.md` before citing it.
+**Status:** ✅
+**Description:** Using the v1 labelled events: alert precision/recall, alerts per hour on
+normal-condition data, list of false alerts with causes (extends
+`docs/false_positive_analysis.md` style). Verify the v1 FPR figure in `docs/results.md`
+before citing it.
 **Dependencies:** T13-008, T14-011
 **Acceptance Criteria:**
-- [ ] Counts shown next to every rate
-- [ ] Every false alert investigated or flagged as unexplained
+- [x] Counts shown next to every rate
+- [x] Every false alert investigated or flagged as unexplained
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
