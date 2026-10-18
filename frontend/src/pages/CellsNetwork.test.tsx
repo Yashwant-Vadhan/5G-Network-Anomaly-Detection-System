@@ -165,6 +165,126 @@ describe('Cells & Network Page (T16-012 / Guardrail G30)', () => {
     expect(screen.queryByText('PCI Handover')).not.toBeInTheDocument();
   });
 
+  it('renders in Live mode with connection badge and live telemetry', () => {
+    const liveSamples = [
+      { pci: 55, nci: 555555, nrarfcn: 634000, deployment_mode: 'SA', timestamp: '10:10:00' },
+      { pci: 99, nci: 999999, nrarfcn: 635000, deployment_mode: 'SA', timestamp: '10:10:03' },
+    ];
+
+    render(
+      <DataProvider initialBundle={mockBundle}>
+        <CellsNetwork
+          isLiveMode={true}
+          connectionState="LIVE"
+          liveSamples={liveSamples}
+        />
+      </DataProvider>
+    );
+
+    const badge = screen.getByTestId('live-state-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('LIVE');
+    expect(badge).toHaveTextContent('2 frames');
+
+    // Serving cell cards reflect latest live sample (pci: 99, nci: 999999, nrarfcn: 635000)
+    expect(screen.getAllByText('99')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('999999')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('635000')[0]).toBeInTheDocument();
+  });
+
+  it('supports window filter selection in Live mode', () => {
+    const liveSamples = Array.from({ length: 150 }, (_, i) => ({
+      pci: 100 + (i % 5),
+      nci: 1000 + i,
+      nrarfcn: 632000,
+      timestamp: `10:00:${i}`,
+    }));
+
+    render(
+      <DataProvider initialBundle={mockBundle}>
+        <CellsNetwork
+          isLiveMode={true}
+          connectionState="LIVE"
+          liveSamples={liveSamples}
+        />
+      </DataProvider>
+    );
+
+    const btn5m = screen.getByRole('button', { name: '5M' });
+    expect(btn5m).toBeInTheDocument();
+    fireEvent.click(btn5m);
+
+    // Switching to 5M caps window to 100 samples
+    const chart = screen.getByTestId('cell-step-chart');
+    expect(chart).toBeInTheDocument();
+  });
+
+  it('renders server-pushed liveTransitions directly (G30)', () => {
+    const liveTrans: BundleTransition[] = [
+      {
+        sample_idx: 5,
+        timestamp: '2026-10-18 10:05:00',
+        device: 'Live Pixel',
+        session_id: 'live-sess',
+        pci_from: 55,
+        pci_to: 99,
+        nci_from: 555555,
+        nci_to: 999999,
+        kind: 'Server Handover',
+        type: 'Server Handover',
+      },
+    ];
+
+    render(
+      <DataProvider initialBundle={mockBundle}>
+        <CellsNetwork
+          isLiveMode={true}
+          connectionState="LIVE"
+          liveTransitions={liveTrans}
+        />
+      </DataProvider>
+    );
+
+    const badge = screen.getByTestId('transition-count-badge');
+    expect(badge).toHaveTextContent('1');
+    expect(screen.getByText('Server Handover')).toBeInTheDocument();
+    expect(screen.getByText('55 -> 99')).toBeInTheDocument();
+  });
+
+  it('maps server CELL_TRANSITION events when liveTransitions is empty (G30)', () => {
+    const liveEvents = [
+      {
+        event_id: 'evt-cell-1',
+        session_id: 'live-sess',
+        device: 'Live Pixel',
+        anomaly_type: 'CELL_TRANSITION' as const,
+        severity: 'LOW' as const,
+        score: 0.1,
+        start: '2026-10-18 10:08:00',
+        end: '2026-10-18 10:08:00',
+        duration_sec: 0,
+        ml: { pci_from: 200, pci_to: 300, nci_from: 111, nci_to: 222 },
+        summary: 'Server detected transition',
+      },
+    ];
+
+    render(
+      <DataProvider initialBundle={mockBundle}>
+        <CellsNetwork
+          isLiveMode={true}
+          connectionState="LIVE"
+          liveEvents={liveEvents}
+        />
+      </DataProvider>
+    );
+
+    const badge = screen.getByTestId('transition-count-badge');
+    expect(badge).toHaveTextContent('1');
+    expect(screen.getByText('Server Cell Transition')).toBeInTheDocument();
+    expect(screen.getByText('200 -> 300')).toBeInTheDocument();
+    expect(screen.getByText('111 -> 222')).toBeInTheDocument();
+  });
+
   it('renders empty table state when transitions array is empty', () => {
     render(
       <DataProvider initialBundle={{ ...mockBundle, transitions: [] }}>
@@ -178,3 +298,5 @@ describe('Cells & Network Page (T16-012 / Guardrail G30)', () => {
     expect(screen.getByTestId('transition-count-badge')).toHaveTextContent('0');
   });
 });
+
+

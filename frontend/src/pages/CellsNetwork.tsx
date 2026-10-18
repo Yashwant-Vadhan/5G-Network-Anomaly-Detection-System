@@ -2,19 +2,32 @@
  * Cells & Network Page Component (T16-012 / T17-005).
  *
  * Implements:
- * - PCI / NCI / NRARFCN step charts per session (NCI/PCI as categorical labels)
- * - Transition table populated strictly from the demo bundle (bundle.transitions)
- * - Prominent "Cell change is normal behaviour" operational guidance note
- * - Transition count equals bundle transitions (G30: no client-side transition detection)
- * - Accessible SVG step charts with tooltips and empty states
+ * - Live and Replay mode support for cellular state and transitions
+ * - Windowed step charts for PCI, NCI, and NRARFCN (5m / 15m / 60m / All)
+ * - Server-provided transitions rendered directly as events arrive
+ * - Strict Guardrail G30 compliance: zero client-side transition calculation
+ * - Transition count equals server/bundle transitions count
+ * - Operational guidance callout: "Cell change is normal behaviour"
  */
 
 import { useState, useMemo } from 'react';
 import { useData } from '../data/useData';
-import { BundleTransition } from '../types/contracts';
+import {
+  BundleTransition,
+  ConnectionState,
+  EventRecord,
+  ScoredSample,
+} from '../types/contracts';
+
+export type WindowFilter = '5m' | '15m' | '60m' | 'all';
 
 export interface CellsNetworkProps {
   transitionsOverride?: BundleTransition[];
+  liveSamples?: (ScoredSample | Record<string, unknown>)[];
+  liveTransitions?: BundleTransition[];
+  liveEvents?: (EventRecord | Record<string, unknown>)[];
+  isLiveMode?: boolean;
+  connectionState?: ConnectionState;
 }
 
 export function formatCellId(val: unknown): string {
@@ -24,20 +37,81 @@ export function formatCellId(val: unknown): string {
   return String(val);
 }
 
-export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
-  const { samples, transitions: contextTransitions } = useData();
-
-  // Guardrail G30: Consume transitions strictly from bundle without client-side detection
-  const transitions = useMemo(() => {
-    return transitionsOverride || contextTransitions || [];
-  }, [transitionsOverride, contextTransitions]);
+export function CellsNetwork({
+  transitionsOverride,
+  liveSamples,
+  liveTransitions,
+  liveEvents,
+  isLiveMode = false,
+  connectionState,
+}: CellsNetworkProps) {
+  const { samples: replaySamples, transitions: contextTransitions } = useData();
 
   const [filterQuery, setFilterQuery] = useState('');
   const [activeChart, setActiveChart] = useState<'pci' | 'nci' | 'nrarfcn'>('pci');
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>('all');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  // Active samples: live telemetry stream in Live mode, otherwise replay samples
+  const allSamples = useMemo(() => {
+    if (isLiveMode && liveSamples && liveSamples.length > 0) {
+      return liveSamples;
+    }
+    return replaySamples;
+  }, [isLiveMode, liveSamples, replaySamples]);
+
+  // Windowed subset of samples (5m = 100 samples, 15m = 300 samples, 60m = 1200 samples)
+  const windowedSamples = useMemo(() => {
+    if (windowFilter === 'all' || allSamples.length <= 1) {
+      return allSamples;
+    }
+    const sampleCap =
+      windowFilter === '5m' ? 100 : windowFilter === '15m' ? 300 : 1200;
+    return allSamples.slice(-sampleCap);
+  }, [allSamples, windowFilter]);
+
+  // Guardrail G30: Transitions computed strictly on the server or loaded from bundle.
+  // The client NEVER computes handovers by diffing adjacent samples in JavaScript.
+  const transitions: BundleTransition[] = useMemo(() => {
+    if (transitionsOverride) {
+      return transitionsOverride;
+    }
+    if (isLiveMode) {
+      if (liveTransitions && liveTransitions.length > 0) {
+        return liveTransitions;
+      }
+      // If server pushed CELL_TRANSITION events, present them directly without client diffing
+      if (liveEvents && liveEvents.length > 0) {
+        const cellEvents = liveEvents.filter(
+          e => (e as Record<string, unknown>).anomaly_type === 'CELL_TRANSITION'
+        );
+        if (cellEvents.length > 0) {
+          return cellEvents.map((rawEvt, idx) => {
+            const evt = rawEvt as Record<string, unknown>;
+            const ml = evt.ml as Record<string, unknown> | undefined;
+            return {
+              sample_idx: idx,
+              timestamp: String(evt.start || ''),
+              device: 'Live Device',
+              session_id: String(evt.session_id || ''),
+              pci_from: ml?.pci_from as number | undefined,
+              pci_to: ml?.pci_to as number | undefined,
+              nci_from: ml?.nci_from as number | undefined,
+              nci_to: ml?.nci_to as number | undefined,
+              kind: 'Server Cell Transition',
+              type: 'CELL_TRANSITION',
+            };
+          });
+        }
+      }
+      return [];
+    }
+    return contextTransitions || [];
+  }, [transitionsOverride, isLiveMode, liveTransitions, liveEvents, contextTransitions]);
+
   // Latest telemetry sample values
-  const latestSample = samples.length > 0 ? samples[samples.length - 1] : null;
+  const latestSample =
+    windowedSamples.length > 0 ? windowedSamples[windowedSamples.length - 1] : null;
   const currentPci = latestSample ? formatCellId(latestSample.pci) : '—';
   const currentNci = latestSample ? formatCellId(latestSample.nci) : '—';
   const currentNrarfcn = latestSample ? formatCellId(latestSample.nrarfcn) : '—';
@@ -55,12 +129,12 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
     });
   }, [transitions, filterQuery]);
 
-  // Extract distinct categorical labels for the active chart
+  // Extract distinct categorical levels for the active chart
   const { chartData, categoricalLevels } = useMemo(() => {
     const dataPoints: { x: number; val: string | number; label: string; ts: string }[] = [];
     const uniqueValues = new Set<string>();
 
-    samples.forEach((s, idx) => {
+    windowedSamples.forEach((s, idx) => {
       const rawVal = s[activeChart];
       const valStr = formatCellId(rawVal);
       if (valStr !== '—') {
@@ -81,7 +155,7 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
     });
 
     return { chartData: dataPoints, categoricalLevels: sortedLevels };
-  }, [samples, activeChart]);
+  }, [windowedSamples, activeChart]);
 
   // SVG Chart Dimensions
   const svgWidth = 800;
@@ -125,21 +199,61 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
       data-testid="cells-network-page"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
     >
-      {/* Page Header */}
-      <div>
-        <h1
-          style={{
-            fontSize: '22px',
-            fontWeight: 700,
-            marginBottom: '4px',
-            color: 'var(--color-text)',
-          }}
-        >
-          Cells & Network
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: 0 }}>
-          Physical cell identity (PCI), NR cell identity (NCI), and carrier frequency timeline.
-        </p>
+      {/* Page Header with Live Status Indicator */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1
+            style={{
+              fontSize: '22px',
+              fontWeight: 700,
+              marginBottom: '4px',
+              color: 'var(--color-text)',
+            }}
+          >
+            Cells & Network
+          </h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '14px', margin: 0 }}>
+            Physical cell identity (PCI), NR cell identity (NCI), and carrier frequency timeline.
+          </p>
+        </div>
+
+        {/* Live / Replay Connection Badge */}
+        {connectionState && (
+          <div
+            data-testid="live-state-badge"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background:
+                  connectionState === 'LIVE'
+                    ? '#22c55e'
+                    : connectionState === 'STALE'
+                    ? '#f59e0b'
+                    : 'var(--color-text-muted)',
+              }}
+            />
+            <span>{connectionState}</span>
+            {isLiveMode && (
+              <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                ({allSamples.length} frames)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Operational Normal Behavior Note (Tech Rule / PRD requirement) */}
@@ -238,7 +352,7 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
             {transitions.length}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-            Strict bundle transition count (G30)
+            Server/bundle transition count (G30)
           </div>
         </div>
       </div>
@@ -258,6 +372,8 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '16px',
+            flexWrap: 'wrap',
+            gap: '12px',
           }}
         >
           <div>
@@ -269,27 +385,53 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
             </span>
           </div>
 
-          {/* Metric Selector Tabs */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {(['pci', 'nci', 'nrarfcn'] as const).map(metric => (
-              <button
-                key={metric}
-                onClick={() => setActiveChart(metric)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: '1px solid var(--color-border)',
-                  background:
-                    activeChart === metric ? 'var(--color-primary)' : 'var(--color-bg)',
-                  color: activeChart === metric ? '#fff' : 'var(--color-text)',
-                }}
-              >
-                {metric.toUpperCase()}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {/* Window Filter (T17-005) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Window:</span>
+              {(['5m', '15m', '60m', 'all'] as const).map(w => (
+                <button
+                  key={w}
+                  onClick={() => setWindowFilter(w)}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: '1px solid var(--color-border)',
+                    background:
+                      windowFilter === w ? 'var(--color-primary)' : 'var(--color-bg)',
+                    color: windowFilter === w ? '#fff' : 'var(--color-text)',
+                  }}
+                >
+                  {w.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Metric Selector Tabs */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {(['pci', 'nci', 'nrarfcn'] as const).map(metric => (
+                <button
+                  key={metric}
+                  onClick={() => setActiveChart(metric)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: '1px solid var(--color-border)',
+                    background:
+                      activeChart === metric ? 'var(--color-primary)' : 'var(--color-bg)',
+                    color: activeChart === metric ? '#fff' : 'var(--color-text)',
+                  }}
+                >
+                  {metric.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -409,10 +551,10 @@ export function CellsNetwork({ transitionsOverride }: CellsNetworkProps) {
         >
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>
-              Bundle Transitions Table
+              {isLiveMode ? 'Live Server Transitions Table' : 'Bundle Transitions Table'}
             </h2>
             <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Discrete cell and frequency transitions recorded in telemetry bundle (G30)
+              Discrete cell and frequency transitions recorded by server engine (G30)
             </span>
           </div>
 

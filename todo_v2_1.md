@@ -336,11 +336,11 @@
 **Owner:** Sushil
 
 #### T17-005: Live Cells & Network
-**Status:** ⬜
+**Status:** ✅
 **Description:** Windowed step charts and transitions as events arrive (transitions computed by the server in live mode).
 **Dependencies:** T17-001, T16-012
 **Acceptance Criteria:**
-- [ ] No client-side transition detection (G30)
+- [x] No client-side transition detection (G30)
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend
 **Owner:** Sushil
