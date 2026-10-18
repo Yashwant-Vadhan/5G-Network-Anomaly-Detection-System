@@ -968,12 +968,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T14-003: Test the bind and exposure policy
-**Status:** ⬜
+**Status:** ✅
 **Description:** Startup tests: default loopback; `--allow-lan` without token exits 2; read endpoints refuse non-loopback unless opted in; `/healthz` leaks nothing.
 **Dependencies:** T11-019
 **Acceptance Criteria:**
-- [ ] All four cases automated
-- [ ] Error messages tell the fix
+- [x] All four cases automated
+- [x] Error messages tell the fix
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
