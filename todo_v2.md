@@ -293,9 +293,9 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Description:** `tests/streaming/test_parity.py`: replay `data/sample/` and every `tests/fixtures/*_synthetic.csv` through the engine sample by sample and compare to the batch `detect()` / `pipelines.run_pipeline` output: flags, type, severity identical; `if_score`, `baseline_z_max` within 1e-6. Add variants: chunked delivery, shuffled arrival with correct timestamps.
 **Dependencies:** T11-005
 **Acceptance Criteria:**
-- [ ] Test passes on real sample and synthetic fixtures
-- [ ] Deliberately breaking a feature in streaming/ makes it fail
-- [ ] Test wired into CI and into G17 stub
+- [x] Test passes on real sample and synthetic fixtures
+- [x] Deliberately breaking a feature in streaming/ makes it fail
+- [x] Test wired into CI and into G17 stub
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Yashwant
@@ -1015,11 +1015,12 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Yashwant
 
 #### T14-007: Soak test
-**Status:** ✅
+**Status:** 🔄
 **Description:** 2 h replay at 1× and 20×; record RSS/CPU, queue sizes, drops, event counts; assert memory is bounded after warm-up (threshold set from a first baseline run and written down).
+> Missing evidence: Only accelerated replay (418.96 s) reported; no run log or timestamp for a full 2 h soak at 1×.
 **Dependencies:** T11-017
 **Acceptance Criteria:**
-- [x] Report in docs/results_v2.md with setup
+- [ ] Report in docs/results_v2.md with setup
 - [x] No crash; no monotonic memory growth
 **Estimated Effort:** 60 min
 **Assigned To:** QA
@@ -1048,8 +1049,9 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Sushil
 
 #### T14-010: Live-vs-batch-on-capture equivalence on real data
-**Status:** ⬜
+**Status:** 🔄
 **Description:** Take the real session from T12-010: run `python -m pipelines.run_pipeline --input <capture dir>` on the live capture CSV and compare to live outputs (flags, type, severity, scores within tolerance).
+> Missing evidence: Live capture equivalence test not executed; no report in docs/results_v2.md.
 **Dependencies:** T12-010, T11-006
 **Acceptance Criteria:**
 - [ ] Zero flag differences or each difference explained
