@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HashRouter } from 'react-router-dom';
-import App from './App';
+import App, { sanitizeErrorMessage } from './App';
 import { PAGES } from './constants/pages';
 import { DemoBundle } from './types/contracts';
 
@@ -133,5 +133,107 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
     expect(screen.getByLabelText(/Filter by operator/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Select session/i)).toBeInTheDocument();
     expect(screen.getByText(/Active Subset:/i)).toBeInTheDocument();
+  });
+
+  describe('Mode switch and labels (T17-010)', () => {
+    it('switches between Recorded demo data and Live with always visible mode label', () => {
+      render(
+        <HashRouter>
+          <App initialBundle={mockBundle} />
+        </HashRouter>
+      );
+      const modeLabel = screen.getByTestId('mode-label');
+      expect(modeLabel).toBeInTheDocument();
+      expect(modeLabel).toHaveTextContent('Recorded demo data');
+      expect(screen.getByText('Static Demo (Mode 1)')).toBeInTheDocument();
+
+      const switchBtn = screen.getByTestId('mode-switch-btn');
+      expect(switchBtn).toHaveTextContent('Switch to Live');
+
+      fireEvent.click(switchBtn);
+      expect(modeLabel).toBeInTheDocument();
+      expect(modeLabel).toHaveTextContent('Live');
+      expect(switchBtn).toHaveTextContent('Switch to Demo');
+      expect(screen.getByTestId('pair-phone-btn')).toBeInTheDocument();
+
+      fireEvent.click(switchBtn);
+      expect(modeLabel).toBeInTheDocument();
+      expect(modeLabel).toHaveTextContent('Recorded demo data');
+      expect(switchBtn).toHaveTextContent('Switch to Live');
+    });
+  });
+
+  describe('Empty and error states in Live mode (T17-010)', () => {
+    it('displays unreachable server state with fix text and no stack traces', () => {
+      render(
+        <HashRouter>
+          <App
+            initialBundle={mockBundle}
+            initialMode="live"
+            initialConnectionState="DISCONNECTED"
+          />
+        </HashRouter>
+      );
+      const unreachableCard = screen.getByTestId('server-unreachable-card');
+      expect(unreachableCard).toBeInTheDocument();
+      expect(
+        within(unreachableCard).getByText('Streaming Server Unreachable')
+      ).toBeInTheDocument();
+      expect(
+        within(unreachableCard).getByText(/python -m streaming.server/i)
+      ).toBeInTheDocument();
+      expect(within(unreachableCard).queryByText(/Traceback/i)).not.toBeInTheDocument();
+
+      const retryBtn = screen.getByTestId('retry-connection-btn');
+      fireEvent.click(retryBtn);
+      expect(screen.queryByTestId('server-unreachable-card')).not.toBeInTheDocument();
+      expect(screen.getByTestId('no-session-card')).toBeInTheDocument();
+    });
+
+    it('displays no session state with fix instructions and pairing button', () => {
+      render(
+        <HashRouter>
+          <App
+            initialBundle={mockBundle}
+            initialMode="live"
+            initialConnectionState="WAITING"
+          />
+        </HashRouter>
+      );
+      const noSessionCard = screen.getByTestId('no-session-card');
+      expect(noSessionCard).toBeInTheDocument();
+      expect(
+        within(noSessionCard).getByRole('button', { name: /Open Pairing Panel/i })
+      ).toBeInTheDocument();
+      expect(within(noSessionCard).getByText(/6-digit PIN/i)).toBeInTheDocument();
+
+      const openPairingBtn = screen.getByTestId('open-pairing-btn');
+      fireEvent.click(openPairingBtn);
+      expect(screen.getByTestId('pairing-panel')).toBeInTheDocument();
+      expect(screen.getByText('Phone Pairing & Telemetry Ingest')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Sanitization (T17-010)', () => {
+    it('sanitizes python tracebacks to prevent stack traces from showing', () => {
+      const rawTrace = [
+        'Traceback (most recent call last):',
+        '  File "streaming/server.py", line 142, in process_frame',
+        '    raise ValueError("unexpected payload")',
+        'ValueError: unexpected payload',
+      ].join('\n');
+
+      const sanitized = sanitizeErrorMessage(rawTrace);
+      expect(sanitized).toBe('A server processing error occurred. Check backend logs.');
+      expect(sanitized).not.toContain('Traceback');
+      expect(sanitized).not.toContain('streaming/server.py');
+      expect(sanitized).not.toContain('line 142');
+    });
+
+    it('preserves clean user-facing error messages', () => {
+      expect(sanitizeErrorMessage('Network connection lost')).toBe('Network connection lost');
+      expect(sanitizeErrorMessage('')).toBe('');
+      expect(sanitizeErrorMessage(null)).toBe('');
+    });
   });
 });

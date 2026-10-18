@@ -391,12 +391,12 @@ key values appear, empty/error states, filters, replay player.
 **Owner:** Yashwant
 
 #### T17-010: Mode switch and empty/error states
-**Status:** ⬜
+**Status:** ✅
 **Description:** Demo ⇄ Live switch, clear labels ('Recorded demo data' vs 'Live'), unreachable-server and no-session states with fix text.
 **Dependencies:** T17-001
 **Acceptance Criteria:**
-- [ ] Mode label always visible
-- [ ] No stack traces shown
+- [x] Mode label always visible
+- [x] No stack traces shown
 **Estimated Effort:** 45 min
 **Assigned To:** Frontend
 **Owner:** Yashwant

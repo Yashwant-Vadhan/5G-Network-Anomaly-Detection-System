@@ -3,7 +3,7 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { PAGES } from './constants/pages';
 import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
-import { DemoBundle } from './types/contracts';
+import { DemoBundle, ConnectionState } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
 import { CellsNetwork } from './pages/CellsNetwork';
@@ -14,8 +14,37 @@ import { About } from './pages/About';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 import { ConnectionChip } from './components/ConnectionChip';
+import { PairingPanel } from './components/PairingPanel';
 
-function AppContent() {
+export function sanitizeErrorMessage(err: unknown): string {
+  if (!err) return '';
+  const msg =
+    typeof err === 'string' ? err : err instanceof Error ? err.message : String(err);
+  if (
+    msg.includes('Traceback') ||
+    msg.includes('File "') ||
+    (msg.includes('line ') && msg.includes('in ')) ||
+    msg.includes('Exception:') ||
+    (msg.includes('Error:') && msg.includes('.py'))
+  ) {
+    return 'A server processing error occurred. Check backend logs.';
+  }
+  return msg;
+}
+
+interface AppContentProps {
+  initialMode?: 'demo' | 'live';
+  initialConnectionState?: ConnectionState;
+}
+
+function AppContent({
+  initialMode = 'demo',
+  initialConnectionState = 'REPLAY-SOURCE',
+}: AppContentProps) {
+  const [mode, setMode] = useState<'demo' | 'live'>(initialMode);
+  const [liveConnectionState, setLiveConnectionState] =
+    useState<ConnectionState>(initialConnectionState);
+  const [isPairingOpen, setIsPairingOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('nads_theme') as 'light' | 'dark') || 'light';
   });
@@ -69,7 +98,11 @@ function AppContent() {
             5G-NADS
           </div>
           <div
+            data-testid="mode-badge"
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               fontSize: '12px',
               padding: '2px 8px',
               borderRadius: '9999px',
@@ -78,13 +111,60 @@ function AppContent() {
               border: '1px solid var(--color-border)',
             }}
           >
-            Static Demo (Mode 1)
+            <span data-testid="mode-label">
+              {mode === 'demo' ? 'Recorded demo data' : 'Live'}
+            </span>
+            {mode === 'demo' && <span>Static Demo (Mode 1)</span>}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            data-testid="mode-switch-btn"
+            onClick={() => {
+              setMode(prev => {
+                const next = prev === 'demo' ? 'live' : 'demo';
+                if (next === 'live' && liveConnectionState === 'REPLAY-SOURCE') {
+                  setLiveConnectionState('LIVE');
+                }
+                return next;
+              });
+            }}
+            aria-label={`Switch to ${mode === 'demo' ? 'Live' : 'Demo'} mode`}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              background:
+                mode === 'live' ? 'var(--color-primary, #0284c7)' : 'var(--color-surface)',
+              color: mode === 'live' ? '#ffffff' : 'var(--color-text)',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600,
+            }}
+          >
+            {mode === 'demo' ? 'Switch to Live' : 'Switch to Demo'}
+          </button>
+          {mode === 'live' && (
+            <button
+              data-testid="pair-phone-btn"
+              onClick={() => setIsPairingOpen(prev => !prev)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              {isPairingOpen ? 'Close Pairing' : 'Pair Phone'}
+            </button>
+          )}
           <ConnectionChip
-            state="REPLAY-SOURCE"
+            state={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
             lastSampleTime={currentSample?.timestamp as string}
           />
           <button
@@ -147,6 +227,129 @@ function AppContent() {
             overflowY: 'auto',
           }}
         >
+          {/* Live Mode Pairing Panel */}
+          {mode === 'live' && isPairingOpen && (
+            <div style={{ marginBottom: '20px' }}>
+              <PairingPanel
+                connectionState={liveConnectionState}
+                onSessionEnded={() => setIsPairingOpen(false)}
+              />
+            </div>
+          )}
+
+          {/* Live Mode Server Unreachable State */}
+          {mode === 'live' && liveConnectionState === 'DISCONNECTED' && (
+            <div
+              data-testid="server-unreachable-card"
+              role="alert"
+              style={{
+                padding: '20px',
+                borderRadius: '8px',
+                border: '1px solid var(--color-danger, #ef4444)',
+                background: 'rgba(239, 68, 68, 0.05)',
+                marginBottom: '20px',
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: 'var(--color-danger, #ef4444)',
+                  marginBottom: '8px',
+                }}
+              >
+                Streaming Server Unreachable
+              </h2>
+              <p style={{ fontSize: '13px', marginBottom: '10px' }}>
+                Cannot connect to the live streaming WebSocket server.
+              </p>
+              <div
+                style={{
+                  background: 'var(--color-surface)',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  border: '1px solid var(--color-border)',
+                  marginBottom: '12px',
+                }}
+              >
+                Fix: Run &apos;python -m streaming.server --allow-remote-view&apos; or check
+                network and port.
+              </div>
+              <button
+                data-testid="retry-connection-btn"
+                onClick={() => setLiveConnectionState('WAITING')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                Retry Connection
+              </button>
+            </div>
+          )}
+
+          {/* Live Mode No Session State */}
+          {mode === 'live' && liveConnectionState === 'WAITING' && (
+            <div
+              data-testid="no-session-card"
+              style={{
+                padding: '20px',
+                borderRadius: '8px',
+                border: '1px solid var(--color-warning, #f59e0b)',
+                background: 'rgba(245, 158, 11, 0.05)',
+                marginBottom: '20px',
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: 'var(--color-warning, #f59e0b)',
+                  marginBottom: '8px',
+                }}
+              >
+                No Active Live Session
+              </h2>
+              <p style={{ fontSize: '13px', marginBottom: '10px' }}>
+                Server is reachable, but no mobile device session is currently paired or
+                transmitting.
+              </p>
+              <div
+                style={{
+                  background: 'var(--color-surface)',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  border: '1px solid var(--color-border)',
+                  marginBottom: '12px',
+                }}
+              >
+                Fix: Open the Pairing Panel, pair your Android device via QR code or 6-digit PIN,
+                and begin recording in the 5G-NADS mobile collector.
+              </div>
+              <button
+                data-testid="open-pairing-btn"
+                onClick={() => setIsPairingOpen(true)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                Open Pairing Panel
+              </button>
+            </div>
+          )}
+
           {/* Filters & Global Controls Area (T16-008) */}
           <section
             aria-label="Filters and session controls"
@@ -174,7 +377,7 @@ function AppContent() {
                   fontSize: '13px',
                 }}
               >
-                <strong>Data Layer Error:</strong> {error}
+                <strong>Data Layer Error:</strong> {sanitizeErrorMessage(error)}
               </div>
             ) : loading ? (
               <div
@@ -305,9 +508,11 @@ function AppContent() {
           </section>
 
           {/* Replay Player Controls (T16-010) */}
-          <div style={{ marginBottom: '20px' }}>
-            <ReplayPlayer />
-          </div>
+          {mode === 'demo' && (
+            <div style={{ marginBottom: '20px' }}>
+              <ReplayPlayer />
+            </div>
+          )}
 
           <Routes>
             <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -318,7 +523,7 @@ function AppContent() {
                   currentSample={currentSample}
                   prevSample={prevSample}
                   events={events}
-                  connectionState="REPLAY-SOURCE"
+                  connectionState={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
                 />
               }
             />
@@ -398,13 +603,23 @@ function AppContent() {
 export interface AppProps {
   initialBundle?: DemoBundle | null;
   bundleUrl?: string;
+  initialMode?: 'demo' | 'live';
+  initialConnectionState?: ConnectionState;
 }
 
-export default function App({ initialBundle, bundleUrl }: AppProps = {}) {
+export default function App({
+  initialBundle,
+  bundleUrl,
+  initialMode = 'demo',
+  initialConnectionState = 'REPLAY-SOURCE',
+}: AppProps = {}) {
   return (
     <DataProvider initialBundle={initialBundle} bundleUrl={bundleUrl}>
       <ReplayProvider>
-        <AppContent />
+        <AppContent
+          initialMode={initialMode}
+          initialConnectionState={initialConnectionState}
+        />
       </ReplayProvider>
     </DataProvider>
   );
