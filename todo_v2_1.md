@@ -369,12 +369,12 @@ key values appear, empty/error states, filters, replay player.
 **Owner:** Sushil
 
 #### T17-008: Pairing panel
-**Status:** ⬜
+**Status:** ✅
 **Description:** Start session, show pairing code + QR with countdown, 'waiting for phone' state, session info, End session, Download CSV (C1 format built from received samples), consent/privacy text.
 **Dependencies:** T17-001, T18-002
 **Acceptance Criteria:**
-- [ ] Expired code shows how to retry
-- [ ] CSV equals samples received (header + row count)
+- [x] Expired code shows how to retry
+- [x] CSV equals samples received (header + row count)
 **Estimated Effort:** 90 min
 **Assigned To:** Frontend
 **Owner:** Yashwant
