@@ -1120,12 +1120,12 @@ before citing it.
 **Owner:** Sushil
 
 #### T14-016: Update limitations_and_future_scope.md
-**Status:** ⬜
+**Status:** ✅
 **Description:** Move implemented items out of Future Scope, keep O-RAN, iOS, SMS, mobility-aware, supervised/LSTM labelled NOT IMPLEMENTED; add the new limitations (measurement-perturbation findings, OEM background limits, single-token security).
 **Dependencies:** T12-009, T14-004
 **Acceptance Criteria:**
-- [ ] Nothing unimplemented described as done
-- [ ] New limitations cite the experiments/tests
+- [x] Nothing unimplemented described as done
+- [x] New limitations cite the experiments/tests
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Yashwant
