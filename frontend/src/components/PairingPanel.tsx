@@ -39,11 +39,14 @@ export function buildC1Csv(samples: ScoredSample[]): string {
   const header = C1_COLUMNS.join(',');
   const rows = samples.map(s => {
     return C1_COLUMNS.map(col => {
-      const val = (s as Record<string, unknown>)[col];
+      const val = (s as unknown as Record<string, unknown>)[col];
       if (val === null || val === undefined || val === '') {
         return 'NA';
       }
-      if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
+      if (
+        typeof val === 'string' &&
+        (val.includes(',') || val.includes('"') || val.includes('\n'))
+      ) {
         return `"${val.replace(/"/g, '""')}"`;
       }
       return String(val);

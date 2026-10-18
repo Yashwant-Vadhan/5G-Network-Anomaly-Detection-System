@@ -14,7 +14,7 @@ import { DataQuality } from './pages/DataQuality';
 import { About } from './pages/About';
 import { ConnectionChip } from './components/ConnectionChip';
 import { ReplayPlayer } from './components/ReplayPlayer';
-import { DemoBundle } from './types/contracts';
+import { DemoBundle, EventRecord } from './types/contracts';
 
 const mockBundle: DemoBundle = {
   bundle_version: 1,
@@ -58,11 +58,31 @@ const mockBundle: DemoBundle = {
       'severity',
     ],
     rows: [
-      ['2026-10-18 10:00:00', 'session-access-1', 'Pixel 8', 'Jio', -85.0, -11.0, 15.0, 'PCI_100', 'NCI_1', '5G_SA', 0.1, 0.5, false, 'NORMAL', 'LOW'],
-      ['2026-10-18 10:00:03', 'session-access-1', 'Pixel 8', 'Jio', -88.0, -12.0, 14.0, 'PCI_100', 'NCI_1', '5G_SA', 0.2, 0.7, false, 'NORMAL', 'LOW'],
-      ['2026-10-18 10:00:06', 'session-access-1', 'Pixel 8', 'Jio', -115.0, -18.0, -2.0, 'PCI_100', 'NCI_1', '5G_SA', 0.85, 3.8, true, 'SIGNAL_DEGRADATION', 'HIGH'],
-      ['2026-10-18 10:00:09', 'session-access-1', 'Pixel 8', 'Jio', -118.0, -19.0, -4.0, 'PCI_100', 'NCI_1', '5G_SA', 0.89, 4.2, true, 'SIGNAL_DEGRADATION', 'HIGH'],
-      ['2026-10-18 10:00:12', 'session-access-1', 'Pixel 8', 'Jio', -86.0, -11.0, 16.0, 'PCI_101', 'NCI_1', '5G_SA', 0.15, 0.6, false, 'NORMAL', 'LOW'],
+      [
+        '2026-10-18 10:00:00', 'session-access-1', 'Pixel 8', 'Jio',
+        -85.0, -11.0, 15.0, 'PCI_100', 'NCI_1', '5G_SA', 0.1, 0.5,
+        false, 'NORMAL', 'LOW',
+      ],
+      [
+        '2026-10-18 10:00:03', 'session-access-1', 'Pixel 8', 'Jio',
+        -88.0, -12.0, 14.0, 'PCI_100', 'NCI_1', '5G_SA', 0.2, 0.7,
+        false, 'NORMAL', 'LOW',
+      ],
+      [
+        '2026-10-18 10:00:06', 'session-access-1', 'Pixel 8', 'Jio',
+        -115.0, -18.0, -2.0, 'PCI_100', 'NCI_1', '5G_SA', 0.85, 3.8,
+        true, 'SIGNAL_DEGRADATION', 'HIGH',
+      ],
+      [
+        '2026-10-18 10:00:09', 'session-access-1', 'Pixel 8', 'Jio',
+        -118.0, -19.0, -4.0, 'PCI_100', 'NCI_1', '5G_SA', 0.89, 4.2,
+        true, 'SIGNAL_DEGRADATION', 'HIGH',
+      ],
+      [
+        '2026-10-18 10:00:12', 'session-access-1', 'Pixel 8', 'Jio',
+        -86.0, -11.0, 16.0, 'PCI_101', 'NCI_1', '5G_SA', 0.15, 0.6,
+        false, 'NORMAL', 'LOW',
+      ],
     ],
   },
   transitions: [
@@ -162,7 +182,7 @@ describe('Accessibility Audit & Automated Axe Scan (T16-016)', () => {
     expect(seriousOrCritical).toEqual([]);
   });
 
-  it('verifies SignalExplorer page has no serious or critical accessibility violations', async () => {
+  it('verifies SignalExplorer page has no a11y violations', async () => {
     const { container } = render(
       <DataProvider initialBundle={mockBundle}>
         <ReplayProvider>
@@ -188,7 +208,7 @@ describe('Accessibility Audit & Automated Axe Scan (T16-016)', () => {
     expect(seriousOrCritical).toEqual([]);
   });
 
-  it('verifies EventsDiagnosis page has no serious or critical accessibility violations', async () => {
+  it('verifies EventsDiagnosis page has no a11y violations', async () => {
     const { container } = render(
       <DataProvider initialBundle={mockBundle}>
         <ReplayProvider>
@@ -223,7 +243,7 @@ describe('Accessibility Audit & Automated Axe Scan (T16-016)', () => {
     expect(seriousOrCritical).toEqual([]);
   });
 
-  it('verifies About & Limitations page has no serious or critical accessibility violations', async () => {
+  it('verifies About & Limitations page has no a11y violations', async () => {
     const { container } = render(
       <DataProvider initialBundle={mockBundle}>
         <About />

@@ -21,7 +21,6 @@ describe('PairingPanel Component (T17-008)', () => {
     session_id: 'live-test-sess-1234',
     pairing_code: 'ABCD9876',
     expires_at: new Date(Date.now() + 180 * 1000).toISOString(),
-    ws_endpoint: '/ws/v1/telemetry/live-test-sess-1234',
   };
 
   const sampleTelemetries: ScoredSample[] = [
@@ -29,7 +28,7 @@ describe('PairingPanel Component (T17-008)', () => {
       timestamp: '2026-10-18T10:00:00Z',
       device: 'Redmi 13 5G',
       manufacturer: 'Xiaomi',
-      android: 14,
+      android: '14',
       operator: 'Jio',
       network_type: 'NR',
       deployment_mode: 'SA',
@@ -44,14 +43,13 @@ describe('PairingPanel Component (T17-008)', () => {
       pci: 421,
       nci: 12345678,
       nrarfcn: 632000,
-      anomaly_score: 0.12,
-      is_anomaly: false,
-    },
+      session_id: 'live-test-sess-1234',
+    } as unknown as ScoredSample,
     {
       timestamp: '2026-10-18T10:00:01Z',
       device: 'Redmi 13 5G',
       manufacturer: 'Xiaomi',
-      android: 14,
+      android: '14',
       operator: 'Jio',
       network_type: 'NR',
       deployment_mode: 'SA',
@@ -66,9 +64,8 @@ describe('PairingPanel Component (T17-008)', () => {
       pci: 421,
       nci: 12345678,
       nrarfcn: 632000,
-      anomaly_score: 0.88,
-      is_anomaly: true,
-    },
+      session_id: 'live-test-sess-1234',
+    } as unknown as ScoredSample,
   ];
 
   it('renders initial state with Start Live Session button and privacy notice', () => {
@@ -110,13 +107,12 @@ describe('PairingPanel Component (T17-008)', () => {
     expect(screen.getByRole('timer')).toHaveTextContent(/Code expires in: (2:59|3:00)/i);
   });
 
-  it('Acceptance Criteria 1: shows expired state and retry instruction/action when code expires', async () => {
+  it('Acceptance Criteria 1: shows expired state and retry instruction on expiry', async () => {
     const now = Date.now();
     const shortExpirySession: CreateLiveSessionResponse = {
       session_id: 'sess-expiring',
       pairing_code: 'EXPIRE01',
       expires_at: new Date(now + 10 * 1000).toISOString(), // 10s
-      ws_endpoint: '/ws/v1/telemetry/sess-expiring',
     };
 
     let fetchCallCount = 0;
@@ -199,7 +195,7 @@ describe('PairingPanel Component (T17-008)', () => {
   });
 
   it('ends session and calls DELETE /api/v1/live-sessions/{id}', async () => {
-    const mockFetch = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+    const mockFetch = vi.fn().mockImplementation((_url: string, opts?: RequestInit) => {
       if (opts?.method === 'DELETE') {
         return Promise.resolve({ ok: true });
       }
@@ -291,13 +287,13 @@ describe('PairingPanel Component (T17-008)', () => {
     });
 
     it('buildC1Csv replaces null/undefined values with NA and escapes commas', () => {
-      const partialSample: ScoredSample = {
+      const partialSample = {
         timestamp: '2026-10-18T10:00:02Z',
         device: 'Test, Device with comma',
         manufacturer: undefined,
         android: null,
         operator: 'Airtel',
-      };
+      } as unknown as ScoredSample;
 
       const csv = buildC1Csv([partialSample]);
       const lines = csv.trim().split('\n');
