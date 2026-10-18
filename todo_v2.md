@@ -979,12 +979,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T14-004: Write the streaming security document
-**Status:** ⬜
+**Status:** ✅
 **Description:** `docs/streaming_security.md`: threat model for the local setup, token handling, bind policy, TLS options (verify uvicorn SSL options and Android cleartext rules in current docs), known limitations (single shared token, no per-device revocation).
 **Dependencies:** T14-001, T14-002, T14-003
 **Acceptance Criteria:**
-- [ ] Limitations stated plainly
-- [ ] Every claim about third-party behaviour verified or marked unverified
+- [x] Limitations stated plainly
+- [x] Every claim about third-party behaviour verified or marked unverified
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
