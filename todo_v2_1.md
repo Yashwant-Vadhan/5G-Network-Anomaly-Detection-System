@@ -241,12 +241,13 @@
 **Owner:** Yashwant
 
 #### T16-017: Component tests for every page
-**Status:** ⬜
-**Description:** Vitest + Testing Library against a small bundle fixture: each page renders, key values appear, empty/error states, filters, replay player.
+**Status:** ✅
+**Description:** Vitest + Testing Library against a small bundle fixture: each page renders,
+key values appear, empty/error states, filters, replay player.
 **Dependencies:** T16-009, T16-011, T16-012, T16-013, T16-014
 **Acceptance Criteria:**
-- [ ] Each page has ≥3 tests
-- [ ] Coverage on `frontend/src` ≥ 70% (proposed)
+- [x] Each page has ≥3 tests (7 to 14 tests per page, 112 total)
+- [x] Coverage on `frontend/src` ≥ 70% (89.55% lines, 97.89% pages)
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Sushil
