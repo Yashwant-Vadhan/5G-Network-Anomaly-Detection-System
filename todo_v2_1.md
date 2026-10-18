@@ -584,12 +584,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 *Goal: A project-themed, accessible collector UI with pairing and consent, without changing what is collected.*
 
 #### T19-001: Make the repo project the Android source of truth
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Open `android-collector/5GNetworkTester` directly in Android Studio, build and install from it, delete the stale copy; add build/run steps to the README.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Build from repo works on both machines
-- [ ] README steps verified
+- [x] Build from repo works on both machines
+- [x] README steps verified
 **Estimated Effort:** 30 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
