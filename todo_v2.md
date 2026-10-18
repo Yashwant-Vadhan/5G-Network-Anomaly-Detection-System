@@ -1109,12 +1109,12 @@ before citing it.
 **Owner:** Sushil
 
 #### T14-015: Update README with a live quickstart
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add: link options, `make token`, `make serve`, `make dashboard`, `make replay`, phone setup, the full non-claims list, status table updated only for tested items (G16).
 **Dependencies:** T14-013, T14-014
 **Acceptance Criteria:**
-- [ ] A teammate follows it from a fresh clone
-- [ ] No item marked ✅ without a passing test
+- [x] A teammate follows it from a fresh clone
+- [x] No item marked ✅ without a passing test
 **Estimated Effort:** 45 min
 **Assigned To:** Backend
 **Owner:** Sushil

@@ -1,42 +1,73 @@
 # 5G-NADS — 5G Network Anomaly Detection and Diagnosis System
 
-Android-based 5G NR measurement and anomaly detection system for analyzing real-world cellular network performance. 5G-NADS collects real Non-Standalone/Standalone (NSA/SA) NR measurements directly from Android devices, detects unusual *temporal* patterns using a statistical baseline and an Isolation Forest model, classifies them into interpretable categories, and explains each detected event through a deterministic, evidence-based multi-agent diagnostic layer — without relying on operator-network access or synthetic data.
+Android-based 5G NR measurement and anomaly detection system for analyzing real-world
+cellular network performance. 5G-NADS collects real Non-Standalone/Standalone (NSA/SA)
+NR measurements directly from Android devices, detects unusual temporal patterns using a
+statistical baseline and an Isolation Forest model, classifies them into interpretable
+categories, and explains each detected event through a deterministic, evidence-based
+multi-agent diagnostic layer — without relying on operator-network access or synthetic data.
 
-This is a research/course project, not an operator-grade product. See [Non-Claims](#non-claims) below for what this system does not do.
+This is an academic research prototype, not an operator-grade product. See [Non-Claims](#non-claims)
+below for what this system explicitly does not do.
+
+---
 
 ## Status
 
-| Component | Status |
-|---|---|
-| Android NR measurement collector | ✅ Implemented and verified against C1 |
-| Real-device dataset collection | ✅ Completed (Redmi: 3760 samples; Samsung: 1772 samples across 3 scenarios each) |
-| Data preprocessing pipeline | ✅ Implemented and verified against C2 (30 unit tests passing) |
-| Feature engineering | ✅ Implemented and verified against C3 |
-| Anomaly detection (baseline z-score + Isolation Forest) | ✅ Implemented and verified |
-| Anomaly classification & severity | ✅ Implemented and verified |
-| Multi-agent diagnostic layer (Signal / Cell / Network / Diagnosis / Recommendation) | ✅ Implemented and verified (Contract C5 & text renderer) |
-| Interpretability dashboard (Streamlit) | ✅ Implemented and verified (Six screens, WCAG accessibility & responsive pass — T6-001 to T6-012) |
-| End-to-end pipeline & tests | ✅ CLI (T7-001), integration tests (T7-007), and security/privacy test suite (T7-009) passing |
-| Evaluation & Labelling Guidelines | ✅ Completed (Labelling guidelines T7-011, evaluation labels T7-012/T7-013, baseline vs IF benchmark T7-016, false-positive report T7-018) |
-| Real-time streaming server (`streaming/`) | ⬜ Planned (FastAPI, WebSockets, C7/C8 ingest & live push) |
-| Real-time alerting & dispatch (`alerts/`) | ⬜ Planned (C9 alert record, dedupe, webhook/email dispatch) |
-| Android collector streaming extension | ⬜ Planned (C7 WebSocket client, queuing, foreground service) |
-| React SPA dashboard (Vite + TypeScript) | ⬜ Planned (Static demo bundle, live charts, pairing) |
-| Advisory edge inference module | ⬜ Planned (Optional isolated Gradle module, parity-gated) |
+| Component | Status | Verification & Evidence |
+|---|---|---|
+| Android NR measurement collector | ✅ Verified | Verified against Contract C1 |
+| Real-device dataset collection | ✅ Completed | Redmi (3,760) & Samsung (1,772) in 3 scenarios |
+| Data preprocessing pipeline | ✅ Verified | Contract C2; 30 unit tests passing |
+| Feature engineering | ✅ Verified | Contract C3 temporal features passing |
+| Anomaly detection (Baseline + IF) | ✅ Verified | Rolling z-score & Isolation Forest verified |
+| Anomaly classification & severity | ✅ Verified | Rule-based classification & severity verified |
+| Multi-agent diagnostic layer | ✅ Verified | Signal, Cell, Network, Diagnosis, Recommendation |
+| Streamlit dashboard (Frozen v1) | ✅ Verified | 6 screens, WCAG accessibility & responsive pass |
+| End-to-end batch pipeline & tests | ✅ Verified | CLI, integration, and security suites passing |
+| Evaluation & labelling guidelines | ✅ Completed | Ground truth labels, benchmark & FP reports |
+| Streaming server (`streaming/`) | ✅ Verified | FastAPI, WebSockets, C7 ingest, C8 live fan-out |
+| Alerting & dispatch (`alerts/`) | ✅ Verified | C9 alert record, dedupe, webhook/email/push |
+| React live dashboard (`frontend/`) | ✅ Verified | Vite + React 19 + TS; 97 Vitest tests pass |
+| Android collector streaming | ⬜ Planned | C7 Kotlin protocol spec complete; replay verified |
+| Advisory edge inference module | ⬜ Planned | Gated prototype; server remains authoritative |
 
-Status is updated only once a component has passing tests — see the guardrail in `docs/planning/TECH_RULES.md` (G16: no "implemented" claim before tested). Full task breakdown, ownership, and dependencies are in [`todo.md`](./todo.md), [`todo_v2.md`](./todo_v2.md), and [`todo_v2_1.md`](./todo_v2_1.md).
+*Status is updated only once a component has passing tests per Guardrail G16 (no "implemented"
+claim before tested). Full task breakdown, ownership, and dependencies are tracked in
+[`todo.md`](./todo.md), [`todo_v2.md`](./todo_v2.md), and [`todo_v2_1.md`](./todo_v2_1.md).*
+
+---
 
 ## Architecture
 
-Three separated layers, kept independently verifiable:
+The system is organized into four decoupled layers, keeping each independently verifiable:
 
-1. **Measurement Layer** — Android app reads live NR cell info, signal strength, and cell identity via the Android Telephony framework (`CellInfoNr`, `CellSignalStrengthNr`, `CellIdentityNr`) and exports timestamped measurements to CSV. Performs no analysis.
-2. **Detection Layer** — Python pipeline validates and cleans the data, engineers temporal features (deltas, rolling stats, persistence counters), and scores each sample with a rolling z-score baseline and an Isolation Forest model.
-3. **Diagnostic Layer** — Five deterministic agents (Signal, Cell, Network, Diagnosis, Recommendation) turn a detected event into a structured, evidence-based, hedged explanation and a monitoring-oriented recommendation. No LLM is used in the core detection or diagnosis decision.
+1. **Measurement Layer:** Android collector reads live NR cell info, signal strength, and cell
+   identities via the Android Telephony framework (`CellInfoNr`, `CellSignalStrengthNr`,
+   `CellIdentityNr`) and streams timestamped measurements (Contract C1/C7).
+2. **Detection Layer:** Real-time stream engine validates measurements, engineers temporal
+   features (Contract C3), and scores samples using a rolling z-score baseline and Isolation
+   Forest model with strict mathematical parity (Guardrails G18, G25).
+3. **Diagnostic Layer:** Five deterministic agents (Signal, Cell, Network, Diagnosis,
+   Recommendation) evaluate detected event windows into structured, evidence-based, hedged
+   explanations and monitoring recommendations. The v1 agent layer remains frozen and unchanged.
+4. **Fan-Out & Egress Layer:** LiveHub distributes real-time snapshots and scored samples over
+   WebSocket `/api/v1/live` (Contract C8) and dispatches gated alerts across webhook, email,
+   and phone push channels (Contract C9).
 
-Full architecture, data contracts, and rationale: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) and [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md).
+Full architecture, data contracts, and design records:
+- [`docs/streaming_architecture.md`](docs/streaming_architecture.md) — Real-time data flow & parity
+- [`docs/streaming_protocol.md`](docs/streaming_protocol.md) — Wire protocols (C7, C8, C9)
+- [`docs/streaming_security.md`](docs/streaming_security.md) — Security boundaries & auth
+- [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md) — Engineering guardrails
+
+---
 
 ## Quick Start
+
+### 1. Environment Setup
+
+Clone the repository and install the development environment (Python 3.12+ required):
 
 ```bash
 git clone https://github.com/Yashwant-Vadhan/5G-Network-Anomaly-Detection-System.git
@@ -44,103 +75,173 @@ cd 5G-Network-Anomaly-Detection-System
 python -m venv .venv
 source .venv/bin/activate            # POSIX
 .venv\Scripts\activate               # Windows (PowerShell / cmd)
-pip install -r requirements-dev.txt  # Python 3.12+
-make lint test          # verify setup and run full unit/integration test suite
-make pipeline           # run preprocessing → features → detection → multi-agent diagnostic layer
-make dashboard          # launch the Streamlit interpretability dashboard on 127.0.0.1
+pip install -r requirements-dev.txt
+make lint test                       # Verify setup and run test suite
 ```
 
-`make help` lists every target. On Windows without `make`, run the underlying
-commands directly, e.g. `python -m ruff check .` and `python -m pytest`.
+### 2. Batch Pipeline & Frozen v1 Dashboard
 
-### Run the React Frontend (v2.1)
+To run the offline batch pipeline and launch the Streamlit interpretability dashboard:
+
+```bash
+make pipeline    # Run preprocessing → features → detection → diagnostic agents
+make dashboard   # Launch Streamlit dashboard on http://127.0.0.1:8501
+```
+
+---
+
+## Live Streaming Quickstart (v2)
+
+Follow these steps to run the real-time streaming pipeline from a fresh clone:
+
+### Step 1: Generate Authentication Token
+Generate a cryptographically secure 32-byte hex token for ingest authentication:
+
+```bash
+make token
+# Or directly via Python:
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### Step 2: Launch the Streaming Server
+Start the FastAPI / WebSocket streaming server on `127.0.0.1:8000`:
+
+```bash
+make serve
+# Or directly with options:
+python -m streaming.server --host 127.0.0.1 --port 8000
+```
+Verify gateway health:
+```bash
+curl http://127.0.0.1:8000/healthz
+# Returns: {"status":"ok","version":"2.0.0","uptime_s":...}
+```
+
+### Step 3: Launch the React Live Dashboard
+In a separate terminal, start the modern React SPA live dashboard:
 
 ```bash
 cd frontend
 npm install              # Node 22 LTS (.nvmrc)
-npm run dev              # launch local Vite dev server on 127.0.0.1:3000
-npm run test             # run unit/component tests with Vitest
-npm run build            # compile static production bundle to frontend/dist/
+npm run dev              # Starts Vite dev server on http://localhost:3000
 ```
+Open `http://localhost:3000` in your browser. The dashboard automatically attempts to connect
+to the live streaming server (`ws://127.0.0.1:8000/api/v1/live`).
 
-## Repository Map
+### Step 4: Stream Telemetry via Replay Tool
+In another terminal, stream real-world 5G telemetry into the ingest gateway:
 
+```bash
+make replay
+# Or replay a specific recording at 2x speed:
+python scripts/replay_stream.py \
+  --csv data/sample/5G_measurements_Samsung_Indoor-Movement.csv --speed 2.0
 ```
-5G-NADS/
-├── android-collector/     # Android NR measurement collector (Kotlin)
-├── data/
-│   ├── raw/               # immutable, git-ignored; real device CSVs
-│   ├── processed/         # generated, git-ignored
-│   ├── sample/            # small committed real-data excerpt
-│   └── eval/              # ground truth evaluation labels
-├── ml/                    # preprocessing, feature engineering, detection models
-├── agents/                # Signal / Cell / Network / Diagnosis / Recommendation agents
-├── pipelines/             # end-to-end pipeline CLI
-├── dashboard/             # Streamlit interpretability dashboard (frozen v1 baseline)
-├── models/                # trained model artifacts + metadata
-├── notebooks/             # EDA and model-selection notebooks
-├── tests/                 # unit / integration / e2e tests
-├── docs/
-│   └── planning/          # PRD.md, DESIGN.md, TECH_RULES.md, ROADMAP.md, PRD_v2.md, DESIGN_v2.md, TECH_RULES_v2.md
-├── todo.md                # v1 task breakdown, ownership, dependencies
-├── todo_v2.md             # v2 streaming & real-time task breakdown
-├── todo_v2_1.md           # v2.1 React dashboard & static demo task breakdown
-└── project-overview.md    # original project specification (source of truth, incl. amendments A1–A6)
-```
+The React Live Dashboard will immediately display incoming samples, live signal charts,
+cell transitions, and real-time anomaly diagnoses.
 
-## Data Policy
+---
 
-- Raw measurement CSVs are **never committed** — they live in `data/raw/`, which is git-ignored except for a checksum manifest.
-- No PII is collected: no phone number, contacts, messages, or precise location.
-- Missing measurements (`NA`, Android sentinel values) are preserved as missing — never treated as zero.
-- An unreported (`UNKNOWN`) deployment mode is never inferred to be SA.
-- Synthetic data, where used for testing, is explicitly labelled and never mixed into real-data results.
+## Link Options & Connection Endpoints
 
-Full policy: [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) (Security Rules), [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md), and [`docs/planning/PRD.md`](docs/planning/PRD.md) (Assumptions & Constraints).
+The streaming server exposes the following WebSocket and REST endpoints:
 
-## Documentation
+| Endpoint | Protocol | Auth Requirement | Purpose |
+|---|---|---|---|
+| `/api/v1/ws/ingest` | WebSocket | Bearer token / Pair token | Phone telemetry ingestion (C7) |
+| `/api/v1/live` | WebSocket | First-frame ticket auth | Real-time live fan-out (C8) |
+| `/healthz` | HTTP GET | None (Public) | Gateway health & uptime status |
+| `/api/v1/sessions` | HTTP GET | None (Loopback) | List active & historical sessions |
+| `/api/v1/sessions/{id}/samples` | HTTP GET | None (Loopback) | Paginated scored samples |
+| `/api/v1/sessions/{id}/events` | HTTP GET | None (Loopback) | Diagnosed anomaly events |
+| `/api/v1/model` | HTTP GET | None (Loopback) | Active ML model metadata & hashes |
+| `/api/v1/metrics` | HTTP GET | None (Loopback) | Latency, sequence gaps, drops |
+| `/api/v1/pair` | HTTP POST | None (Loopback) | Ephemeral session pairing (C10) |
 
-| Document | Contents |
-|---|---|
-| [`project-overview.md`](./project-overview.md) | Original project specification — source of truth (including v2 amendments A1–A6) |
-| [`docs/planning/PRD.md`](docs/planning/PRD.md) | Goals, personas, user stories, functional/non-functional requirements, MVP scope |
-| [`docs/planning/PRD_v2.md`](docs/planning/PRD_v2.md) | v2 streaming requirements, live alerting, edge inference scope, amendments A1–A6 |
-| [`docs/planning/DESIGN.md`](docs/planning/DESIGN.md) | Dashboard information architecture, screens, design system (v1) |
-| [`docs/planning/DESIGN_v2.md`](docs/planning/DESIGN_v2.md) | v2.1 React dashboard specifications, live connection states, alert design, tokens |
-| [`docs/planning/TECH_RULES.md`](docs/planning/TECH_RULES.md) | Architecture, tech stack, data contracts, coding/security/testing standards, guardrails (v1) |
-| [`docs/planning/TECH_RULES_v2.md`](docs/planning/TECH_RULES_v2.md) | v2 architecture, contracts C7–C11, guardrails G1′ & G17–G32, parity rules |
-| [`docs/planning/ROADMAP.md`](docs/planning/ROADMAP.md) | Milestones, effort estimates, risk register |
-| [`todo.md`](./todo.md) | Full v1 task list with ownership, dependencies, and acceptance criteria |
-| [`todo_v2.md`](./todo_v2.md) | v2 task list covering streaming server, live alerting, and edge inference |
-| [`todo_v2_1.md`](./todo_v2_1.md) | v2.1 task list covering React SPA dashboard and static demo bundle |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup, branch/commit conventions, task claiming, guardrail checklist for contributors and AI agents |
-| [`docs/eda_findings.md`](docs/eda_findings.md) | Collector verification results, EDA observations, and answers to open questions |
-| [`docs/decisions.md`](docs/decisions.md) | Architectural Decision Records (ADRs) covering agents, ML baseline, privacy, and storage |
-| [`docs/testing.md`](docs/testing.md) | Security and privacy checks, test suite structure, and non-applicable security items |
-| [`docs/guardrails_checklist.md`](docs/guardrails_checklist.md) | Complete audit mapping of G1–G16 guardrails to test suites and enforcement mechanisms |
-| [`docs/labelling_guidelines.md`](docs/labelling_guidelines.md) | Guidelines and blind labelling schema for human ground-truth evaluation |
-| [`docs/dataset.md`](docs/dataset.md) | Dataset documentation, schema details, missing-value policies, and MANIFEST verification |
-| [`docs/presentation.md`](docs/presentation.md) | 10-minute slide deck outline, speaker notes, and 3-minute live dashboard demo script |
-| [`docs/controlled_experiments.md`](docs/controlled_experiments.md) | Controlled natural-event experiments and event ground truth timestamp mapping |
+### Link & Binding Security Policies
+- **Loopback Default:** By default, server binds to `127.0.0.1`. Remote viewers are blocked.
+- **LAN Binding:** To ingest from physical phones over local Wi-Fi, pass `--allow-lan` and a
+  non-empty `--token=<TOKEN>`. Unauthenticated binding on public interfaces is forbidden.
+- **Reverse Proxy / TLS:** For production or public demos, terminate TLS via Nginx / Caddy
+  and set `NADS_MODE=public` with explicit CORS whitelist in `NADS_ALLOWED_ORIGINS`.
 
-| [`docs/agent_architecture.md`](docs/agent_architecture.md) | Multi-agent diagnostic layer architecture, responsibilities, contracts, and execution flow |
-| [`docs/ios_collection_note.md`](docs/ios_collection_note.md) | Technical research note on iOS Telephony API constraints and comparative feasibility |
-| [`docs/results.md`](docs/results.md) | Baseline vs. Isolation Forest quantitative evaluation results & latency analysis |
-| [`docs/false_positive_analysis.md`](docs/false_positive_analysis.md) | False positive & negative investigation report with severity validation |
-| [`docs/limitations_and_future_scope.md`](docs/limitations_and_future_scope.md) | System limitations (§48) and explicitly un-implemented future scope (§55) |
-| [`docs/definition_of_done.md`](docs/definition_of_done.md) | Exhaustive 25-item Definition-of-Done audit matrix and v1.0.0 release verification |
-| [`data/README.md`](data/README.md) | Data contract C1 verification, timestamp format, sentinel behaviour, and data directory structure |
+---
 
-## Non-Claims
+## Phone Setup & Live Ingestion
 
-5G-NADS does **not** claim to:
-- Provide universal 5G anomaly detection generalizable beyond the collected dataset
-- Guarantee identification of root cause for a detected anomaly
-- Guarantee correct SA/NSA identification when the device itself reports it as unknown
-- Control or modify the operator network in any way
-- Treat every cell transition, or every weak-signal reading, as an anomaly on its own
+To stream live 5G radio metrics directly from a physical Android phone:
+
+1. **Network Connectivity:** Ensure the Android smartphone and host computer are on the same
+   Wi-Fi network or mobile hotspot.
+2. **Start Server with LAN Access:**
+   ```bash
+   python -m streaming.server --host 0.0.0.0 --port 8000 --allow-lan --token <YOUR_TOKEN>
+   ```
+3. **Configure Android Collector:**
+   - Open the 5G-NADS collector app on Android.
+   - Navigate to **Streaming Settings**.
+   - Set Server URL: `ws://<HOST_LOCAL_IP>:8000/api/v1/ws/ingest`
+   - Enter your generated Bearer token, or use the 8-character pairing code from the React UI.
+4. **Android Permissions & OS Limits:**
+   - **Required Permissions:** Grant `ACCESS_FINE_LOCATION` and `READ_PHONE_STATE`.
+   - **Background Execution:** Disable OEM battery optimization for the 5G-NADS app
+     (Settings $\rightarrow$ Apps $\rightarrow$ Battery $\rightarrow$ Unrestricted) to prevent
+     background sequence drops.
+5. **Start Collection:** Tap **Start Ingest**. The server acknowledges frames via cumulative
+   `ack` messages, and real-time telemetry flows immediately into the dashboard.
+
+---
+
+## Explicit Non-Claims
+
+5G-NADS **does not** claim to:
+
+1. **Universal Anomaly Detection:** Provide universal 5G anomaly detection generalizable
+   beyond the collected dataset, tested devices, and observed carrier deployments.
+2. **Root Cause Attribution:** Guarantee root cause identification for any detected anomaly;
+   attributions are correlation-based hypotheses derived from UE-side telemetry.
+3. **Unambiguous Architecture Reporting:** Guarantee correct SA/NSA identification when the
+   underlying Android Telephony framework reports network state as `UNKNOWN`.
+4. **Network Control:** Control, optimize, or modify the operator network or device connection
+   in any way; the system is strictly a passive client-side observer.
+5. **Universal Thresholds:** Establish universal RF thresholds applicable across all global
+   carrier configurations and propagation environments.
+6. **Isolated Metric Severity:** Treat every cell transition, handover, or weak-signal
+   reading as an anomaly on its own without temporal persistence.
+7. **On-Device Inference Authority:** Execute heavy ML inside the Android measurement path;
+   on-device scoring (if enabled) is advisory; the server pipeline is authoritative.
+8. **Hard Real-Time Guarantees:** Provide hard real-time latency guarantees; "real-time" denotes
+   near-real-time streaming with empirical latency figures on specific hardware.
+9. **Safety or Emergency System:** Function as an outage notification, emergency alert, or
+   safety-critical communications system.
+10. **Carrier Infrastructure Visibility:** Possess visibility into the operator's RAN or 5G
+    Core; the system cannot determine if an anomaly is caused by carrier equipment faults.
+11. **Finality of In-Flight Events:** Provide final diagnoses on live data; real-time events
+    remain provisional until an event closes and complete temporal context is available.
+12. **Unimplemented External Protocols:** Support O-RAN interfaces, iOS collection, or SMS
+    dispatch — these capabilities are explicitly **NOT IMPLEMENTED**.
+13. **Commercial Readiness:** Represent an operator-grade, commercial network monitoring
+    product; 5G-NADS is an exploratory academic research prototype.
+
+---
+
+## Key Documentation
+
+- [Streaming Architecture](docs/streaming_architecture.md) — Real-time flows & parity design
+- [Streaming Protocol](docs/streaming_protocol.md) — Contracts C7, C8, C9, wire examples & limits
+- [Streaming Security](docs/streaming_security.md) — Threat model, bind policies, auth & CORS
+- [Recovery Matrix](docs/recovery_matrix.md) — Disconnects, sequence jumps, drops & recovery
+- [Architecture Decisions](docs/decisions.md) — Architectural Decision Records (ADRs 1–10)
+- [Evaluation Results v2](docs/results_v2.md) — Streaming benchmarks, latency & quality
+- [PRD v2](docs/planning/PRD_v2.md) — Streaming requirements, live alerts & scope
+- [Engineering Rules v2](docs/planning/TECH_RULES_v2.md) — Contracts C7–C11 & guardrails G17–G32
+- [False Positive Analysis](docs/false_positive_analysis.md) — Investigation of false alarms
+- [Limitations & Scope](docs/limitations_and_future_scope.md) — Explicitly un-implemented scope
+
+---
 
 ## Team
 
-Yashwant Vadhan M · M A Sushil Kumar
-Dept. of Artificial Intelligence and Data Science, Madras Institute of Technology Campus, Anna University
+**Yashwant Vadhan M** · **M A Sushil Kumar**  
+Department of Artificial Intelligence and Data Science  
+Madras Institute of Technology Campus, Anna University
