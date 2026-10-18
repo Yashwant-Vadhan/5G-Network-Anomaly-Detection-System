@@ -163,3 +163,43 @@ def test_public_mode_safe_config_starts_and_logs(caplog: pytest.LogCaptureFixtur
     assert "PUBLIC" in log_text
     # Secret token is never logged
     assert secret_token not in log_text
+
+
+def test_spa_static_files_and_fallback(tmp_path, monkeypatch):
+    """Test SPA static assets and HTML5 history fallback routing (T18-007)."""
+    # Create mock static dist directory
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    index_html = dist / "index.html"
+    index_html.write_text(
+        "<!doctype html><html><body>5G-NADS SPA</body></html>",
+        encoding="utf-8",
+    )
+    assets = dist / "assets"
+    assets.mkdir()
+    sample_js = assets / "app.js"
+    sample_js.write_text("console.log('5g-nads');", encoding="utf-8")
+
+    monkeypatch.setenv("NADS_STATIC_DIR", str(dist))
+    app = create_app()
+    client = TestClient(app)
+
+    # 1. Root / returns index.html
+    r_root = client.get("/")
+    assert r_root.status_code == 200
+    assert "5G-NADS SPA" in r_root.text
+
+    # 2. Static asset /assets/app.js is served
+    r_asset = client.get("/assets/app.js")
+    assert r_asset.status_code == 200
+    assert "console.log" in r_asset.text
+
+    # 3. Client route /overview returns index.html for client-side routing
+    r_route = client.get("/overview")
+    assert r_route.status_code == 200
+    assert "5G-NADS SPA" in r_route.text
+
+    # 4. Unknown API route returns 404 JSON per Contract C8
+    r_api = client.get("/api/v1/nonexistent-endpoint")
+    assert r_api.status_code == 404
+    assert r_api.json()["error"]["code"] == "HTTP_404"

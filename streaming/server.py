@@ -459,7 +459,30 @@ def create_app(
 
     # Error Handlers adhering strictly to Contract C8
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    async def http_exception_handler(request: Request, exc: HTTPException) -> Response:
+        if exc.status_code == 404:
+            path = request.url.path
+            if not (path.startswith("/api/") or path.startswith("/ws/")):
+                sdir = os.environ.get("NADS_STATIC_DIR")
+                if not sdir:
+                    cdist = os.path.join(
+                        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "frontend",
+                        "dist",
+                    )
+                    if os.path.isdir(cdist):
+                        sdir = cdist
+                if sdir and os.path.isdir(sdir):
+                    rel = path.lstrip("/")
+                    target = os.path.join(sdir, rel)
+                    if rel and os.path.isfile(target):
+                        from fastapi.responses import FileResponse
+                        return FileResponse(target)
+                    idx_p = os.path.join(sdir, "index.html")
+                    if os.path.isfile(idx_p):
+                        from fastapi.responses import FileResponse
+                        return FileResponse(idx_p)
+
         corr_id = get_correlation_id(request)
         code = "UNAUTHORIZED" if exc.status_code == 401 else f"HTTP_{exc.status_code}"
         payload = ErrorResponse(
@@ -473,6 +496,12 @@ def create_app(
             status_code=exc.status_code,
             content=payload.model_dump(mode="json"),
             headers={"X-Correlation-ID": corr_id},
+        )
+
+    @app.exception_handler(404)
+    async def not_found_handler(request: Request, exc: Exception) -> Response:
+        return await http_exception_handler(
+            request, HTTPException(status_code=404, detail="Not Found")
         )
 
     @app.exception_handler(RequestValidationError)
@@ -1492,6 +1521,36 @@ def create_app(
                     break
         finally:
             await app.state.hub.unsubscribe(sub_id)
+
+    # Mount SPA static files if static assets directory exists (T18-007)
+    static_dir = os.environ.get("NADS_STATIC_DIR")
+    if not static_dir:
+        default_dist = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "frontend",
+            "dist",
+        )
+        if os.path.isdir(default_dist):
+            static_dir = default_dist
+
+    if static_dir and os.path.isdir(static_dir):
+        from fastapi.responses import FileResponse
+        from fastapi.staticfiles import StaticFiles
+
+        index_file = os.path.join(static_dir, "index.html")
+
+        assets_dir = os.path.join(static_dir, "assets")
+        if os.path.isdir(assets_dir):
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+        data_dir_static = os.path.join(static_dir, "data")
+        if os.path.isdir(data_dir_static):
+            app.mount("/data", StaticFiles(directory=data_dir_static), name="data")
+
+        if os.path.isfile(index_file):
+            @app.get("/", include_in_schema=False)
+            async def serve_index() -> Response:
+                return FileResponse(index_file)
 
     return app
 

@@ -15,7 +15,8 @@ COV_FAIL_UNDER ?= 0
 PYTEST_NO_TESTS := 5
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lint format test preprocess pipeline dashboard demo clean-processed token serve replay demo-live
+.PHONY: help setup lint format test preprocess pipeline dashboard demo clean-processed \
+	token serve replay demo-live docker-build docker-run
 
 help:
 	@echo "5G-NADS targets:"
@@ -32,6 +33,8 @@ help:
 	@echo "  serve             start FastAPI streaming server on 127.0.0.1:8000"
 	@echo "  replay            replay CSV telemetry stream (usage: make replay CSV=...)"
 	@echo "  demo-live         launch live streaming server and demo pipeline"
+	@echo "  docker-build      build unified multi-stage container image"
+	@echo "  docker-run        run container on 127.0.0.1:8000 in public mode"
 
 setup:
 	@echo "Installing pinned dev requirements (Python 3.12+)"
@@ -93,6 +96,19 @@ replay:
 demo-live:
 	@echo "Running demo-live: starting streaming server..."
 	$(PYTHON) -m streaming.server --host 127.0.0.1 --port 8000
+
+IMAGE_NAME ?= 5gnads-app:latest
+
+docker-build:
+	@echo "Building multi-stage container image $(IMAGE_NAME)..."
+	docker build -t $(IMAGE_NAME) .
+
+docker-run:
+	@echo "Running $(IMAGE_NAME) on port 8000 (mode=public)..."
+	docker run -p 8000:8000 \
+	  -e NADS_MODE=public \
+	  -e NADS_ALLOWED_ORIGINS="http://localhost:8000,http://127.0.0.1:8000" \
+	  $(IMAGE_NAME)
 
 # Guardrail G7 & G22: raw and live data are immutable. This recipe touches $(PROCESSED_DIR)
 # and nothing else; the guard below aborts if that path is empty or resolves inside

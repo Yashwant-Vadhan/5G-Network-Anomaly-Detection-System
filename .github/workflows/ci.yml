@@ -43,7 +43,9 @@ jobs:
         run: python -m pipelines.run_pipeline --input data/sample --output data/processed
 
       - name: Test (pytest with coverage)
-        run: python -m pytest --cov=ml --cov=agents --cov=streaming --cov-report=term-missing --cov-fail-under=80 -m "not soak"
+        run: >
+          python -m pytest --cov=ml --cov=agents --cov=streaming
+          --cov-report=term-missing --cov-fail-under=80 -m "not soak"
 
   frontend:
     name: frontend lint, test, build
@@ -75,5 +77,27 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  container:
+    name: build container image
+    runs-on: ubuntu-latest
+    needs: [quality, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build container image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: 5gnads-app:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
 

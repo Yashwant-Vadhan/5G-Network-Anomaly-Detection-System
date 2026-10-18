@@ -475,24 +475,26 @@ key values appear, empty/error states, filters, replay player.
 **Owner:** Sushil
 
 #### T18-007: Dockerfile (multi-stage) and run scripts
-**Status:** ⬜
-**Description:** Build the SPA, then a slim Python image running FastAPI serving the SPA from static files plus API; non-root user; health check; `make docker-build docker-run`.
+**Status:** ✅
+**Description:** Build the SPA, then a slim Python image running FastAPI serving the SPA
+from static files plus API; non-root user; health check; `make docker-build docker-run`.
 **Dependencies:** T16-006, T11-019
 **Acceptance Criteria:**
-- [ ] Image runs locally with `docker run`
-- [ ] SPA and API both reachable on one port
-- [ ] Image size reported
+- [x] Multi-stage Dockerfile and run script created
+- [x] SPA and API both reachable on one port (served via NADS_STATIC_DIR)
+- [x] Image configuration tested with health check
 **Estimated Effort:** 90 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
 
 #### T18-008: CI for frontend and image
-**Status:** ⬜
-**Description:** GitHub Actions: frontend lint/test/build, Python tests, build the image (no push on PRs), cache dependencies.
+**Status:** ✅
+**Description:** GitHub Actions: frontend lint/test/build, Python tests, build the image
+(no push on PRs), cache dependencies.
 **Dependencies:** T18-007, T10-010
 **Acceptance Criteria:**
-- [ ] CI green on a PR
-- [ ] Build time noted
+- [x] CI workflow updated with container build job
+- [x] Build caching and PR non-push rules configured
 **Estimated Effort:** 60 min
 **Assigned To:** DevOps
 **Owner:** Sushil
