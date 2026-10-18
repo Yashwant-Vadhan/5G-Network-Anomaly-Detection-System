@@ -380,12 +380,12 @@ key values appear, empty/error states, filters, replay player.
 **Owner:** Yashwant
 
 #### T17-009: Live-mode tests with a mock server
-**Status:** ⬜
+**Status:** ✅
 **Description:** Vitest/Playwright against a mock WebSocket server: every connection state, provisional→final, alert + ack, dropped→resync, auth failure.
 **Dependencies:** T17-002, T17-006, T17-007, T17-008
 **Acceptance Criteria:**
-- [ ] Each state has a test
-- [ ] Auth failure shows a clear message
+- [x] Each state has a test
+- [x] Auth failure shows a clear message
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Yashwant

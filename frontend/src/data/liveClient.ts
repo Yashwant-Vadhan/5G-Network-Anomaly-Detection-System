@@ -64,6 +64,7 @@ export class LiveClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private backoffMs: number;
   private isExplicitlyClosed: boolean = false;
+  private lastErrorMessage: string | null = null;
   private listeners: Set<LiveClientListener> = new Set();
 
   constructor(config: LiveClientConfig) {
@@ -90,6 +91,10 @@ export class LiveClient {
     return this.currentSessionId;
   }
 
+  public getLastErrorMessage(): string | null {
+    return this.lastErrorMessage;
+  }
+
   public getSamples(): ScoredSample[] {
     return [...this.samples];
   }
@@ -105,6 +110,7 @@ export class LiveClient {
 
   public async connect(): Promise<void> {
     this.isExplicitlyClosed = false;
+    this.lastErrorMessage = null;
     this.clearTimers();
     this.setState('WAITING');
 
@@ -144,8 +150,14 @@ export class LiveClient {
       this.handleMessage(event.data);
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event: { code: number; reason: string }) => {
       this.clearStaleTimer();
+      if (event && (event.code === 4401 || event.code === 4403)) {
+        const msg = event.reason || 'Authentication failed: Invalid or expired ticket';
+        this.emitError(new Error(msg));
+        this.setState('DISCONNECTED');
+        return;
+      }
       if (!this.isExplicitlyClosed) {
         this.scheduleReconnect();
       } else {
@@ -192,6 +204,21 @@ export class LiveClient {
       }
     } catch (err) {
       this.emitError(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
+
+  public async ackAlert(alertId: string): Promise<boolean> {
+    const fetcher = this.config.fetchFn;
+    if (!fetcher) return false;
+    try {
+      const url = `${this.config.httpBaseUrl}/api/v1/alerts/${encodeURIComponent(
+        alertId
+      )}/ack`;
+      const res = await fetcher(url, { method: 'POST' });
+      return res.ok;
+    } catch (err) {
+      this.emitError(err instanceof Error ? err : new Error(String(err)));
+      return false;
     }
   }
 
@@ -311,6 +338,7 @@ export class LiveClient {
   }
 
   private emitError(err: Error): void {
+    this.lastErrorMessage = err.message;
     for (const l of this.listeners) l.onError?.(err);
   }
 }
