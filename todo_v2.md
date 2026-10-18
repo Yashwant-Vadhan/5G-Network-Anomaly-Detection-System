@@ -789,13 +789,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T13-008: Evaluate the alert policy on existing data by replay
-**Status:** ⬜
+**Status:** ✅
 **Description:** `scripts/eval_alert_policy.py`: stream the v1 sample/exploration data, list which events alert and why, compute alerts/hour on stationary-normal data. Choose thresholds on **non-evaluation** data only; record the procedure.
 **Dependencies:** T13-002, T11-015
 **Acceptance Criteria:**
-- [ ] Report lists every event with its alert decision
-- [ ] Thresholds origin documented; evaluation labels untouched
-- [ ] Result feeds docs/results_v2.md
+- [x] Report lists every event with its alert decision
+- [x] Thresholds origin documented; evaluation labels untouched
+- [x] Result feeds docs/results_v2.md
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
