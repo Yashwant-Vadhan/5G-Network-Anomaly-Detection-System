@@ -1098,12 +1098,12 @@ before citing it.
 **Owner:** Yashwant
 
 #### T14-014: Write the streaming architecture document
-**Status:** ⬜
+**Status:** ✅
 **Description:** `docs/streaming_architecture.md`: diagrams (mermaid), module responsibilities, data flow, parity design, decision record summary; update `docs/architecture.md` to link it.
 **Dependencies:** T14-009
 **Acceptance Criteria:**
-- [ ] Diagrams render
-- [ ] Agent layer described as unchanged
+- [x] Diagrams render
+- [x] Agent layer described as unchanged
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil

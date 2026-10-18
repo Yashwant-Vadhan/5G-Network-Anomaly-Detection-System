@@ -78,3 +78,12 @@ Per project specification (§30) and Guardrails G9/G14:
 
 1. **Detection Layer (`ml/`)**: Responsible solely for numerical processing, feature extraction, statistical baseline scoring, Isolation Forest inference, and categorical classification. It does not generate text explanations or actionable recommendations.
 2. **Diagnostic Layer (`agents/`)**: Responsible solely for qualitative domain reasoning, evidence aggregation, hedged diagnosis attribution, and recommendation formatting. Reasoning agents **NEVER** import `sklearn` or load ML model binary files directly (Guardrail G9).
+
+---
+
+## 5. Streaming & Real-Time Architecture (v2)
+
+For details on the real-time ingest pipeline, streaming engine parity, online event tracking,
+pure alert policy gatekeeping, and dashboard fan-out, see:
+- [docs/streaming_architecture.md](docs/streaming_architecture.md)
+
