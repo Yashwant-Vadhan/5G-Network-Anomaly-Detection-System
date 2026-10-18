@@ -208,12 +208,12 @@
 **Owner:** Sushil
 
 #### T16-014: Build Data Quality
-**Status:** ⬜
+**Status:** ✅
 **Description:** Missing-value table per device/column, CSI availability, deployment-mode distribution with the UNKNOWN note, raw vs processed row counts with the reason rows were dropped, synthetic-data banner.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] Numbers equal the Streamlit page (e.g. Redmi 3,756 processed)
-- [ ] UNKNOWN copy rule shown verbatim
+- [x] Numbers equal the Streamlit page (e.g. Redmi 3,756 processed)
+- [x] UNKNOWN copy rule shown verbatim
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Yashwant
