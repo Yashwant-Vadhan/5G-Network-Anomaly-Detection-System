@@ -109,6 +109,15 @@
       "title": "Session Label",
       "type": "string"
     },
+    "source": {
+      "default": "phone",
+      "enum": [
+        "phone",
+        "replay"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
     "type": {
       "const": "hello",
       "default": "hello",

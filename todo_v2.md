@@ -1087,12 +1087,12 @@ before citing it.
 **Owner:** Sushil
 
 #### T14-013: Write the streaming protocol document
-**Status:** ⬜
+**Status:** ✅
 **Description:** `docs/streaming_protocol.md`: C7/C8/C9 with examples, error codes, resume/ack semantics, limits, versioning rules; examples generated from the golden files.
 **Dependencies:** T14-009
 **Acceptance Criteria:**
-- [ ] Examples are included from tests/fixtures/stream
-- [ ] Doc and schema drift check pass
+- [x] Examples are included from tests/fixtures/stream
+- [x] Doc and schema drift check pass
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant

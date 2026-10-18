@@ -11,5 +11,6 @@
   "resume_from_seq": 0,
   "schema_version": 2,
   "session_label": "walk-01",
+  "source": "phone",
   "type": "hello"
 }
