@@ -6,6 +6,7 @@ import { useData } from './data/useData';
 import { DemoBundle } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
+import { CellsNetwork } from './pages/CellsNetwork';
 import { EventsDiagnosis } from './pages/EventsDiagnosis';
 import { StreamHealth } from './pages/StreamHealth';
 import { ReplayProvider, useReplay } from './data/ReplayContext';
@@ -320,12 +321,14 @@ function AppContent() {
               }
             />
             <Route path="/signals" element={<SignalExplorer />} />
+            <Route path="/cells" element={<CellsNetwork />} />
             <Route path="/events" element={<EventsDiagnosis />} />
             <Route path="/stream-health" element={<StreamHealth />} />
             {PAGES.filter(
               p =>
                 p.path !== '/overview' &&
                 p.path !== '/signals' &&
+                p.path !== '/cells' &&
                 p.path !== '/events' &&
                 p.path !== '/stream-health'
             ).map(p => (

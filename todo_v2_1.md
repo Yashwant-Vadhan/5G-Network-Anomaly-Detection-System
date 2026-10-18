@@ -185,12 +185,12 @@
 **Owner:** Sushil
 
 #### T16-012: Build Cells & Network
-**Status:** ⬜
+**Status:** ✅
 **Description:** PCI/NCI/NRARFCN step charts per session (NCI/PCI as categorical labels), transition table from the bundle, the 'cell change is normal behaviour' note.
 **Dependencies:** T16-008
 **Acceptance Criteria:**
-- [ ] Transition count equals bundle `transitions`
-- [ ] No client-side transition detection (G30)
+- [x] Transition count equals bundle `transitions`
+- [x] No client-side transition detection (G30)
 **Estimated Effort:** 60 min
 **Assigned To:** Frontend
 **Owner:** Yashwant
