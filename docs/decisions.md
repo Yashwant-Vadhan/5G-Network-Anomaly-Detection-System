@@ -206,5 +206,21 @@
   - Recharts: rejected due to severe SVG DOM thrashing with 5.5k points across 4 panels.
   - Pure Tailwind CSS vs CSS Variables: CSS variables selected to enable instantaneous, zero-recalculation runtime light/dark theme switching while preserving pure design tokens from `DESIGN_v2.md`.
 - **Consequences**: Minimal bundle overhead for public static demo hosting (< 50 KB total chart impact); sub-10 ms rendering ensures sub-second live streaming updates without client jank; requires a small React `useRef` wrapper around uPlot Canvas.
+---
 
+## ADR-016: Revisit Streamlit Evaluation — Transition to React for Streaming Latency KPI
 
+- **Date**: 2026-10-18
+- **Status**: Accepted
+- **Context**: Task `T14-008` evaluated the proposed 2.0 s p95 latency KPI (sample → visible)
+  under both Streamlit and React dashboards during 1× live telemetry replay.
+- **Empirical Findings (`docs/results_v2.md`)**:
+  - **Streamlit**: Reached **> 2.3 s p95** due to script re-execution latency and polling
+    quantization overhead, failing the 2.0 s p95 KPI target.
+  - **React + WebSocket + uPlot**: Achieved **< 50 ms p95**, updating the UI smoothly at 60 FPS
+    without full page or widget reruns.
+- **Decision**: Formally deprecate Streamlit for live streaming modes (Modes 2 & 3) and adopt
+  the React single-page application as the primary production dashboard interface.
+- **Consequences**: Satisfies the sub-2.0 s streaming latency requirement; decouples dashboard
+  rendering from Python server threads; preserves v1 Streamlit codebase strictly for historical
+  evaluation baseline comparisons (frozen under `dashboard/`).

@@ -1023,12 +1023,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T14-008: Latency benchmark
-**Status:** ⬜
+**Status:** ✅
 **Description:** Measure sample→published and, via the dashboard client, sample→visible at 1× replay on LAN/loopback; report p50/p95/max with machine, Python/Streamlit versions and refresh interval. Compare to the proposed 2 s p95 and state pass/fail honestly.
 **Dependencies:** T17-007, T11-018
 **Acceptance Criteria:**
-- [ ] Setup fully described (G24)
-- [ ] If the KPI fails, the 'revisit Streamlit' entry in docs/decisions.md is opened
+- [x] Setup fully described (G24)
+- [x] If the KPI fails, the 'revisit Streamlit' entry in docs/decisions.md is opened
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
