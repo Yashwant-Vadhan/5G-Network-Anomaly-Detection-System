@@ -1001,12 +1001,15 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T14-006: Implement guardrail tests G17–G26
-**Status:** ⬜
-**Description:** Replace each `xfail` stub in `tests/test_guardrails_v2.py` with a real test (or a documented manual-check entry where automation is impractical, e.g., OEM background behaviour). Includes forbidden-phrase lint for 'guaranteed/instant/zero latency' (G24) and webhook payload shape (G26).
+**Status:** ✅
+**Description:** Replace each `xfail` stub in `tests/test_guardrails_v2.py` with a real
+test (or a documented manual-check entry where automation is impractical, e.g.,
+OEM background behaviour). Includes forbidden-phrase lint for
+'guaranteed/instant/zero latency' (G24) and webhook payload shape (G26).
 **Dependencies:** T10-009, T11-006, T13-009, T14-001, T14-003
 **Acceptance Criteria:**
-- [ ] No xfail left unless explained in the docstring
-- [ ] Every G17–G26 mapped in docs
+- [x] No xfail left unless explained in the docstring
+- [x] Every G17–G26 mapped in docs
 **Estimated Effort:** 90 min
 **Assigned To:** QA
 **Owner:** Yashwant
