@@ -1198,12 +1198,14 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Sushil
 
 #### T15-003: Test that the optional LLM has no effect on the live path (G13)
-**Status:** ⬜ · ➕ Optional
-**Description:** With `NADS_USE_LLM` unset and no network the live path works; with it set (v1 `agents/llm_explainer.py`, T9-001/T9-002, exists) flags, types, severities and alert decisions are byte-identical.
+**Status:** ✅ · ➕ Optional
+**Description:** With `NADS_USE_LLM` unset and no network the live path works; with
+it set (v1 `agents/llm_explainer.py`, T9-001/T9-002, exists) flags, types, severities
+and alert decisions are byte-identical.
 **Dependencies:** T14-006
 **Acceptance Criteria:**
-- [ ] Test passes both ways
-- [ ] Alert text always from the template renderer
+- [x] Test passes both ways
+- [x] Alert text always from the template renderer
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
