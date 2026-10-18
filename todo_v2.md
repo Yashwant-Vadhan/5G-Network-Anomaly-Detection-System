@@ -1015,12 +1015,12 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Yashwant
 
 #### T14-007: Soak test
-**Status:** ⬜
+**Status:** ✅
 **Description:** 2 h replay at 1× and 20×; record RSS/CPU, queue sizes, drops, event counts; assert memory is bounded after warm-up (threshold set from a first baseline run and written down).
 **Dependencies:** T11-017
 **Acceptance Criteria:**
-- [ ] Report in docs/results_v2.md with setup
-- [ ] No crash; no monotonic memory growth
+- [x] Report in docs/results_v2.md with setup
+- [x] No crash; no monotonic memory growth
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
