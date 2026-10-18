@@ -130,7 +130,7 @@ class MainActivity : ComponentActivity() {
 
         val titleText = TextView(this).apply {
 
-            text = "5G NETWORK TESTER"
+            text = getString(R.string.title_text)
 
             textSize = 22f
 
@@ -160,7 +160,7 @@ class MainActivity : ComponentActivity() {
 
         val startButton = Button(this).apply {
 
-            text = "START"
+            text = getString(R.string.btn_start)
 
             setOnClickListener {
                 startCollection()
@@ -170,7 +170,7 @@ class MainActivity : ComponentActivity() {
 
         val stopButton = Button(this).apply {
 
-            text = "STOP"
+            text = getString(R.string.btn_stop)
 
             setOnClickListener {
                 stopCollection()
@@ -180,7 +180,7 @@ class MainActivity : ComponentActivity() {
 
         val saveButton = Button(this).apply {
 
-            text = "SAVE CSV"
+            text = getString(R.string.btn_save_csv)
 
             setOnClickListener {
                 saveCsv()

@@ -1,3 +1,15 @@
 <resources>
-    <string name="app_name">5GNetworkTester</string>
+    <string name="app_name">NADS Collector</string>
+    <string name="title_text">NADS Collector</string>
+    <string name="btn_start">START</string>
+    <string name="btn_stop">STOP</string>
+    <string name="btn_save_csv">SAVE CSV</string>
+    <string name="status_collecting">Status: Collecting…</string>
+    <string name="status_stopped">Status: Stopped</string>
+    <string name="status_ready">Status: Ready</string>
+    <string name="status_saved">Saved: %1$s</string>
+    <string name="status_permission_denied">Permission Denied</string>
+    <string name="network_nr_nsa">5G NSA</string>
+    <string name="network_nr_sa">5G SA</string>
+    <string name="network_lte">LTE</string>
 </resources>

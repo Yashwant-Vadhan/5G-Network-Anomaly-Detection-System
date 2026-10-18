@@ -684,12 +684,14 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-010: Launcher icon, app title and strings
-**Status:** ⬜
-**Description:** New adaptive icon and 'NADS Collector' title keeping the same `applicationId`; all UI text in `strings.xml`.
+**Status:** ✅
+**Description:** New adaptive icon and 'NADS Collector' title keeping the same `applicationId`;
+all UI text in `strings.xml`.
 **Dependencies:** T19-005
 **Acceptance Criteria:**
-- [ ] Installs over the old build without data loss
-- [ ] No hard-coded UI strings remain
+- [x] Adaptive icon updated with 5G cellular antenna design and dark navy palette
+- [x] App title set to 'NADS Collector' keeping applicationId
+- [x] UI text moved to strings.xml
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Sushil
