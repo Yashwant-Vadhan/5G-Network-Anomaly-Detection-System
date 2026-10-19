@@ -42,7 +42,7 @@ import com.example.a5gnetworktester.ui.theme.Spacing
  */
 @Composable
 fun PairingScreen(
-    onPairSuccess: (sessionId: String) -> Unit,
+    onPairSuccess: (sessionId: String, ingestToken: String, serverUrl: String, wsUrl: String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     pairingClientFactory: (url: String) -> PairingClient = { url -> PairingClient(url) },
@@ -156,7 +156,7 @@ fun PairingScreen(
                         if (result is PairingResult.Success) {
                             // Securely store token without logging
                             tokenStorageSaver(result.ingestToken)
-                            onPairSuccess(result.sessionId)
+                            onPairSuccess(result.sessionId, result.ingestToken, serverUrl, result.wsUrl)
                         }
                     }.start()
                 },

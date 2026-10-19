@@ -25,7 +25,10 @@ import java.util.Date
 import java.util.Locale
 import com.example.a5gnetworktester.streaming.AlertNotificationManager
 import com.example.a5gnetworktester.streaming.C7Alert
+import com.example.a5gnetworktester.streaming.C7Error
 import com.example.a5gnetworktester.streaming.StreamClient
+import com.example.a5gnetworktester.streaming.StreamClientListener
+import com.example.a5gnetworktester.streaming.StreamState
 import com.example.a5gnetworktester.streaming.TelemetryDispatcher
 import com.example.a5gnetworktester.ui.theme._5GNetworkTesterTheme
 
@@ -50,6 +53,7 @@ class MainActivity : ComponentActivity() {
     private val csvRows = mutableListOf<String>()
 
     private var streamClient: StreamClient? = null
+    private var isStreamingActive by mutableStateOf(false)
 
     /*
      * Incremental CSV writer persisting measurements as collected (T19-004, Guardrail G18).
@@ -141,7 +145,7 @@ class MainActivity : ComponentActivity() {
                 when (currentScreen) {
                     AppScreen.HOME -> HomeScreen(
                         uiState = uiState,
-                        isStreaming = streamClient?.isConnected == true,
+                        isStreaming = isStreamingActive,
                         onStartClick = { startCollection() },
                         onStopClick = { stopCollection() },
                         onSaveCsvClick = { saveCsv() },
@@ -149,7 +153,8 @@ class MainActivity : ComponentActivity() {
                         onNavigateConsent = { currentScreen = AppScreen.CONSENT }
                     )
                     AppScreen.PAIRING -> PairingScreen(
-                        onPairSuccess = { _ ->
+                        onPairSuccess = { sessionId, ingestToken, serverUrl, wsUrl ->
+                            initStreamClient(serverUrl, ingestToken, wsUrl)
                             currentScreen = AppScreen.HOME
                         },
                         onBack = { currentScreen = AppScreen.HOME },
@@ -913,6 +918,40 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    private fun initStreamClient(serverUrl: String, ingestToken: String, wsUrlPath: String) {
+        val cleanServer = serverUrl.trimEnd('/')
+        val wsScheme = if (cleanServer.startsWith("https")) "wss" else "ws"
+        val hostPort = cleanServer.substringAfter("://")
+        val path = if (wsUrlPath.startsWith('/')) wsUrlPath else "/$wsUrlPath"
+        val fullWsUrl = "$wsScheme://$hostPort$path"
+
+        streamClient?.disconnect()
+        val client = StreamClient(
+            wsEndpointUrl = fullWsUrl,
+            ingestToken = ingestToken,
+            context = this,
+            listener = object : StreamClientListener {
+                override fun onConnected() {
+                    runOnUiThread {
+                        isStreamingActive = true
+                    }
+                }
+                override fun onConnectionStateChanged(state: StreamState) {
+                    runOnUiThread {
+                        isStreamingActive = (state == StreamState.CONNECTED)
+                    }
+                }
+                override fun onAlert(alert: C7Alert) {
+                    runOnUiThread {
+                        alertNotificationManager.onAlert(alert)
+                    }
+                }
+            }
+        )
+        streamClient = client
+        client.connect()
+    }
+
     override fun onDestroy() {
 
         collecting = false
@@ -924,6 +963,8 @@ class MainActivity : ComponentActivity() {
         unregisterDisplayCallback()
         currentSessionWriter?.close()
         currentSessionWriter = null
+        streamClient?.disconnect()
+        streamClient = null
 
         super.onDestroy()
     }
