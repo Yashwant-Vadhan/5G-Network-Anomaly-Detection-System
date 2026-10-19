@@ -13,6 +13,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 interface StreamClientListener {
@@ -44,6 +45,7 @@ class StreamClient(
     val queue: PersistentSampleQueue = PersistentSampleQueue(
         storageDir = File(context?.filesDir ?: File(System.getProperty("java.io.tmpdir"), "5g_nads_stream_queue"), "unacked_queue")
     ),
+    val backoff: ExponentialBackoff = ExponentialBackoff(),
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
@@ -61,6 +63,12 @@ class StreamClient(
 
     var isFatalHalted: Boolean = false
         private set
+
+    var lastSeqAcked: Long = 0L
+        private set
+
+    private var explicitDisconnect: Boolean = false
+    private var reconnectTask: ScheduledFuture<*>? = null
 
     val clientId: String by lazy {
         getOrCreateClientId()
@@ -86,6 +94,8 @@ class StreamClient(
         if (isFatalHalted) {
             return
         }
+        explicitDisconnect = false
+        reconnectTask?.cancel(false)
 
         executor.execute {
             if (currentState == StreamState.CONNECTING || currentState == StreamState.CONNECTED) {
@@ -103,8 +113,9 @@ class StreamClient(
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     executor.execute {
                         updateState(StreamState.CONNECTED)
+                        backoff.reset()
                         listener?.onConnected()
-                        sendHello(resumeFromSeq = currentSeq)
+                        sendHello(resumeFromSeq = lastSeqAcked)
                         drainQueue()
                     }
                 }
@@ -120,6 +131,7 @@ class StreamClient(
                         this@StreamClient.webSocket = null
                         if (!isFatalHalted) {
                             updateState(StreamState.DISCONNECTED)
+                            scheduleReconnect()
                         }
                     }
                 }
@@ -129,6 +141,7 @@ class StreamClient(
                         this@StreamClient.webSocket = null
                         if (!isFatalHalted) {
                             updateState(StreamState.DISCONNECTED)
+                            scheduleReconnect()
                         }
                     }
                 }
@@ -137,6 +150,8 @@ class StreamClient(
     }
 
     fun disconnect() {
+        explicitDisconnect = true
+        reconnectTask?.cancel(false)
         executor.execute {
             webSocket?.close(1000, "Client disconnected")
             webSocket = null
@@ -144,6 +159,17 @@ class StreamClient(
                 updateState(StreamState.DISCONNECTED)
             }
         }
+    }
+
+    fun scheduleReconnect() {
+        if (isFatalHalted || explicitDisconnect) return
+        val delayMs = backoff.nextDelayMs()
+        reconnectTask?.cancel(false)
+        reconnectTask = executor.schedule({
+            if (!isFatalHalted && !explicitDisconnect && currentState == StreamState.DISCONNECTED) {
+                connect()
+            }
+        }, delayMs, TimeUnit.MILLISECONDS)
     }
 
     fun sendHello(
@@ -193,9 +219,6 @@ class StreamClient(
         sentAt: String,
         edge: Map<String, Any?>? = null
     ): Long {
-        currentSeq++
-        val seqToSend = currentSeq
-
         val payload = C7SamplePayload(
             timestamp = timestamp,
             device = clientInfo.device,
@@ -300,6 +323,7 @@ class StreamClient(
             "ack" -> {
                 val schemaVer = extractIntField(text, "schema_version") ?: 2
                 val seq = extractLongField(text, "seq") ?: 0
+                lastSeqAcked = maxOf(lastSeqAcked, seq)
                 queue.acknowledge(seq)
                 drainQueue()
                 val ack = C7Ack(type, schemaVer, seq)
@@ -318,6 +342,7 @@ class StreamClient(
                 // Acceptance criteria: Fatal error codes stop reconnect loops
                 if (fatal) {
                     isFatalHalted = true
+                    reconnectTask?.cancel(true)
                     webSocket?.close(1008, "Fatal server error: $code")
                     webSocket = null
                     updateState(StreamState.FATAL_HALTED)

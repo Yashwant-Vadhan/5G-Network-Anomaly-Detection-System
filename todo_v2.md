@@ -512,13 +512,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-004: Implement reconnect with backoff and resume
-**Status:** ⬜
+**Status:** ✅
 **Description:** Exponential backoff with jitter (cap 30 s), resume from `last_seq_acked`, flush backlog paced by acks, re-`hello` with queue stats. Reconnect is cancelled on fatal errors (UNAUTHORIZED, VERSION_MISMATCH).
 **Dependencies:** T12-003, T11-012
 **Acceptance Criteria:**
-- [ ] Server restart mid-session resumes with no duplicates stored
-- [ ] Flush does not flood (respects window)
-- [ ] Backoff unit-tested with a fake clock
+- [x] Server restart mid-session resumes with no duplicates stored
+- [x] Flush does not flood (respects window)
+- [x] Backoff unit-tested with a fake clock
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
