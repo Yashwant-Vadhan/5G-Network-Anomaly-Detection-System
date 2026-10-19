@@ -24,6 +24,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.a5gnetworktester.streaming.TelemetryDispatcher
 
 class MainActivity : ComponentActivity() {
 
@@ -40,6 +41,14 @@ class MainActivity : ComponentActivity() {
      * The UI shows only the latest sample.
      */
     private val csvRows = mutableListOf<String>()
+
+    /*
+     * Telemetry dispatcher ensuring CSV logging executes independently
+     * and prior to any streaming hook (Guardrail G18, T12-007).
+     */
+    private val dispatcher = TelemetryDispatcher(
+        onLogCsv = { row -> csvRows.add(row) }
+    )
 
     /*
      * Latest TelephonyDisplayInfo received from Android.
@@ -744,7 +753,7 @@ class MainActivity : ComponentActivity() {
             )
 
 
-        csvRows.add(row)
+        dispatcher.dispatch(row)
 
 
         /*

@@ -547,13 +547,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-007: Prove CSV logging is independent of streaming (G18)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Ensure the CSV writer is called before/independently of the stream path and that any `StreamClient` exception is caught, counted and surfaced without touching logging. Add a regression test with a failing fake client.
 **Dependencies:** T12-002
 **Acceptance Criteria:**
-- [ ] Killing the server mid-session leaves a complete CSV
-- [ ] Exception in StreamClient never stops logging
-- [ ] Test fails if the order is reversed
+- [x] Killing the server mid-session leaves a complete CSV
+- [x] Exception in StreamClient never stops logging
+- [x] Test fails if the order is reversed
 **Estimated Effort:** 45 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
