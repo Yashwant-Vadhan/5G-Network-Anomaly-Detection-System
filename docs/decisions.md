@@ -225,3 +225,18 @@
 - **Consequences**: Satisfies the sub-2.0 s streaming latency requirement; decouples dashboard
   rendering from Python server threads; preserves v1 Streamlit codebase strictly for historical
   evaluation baseline comparisons (frozen under `dashboard/`).
+
+---
+
+## ADR-017: Android Persistent Sample Queue — File-Based Append-Only Log with Compaction
+
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: Task `T12-003` requires an Android persistent unacked sample queue with a cap (`MAX_QUEUE = 5000` ≈ 4 h of telemetry), FIFO drop-oldest upon overflow, cumulative acknowledgement deletion (`seq <= ack.seq`), in-flight window control (`MAX_INFLIGHT_UNACKED = 50`), and survival across process termination. The task mandated deciding between Room/SQLite vs an append-only file and recording the choice in `docs/decisions.md`.
+- **Decision**: Adopt a **file-based append-only sequential log with atomic metadata tracking and periodic compaction** (`PersistentSampleQueue`), rather than Room or SQLite.
+- **Rationale**:
+  1. **Zero External Dependencies / Overhead**: Room requires heavy annotation processors (kapt/KSP), runtime metadata reflection, and schema migrations that bloat APK size and compilation time for what is fundamentally a FIFO queue.
+  2. **Pure Host JVM Testability**: Android's `SQLiteOpenHelper` is stubbed out in local JVM tests (`testDebugUnitTest`) unless Robolectric is introduced. The file-based log executes identically on both Android runtime and standard Adoptium JDK 25 unit test runners without mocks or emulation.
+  3. **Process Crash Durability**: Writes are flushed to disk before acknowledgement, and queue depth along with the cumulative `dropped_from_queue` counter are safely recovered upon process restart.
+  4. **Performance & Memory**: Append operations are O(1); cumulative acks update an in-memory index with lightweight periodic compaction, easily supporting 5,000 samples (< 4 MB total disk footprint).
+- **Consequences**: Avoids Room/SQLite complexity; provides deterministic serialization; fulfills Guardrail G18 and Contract C7 queue metrics.

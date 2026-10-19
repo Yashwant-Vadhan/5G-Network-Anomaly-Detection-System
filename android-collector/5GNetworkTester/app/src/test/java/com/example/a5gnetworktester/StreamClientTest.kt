@@ -7,6 +7,7 @@ import com.example.a5gnetworktester.streaming.C7HelloAck
 import com.example.a5gnetworktester.streaming.C7IngestHello
 import com.example.a5gnetworktester.streaming.C7IngestSample
 import com.example.a5gnetworktester.streaming.C7Json
+import com.example.a5gnetworktester.streaming.C7Ping
 import com.example.a5gnetworktester.streaming.C7SamplePayload
 import com.example.a5gnetworktester.streaming.DeviceInfoProvider
 import com.example.a5gnetworktester.streaming.StreamClient
@@ -256,5 +257,16 @@ class StreamClientTest {
         val csvRow = "01-10-26 18:26:32,SM-A156E,samsung,16,airtel,LTE,NSA,NR_NSA,false,-97.0,-12.0,3.0,NA,NA,NA,861,0,629952"
         val seq = client.sendCsvRow(csvRow)
         assertEquals(1L, seq)
+    }
+
+    @Test
+    fun pingSerialization_matchesGoldenExampleByteForByte() {
+        val ping = C7Ping(
+            dropped_from_queue = 0L,
+            queue_depth = 5L
+        )
+        val json = ping.toCanonicalJson()
+        val expected = """{"dropped_from_queue":0,"queue_depth":5,"schema_version":2,"type":"ping"}"""
+        assertEquals(expected, json)
     }
 }

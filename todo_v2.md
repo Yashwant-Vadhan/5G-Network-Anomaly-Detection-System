@@ -500,13 +500,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-003: Implement the unacked-sample queue
-**Status:** ⬜
+**Status:** ✅
 **Description:** Persistent queue (decide Room/SQLite vs append-only file, record the choice in decisions.md) with cap `MAX_QUEUE` (proposed 5,000 ≈ 4 h); drop **oldest** when full and increment `dropped_from_queue`; delete items ≤ cumulative `ack`.
 **Dependencies:** T12-002
 **Acceptance Criteria:**
-- [ ] Survives process kill
-- [ ] Drop-oldest counter reported in `hello`/`ping`
-- [ ] Max in-flight unacked ≤ `MAX_INFLIGHT_UNACKED`
+- [x] Survives process kill
+- [x] Drop-oldest counter reported in `hello`/`ping`
+- [x] Max in-flight unacked ≤ `MAX_INFLIGHT_UNACKED`
 **Estimated Effort:** 90 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

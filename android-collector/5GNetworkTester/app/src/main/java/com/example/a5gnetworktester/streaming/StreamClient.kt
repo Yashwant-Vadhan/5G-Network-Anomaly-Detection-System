@@ -6,6 +6,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,6 +41,9 @@ class StreamClient(
     private val context: Context? = null,
     private val clientInfo: DeviceInfoProvider = DefaultDeviceInfoProvider(context),
     private val listener: StreamClientListener? = null,
+    val queue: PersistentSampleQueue = PersistentSampleQueue(
+        storageDir = File(context?.filesDir ?: File(System.getProperty("java.io.tmpdir"), "5g_nads_stream_queue"), "unacked_queue")
+    ),
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
@@ -101,6 +105,7 @@ class StreamClient(
                         updateState(StreamState.CONNECTED)
                         listener?.onConnected()
                         sendHello(resumeFromSeq = currentSeq)
+                        drainQueue()
                     }
                 }
 
@@ -141,7 +146,11 @@ class StreamClient(
         }
     }
 
-    fun sendHello(resumeFromSeq: Long = 0, droppedCount: Long = 0, queueDepth: Long = 0) {
+    fun sendHello(
+        resumeFromSeq: Long = 0,
+        droppedCount: Long = queue.droppedFromQueue,
+        queueDepth: Long = queue.size.toLong()
+    ) {
         val hello = C7IngestHello(
             client_id = clientId,
             app_version = "1.3.0",
@@ -154,6 +163,16 @@ class StreamClient(
             queue_depth = queueDepth
         )
         webSocket?.send(hello.toCanonicalJson())
+    }
+
+    fun sendPing() {
+        val ping = C7Ping(
+            dropped_from_queue = queue.droppedFromQueue,
+            queue_depth = queue.size.toLong()
+        )
+        executor.execute {
+            webSocket?.send(ping.toCanonicalJson())
+        }
     }
 
     fun sendSample(
@@ -216,11 +235,22 @@ class StreamClient(
             edge = edge
         )
 
+        // Durable queue persistence (T12-003, ADR-017)
+        queue.enqueue(seqToSend, sample.toCanonicalJson())
+
         executor.execute {
-            webSocket?.send(sample.toCanonicalJson())
+            drainQueue()
         }
 
         return seqToSend
+    }
+
+    fun drainQueue() {
+        if (currentState != StreamState.CONNECTED) return
+        val batch = queue.pollNextInflightBatch()
+        for (item in batch) {
+            webSocket?.send(item.sampleJson)
+        }
     }
 
     fun sendCsvRow(
@@ -262,11 +292,16 @@ class StreamClient(
                 val accepted = extractBooleanField(text, "accepted") ?: true
                 val resumedAt = extractLongField(text, "resumed_at_seq")
                 val helloAck = C7HelloAck(type, schemaVer, sessionId, accepted, resumedAt)
+                if (accepted) {
+                    drainQueue()
+                }
                 listener?.onHelloAck(helloAck)
             }
             "ack" -> {
                 val schemaVer = extractIntField(text, "schema_version") ?: 2
                 val seq = extractLongField(text, "seq") ?: 0
+                queue.acknowledge(seq)
+                drainQueue()
                 val ack = C7Ack(type, schemaVer, seq)
                 listener?.onAck(ack)
             }
@@ -302,6 +337,9 @@ class StreamClient(
 
     private fun updateState(newState: StreamState) {
         currentState = newState
+        if (newState == StreamState.DISCONNECTED) {
+            queue.resetInFlight()
+        }
         listener?.onConnectionStateChanged(newState)
     }
 

@@ -135,6 +135,22 @@ data class C7Alert(
     val detail: String?
 )
 
+data class C7Ping(
+    val type: String = "ping",
+    val schema_version: Int = 2,
+    val dropped_from_queue: Long = 0,
+    val queue_depth: Long = 0
+) {
+    fun toMap(): Map<String, Any?> = sortedMapOf(
+        "dropped_from_queue" to dropped_from_queue,
+        "queue_depth" to queue_depth,
+        "schema_version" to schema_version,
+        "type" to type
+    )
+
+    fun toCanonicalJson(): String = C7Json.canonicalize(toMap())
+}
+
 /**
  * Lightweight, zero-dependency canonical JSON serializer for Contract C7.
  * Orders keys alphabetically, formats nulls, escapes strings, and strips whitespace.
