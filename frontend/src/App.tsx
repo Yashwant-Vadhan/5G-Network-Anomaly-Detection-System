@@ -125,7 +125,7 @@ function AppContent({
               setMode(prev => {
                 const next = prev === 'demo' ? 'live' : 'demo';
                 if (next === 'live' && liveConnectionState === 'REPLAY-SOURCE') {
-                  setLiveConnectionState('LIVE');
+                  setLiveConnectionState('WAITING');
                 }
                 return next;
               });
