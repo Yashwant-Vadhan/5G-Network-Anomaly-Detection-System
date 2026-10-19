@@ -606,12 +606,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-003: Introduce UiState and decouple the UI
-**Status:** ⬜
+**Status:** ✅
 **Description:** Replace direct `outputText.text = …` writes in the collection path with publishing a `UiState`; keep `startCollection()`/`saveCsv()` behaviour.
 **Dependencies:** T19-002
 **Acceptance Criteria:**
-- [ ] Golden tests still pass
-- [ ] App behaves the same on a device (manual 2-min session)
+- [x] Golden tests still pass
+- [x] App behaves the same on a device (manual 2-min session)
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

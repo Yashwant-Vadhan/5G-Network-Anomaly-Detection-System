@@ -63,6 +63,31 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var alertNotificationManager: AlertNotificationManager
 
+    var uiState: UiState = UiState()
+        private set(value) {
+            field = value
+            runOnUiThread { render(value) }
+        }
+
+    private fun render(state: UiState) {
+        if (::outputText.isInitialized) {
+            outputText.text = state.displayOutput
+        }
+        if (::statusText.isInitialized) {
+            val runningState = if (state.isCollecting) {
+                getString(R.string.status_running)
+            } else {
+                getString(R.string.status_stopped)
+            }
+            statusText.text = getString(
+                R.string.status_format,
+                runningState,
+                state.sampleCount,
+                state.deploymentMode
+            )
+        }
+    }
+
     companion object {
 
         private const val PERMISSION_REQUEST_CODE = 100
@@ -253,6 +278,7 @@ class MainActivity : ComponentActivity() {
 
 
         setContentView(root)
+        render(uiState)
     }
 
 
@@ -414,12 +440,15 @@ class MainActivity : ComponentActivity() {
 
 
         /*
-         * Clear previous display.
+         * Clear previous display via UiState.
          */
-        outputText.text = getString(R.string.waiting_measurement)
-
-
-        updateStatus()
+        uiState = uiState.copy(
+            isCollecting = true,
+            sampleCount = 0,
+            deploymentMode = getDeploymentMode(),
+            latestReading = null,
+            statusMessage = getString(R.string.waiting_measurement)
+        )
 
 
         /*
@@ -776,48 +805,38 @@ class MainActivity : ComponentActivity() {
 
 
         /*
-         * IMPORTANT:
-         *
-         * Replace the previous screen contents.
-         * Do NOT append readings vertically.
+         * Decoupled UI state publication (T19-003).
+         * Replaces previous screen contents with current sample via UiState.
          */
-        runOnUiThread {
+        val reading = TelemetryReading(
+            timestamp = timestamp,
+            device = device,
+            manufacturer = manufacturer,
+            androidVersion = androidVersion,
+            operator = operator,
+            networkType = networkType,
+            deploymentMode = deploymentMode,
+            displayOverride = displayOverride,
+            registered = registered,
+            ssRsrp = ssRsrp,
+            ssRsrq = ssRsrq,
+            ssSinr = ssSinr,
+            csiRsrp = csiRsrp,
+            csiRsrq = csiRsrq,
+            csiSinr = csiSinr,
+            pci = pci,
+            nci = nci,
+            nrarfcn = nrarfcn,
+            samplesStored = csvRows.size - 1
+        )
 
-            outputText.text =
-                "CURRENT READING\n" +
-                        "============================\n\n" +
-
-                        "Timestamp       : $timestamp\n" +
-                        "Device          : $device\n" +
-                        "Manufacturer    : $manufacturer\n" +
-                        "Android         : $androidVersion\n" +
-                        "Operator        : $operator\n\n" +
-
-                        "Network Type    : $networkType\n" +
-                        "Deployment Mode : $deploymentMode\n" +
-                        "Display Override: $displayOverride\n" +
-                        "Registered      : $registered\n\n" +
-
-                        "SS-RSRP         : $ssRsrp dBm\n" +
-                        "SS-RSRQ         : $ssRsrq dB\n" +
-                        "SS-SINR         : $ssSinr dB\n\n" +
-
-                        "CSI-RSRP        : $csiRsrp\n" +
-                        "CSI-RSRQ        : $csiRsrq\n" +
-                        "CSI-SINR        : $csiSinr\n\n" +
-
-                        "PCI             : $pci\n" +
-                        "NCI             : $nci\n" +
-                        "NRARFCN         : $nrarfcn\n\n" +
-
-                        "============================\n" +
-                        "Samples Stored  : ${csvRows.size - 1}\n\n" +
-                        "CSV stores ALL samples.\n" +
-                        "Screen shows CURRENT sample."
-        }
-
-
-        updateStatus()
+        uiState = uiState.copy(
+            isCollecting = collecting,
+            sampleCount = csvRows.size - 1,
+            deploymentMode = getDeploymentMode(),
+            latestReading = reading,
+            statusMessage = null
+        )
     }
 
 
@@ -850,12 +869,6 @@ class MainActivity : ComponentActivity() {
      * Updates the small status section.
      */
     private fun updateStatus() {
-
-        if (!::statusText.isInitialized) {
-            return
-        }
-
-
         val sampleCount =
             if (csvRows.isEmpty()) {
                 0
@@ -863,17 +876,10 @@ class MainActivity : ComponentActivity() {
                 csvRows.size - 1
             }
 
-
-        val runningState = if (collecting) {
-            getString(R.string.status_running)
-        } else {
-            getString(R.string.status_stopped)
-        }
-        statusText.text = getString(
-            R.string.status_format,
-            runningState,
-            sampleCount,
-            getDeploymentMode()
+        uiState = uiState.copy(
+            isCollecting = collecting,
+            sampleCount = sampleCount,
+            deploymentMode = getDeploymentMode()
         )
     }
 
@@ -884,7 +890,10 @@ class MainActivity : ComponentActivity() {
     private fun saveCsv() {
 
         if (csvRows.size <= 1) {
-            outputText.text = getString(R.string.no_measurements_to_save)
+            uiState = uiState.copy(
+                latestReading = null,
+                statusMessage = getString(R.string.no_measurements_to_save)
+            )
             return
         }
 
@@ -896,7 +905,10 @@ class MainActivity : ComponentActivity() {
 
 
             if (directory == null) {
-                outputText.text = getString(R.string.storage_access_error)
+                uiState = uiState.copy(
+                    latestReading = null,
+                    statusMessage = getString(R.string.storage_access_error)
+                )
                 return
             }
 
@@ -926,9 +938,9 @@ class MainActivity : ComponentActivity() {
 
 
             /*
-             * Show the exact saved path.
+             * Show the exact saved path via UiState.
              */
-            outputText.text =
+            val msg =
                 "CSV SAVED SUCCESSFULLY\n" +
                         "============================\n\n" +
                         "Samples Saved : ${csvRows.size - 1}\n\n" +
@@ -939,12 +951,21 @@ class MainActivity : ComponentActivity() {
                         "============================\n" +
                         "All collected samples are stored."
 
+            uiState = uiState.copy(
+                latestReading = null,
+                statusMessage = msg
+            )
 
         } catch (e: Exception) {
 
-            outputText.text =
+            val msg =
                 "CSV SAVE ERROR\n\n" +
                         "${e.message}"
+
+            uiState = uiState.copy(
+                latestReading = null,
+                statusMessage = msg
+            )
         }
     }
 
