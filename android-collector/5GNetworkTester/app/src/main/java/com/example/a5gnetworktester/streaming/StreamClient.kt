@@ -61,6 +61,9 @@ class StreamClient(
     var currentState: StreamState = StreamState.DISCONNECTED
         private set
 
+    val isConnected: Boolean
+        get() = currentState == StreamState.CONNECTED
+
     var isFatalHalted: Boolean = false
         private set
 

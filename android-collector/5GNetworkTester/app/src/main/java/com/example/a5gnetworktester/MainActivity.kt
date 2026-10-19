@@ -13,11 +13,10 @@ import android.telephony.CellSignalStrengthNr
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
-import android.view.Gravity
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
 import java.io.File
@@ -28,12 +27,17 @@ import com.example.a5gnetworktester.streaming.AlertNotificationManager
 import com.example.a5gnetworktester.streaming.C7Alert
 import com.example.a5gnetworktester.streaming.StreamClient
 import com.example.a5gnetworktester.streaming.TelemetryDispatcher
+import com.example.a5gnetworktester.ui.theme._5GNetworkTesterTheme
+
+enum class AppScreen {
+    HOME,
+    PAIRING,
+    CONSENT
+}
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var telephonyManager: TelephonyManager
-    private lateinit var statusText: TextView
-    private lateinit var outputText: TextView
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -71,30 +75,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var alertNotificationManager: AlertNotificationManager
 
-    var uiState: UiState = UiState()
-        private set(value) {
-            field = value
-            runOnUiThread { render(value) }
-        }
+    var currentScreen by mutableStateOf(AppScreen.HOME)
 
-    private fun render(state: UiState) {
-        if (::outputText.isInitialized) {
-            outputText.text = state.displayOutput
-        }
-        if (::statusText.isInitialized) {
-            val runningState = if (state.isCollecting) {
-                getString(R.string.status_running)
-            } else {
-                getString(R.string.status_stopped)
-            }
-            statusText.text = getString(
-                R.string.status_format,
-                runningState,
-                state.sampleCount,
-                state.deploymentMode
-            )
-        }
-    }
+    var uiState: UiState by mutableStateOf(UiState())
 
     companion object {
 
@@ -153,7 +136,37 @@ class MainActivity : ComponentActivity() {
 
         alertNotificationManager = AlertNotificationManager(this)
 
-        createUI()
+        setContent {
+            _5GNetworkTesterTheme {
+                when (currentScreen) {
+                    AppScreen.HOME -> HomeScreen(
+                        uiState = uiState,
+                        isStreaming = streamClient?.isConnected == true,
+                        onStartClick = { startCollection() },
+                        onStopClick = { stopCollection() },
+                        onSaveCsvClick = { saveCsv() },
+                        onNavigatePairing = { currentScreen = AppScreen.PAIRING },
+                        onNavigateConsent = { currentScreen = AppScreen.CONSENT }
+                    )
+                    AppScreen.PAIRING -> PairingScreen(
+                        onPairSuccess = { _ ->
+                            currentScreen = AppScreen.HOME
+                        },
+                        onBack = { currentScreen = AppScreen.HOME },
+                        tokenStorageSaver = { token ->
+                            TokenStorage(this@MainActivity).saveIngestToken(token)
+                        }
+                    )
+                    AppScreen.CONSENT -> ConsentScreen(
+                        onAccept = {
+                            ConsentManager.setConsent(this@MainActivity, true)
+                            currentScreen = AppScreen.HOME
+                        },
+                        onDecline = { currentScreen = AppScreen.HOME }
+                    )
+                }
+            }
+        }
 
         if (!hasPermissions()) {
 
@@ -168,125 +181,6 @@ class MainActivity : ComponentActivity() {
             registerDisplayCallback()
             updateStatus()
         }
-    }
-
-
-    /*
-     * Creates the application UI.
-     */
-    private fun createUI() {
-
-        val root = LinearLayout(this).apply {
-
-            orientation = LinearLayout.VERTICAL
-
-            setPadding(
-                30,
-                30,
-                30,
-                30
-            )
-        }
-
-
-        val titleText = TextView(this).apply {
-
-            text = getString(R.string.title_text)
-
-            textSize = 22f
-
-            gravity = Gravity.CENTER
-
-            setPadding(
-                0,
-                0,
-                0,
-                20
-            )
-        }
-
-
-        statusText = TextView(this).apply {
-
-            textSize = 16f
-
-            setPadding(
-                0,
-                0,
-                0,
-                15
-            )
-        }
-
-
-        val startButton = Button(this).apply {
-
-            text = getString(R.string.btn_start)
-
-            setOnClickListener {
-                startCollection()
-            }
-        }
-
-
-        val stopButton = Button(this).apply {
-
-            text = getString(R.string.btn_stop)
-
-            setOnClickListener {
-                stopCollection()
-            }
-        }
-
-
-        val saveButton = Button(this).apply {
-
-            text = getString(R.string.btn_save_csv)
-
-            setOnClickListener {
-                saveCsv()
-            }
-        }
-
-
-        val buttonLayout = LinearLayout(this).apply {
-
-            orientation = LinearLayout.HORIZONTAL
-
-            gravity = Gravity.CENTER
-        }
-
-        buttonLayout.addView(startButton)
-        buttonLayout.addView(stopButton)
-        buttonLayout.addView(saveButton)
-
-
-        outputText = TextView(this).apply {
-
-            textSize = 15f
-
-            setPadding(
-                0,
-                20,
-                0,
-                20
-            )
-        }
-
-
-        val scrollView = ScrollView(this)
-
-        scrollView.addView(outputText)
-
-
-        root.addView(titleText)
-        root.addView(statusText)
-        root.addView(buttonLayout)
-        root.addView(scrollView)
-
-
-        setContentView(root)
-        render(uiState)
     }
 
 
@@ -327,8 +221,7 @@ class MainActivity : ComponentActivity() {
 
             } catch (e: Exception) {
 
-                outputText.text =
-                    "Display callback error: ${e.message}"
+                uiState = uiState.copy(statusMessage = "Display callback error: ${e.message}")
             }
         }
     }
@@ -557,7 +450,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             runOnUiThread {
                                 val detailMsg = detail?.message ?: getString(R.string.cell_info_none)
-                                outputText.text = getString(R.string.cell_info_error, errorCode, detailMsg)
+                                uiState = uiState.copy(statusMessage = getString(R.string.cell_info_error, errorCode, detailMsg))
                             }
                         }
                     }
@@ -574,7 +467,7 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
 
             runOnUiThread {
-                outputText.text = getString(R.string.collection_error, e.message ?: "")
+                uiState = uiState.copy(statusMessage = getString(R.string.collection_error, e.message ?: ""))
             }
         }
     }
@@ -588,9 +481,9 @@ class MainActivity : ComponentActivity() {
     ) {
         if (cellInfoList.isNullOrEmpty()) {
             runOnUiThread {
-                outputText.text =
-                    "No cellular information returned.\n\n" +
-                            "Retrying..."
+                uiState = uiState.copy(
+                    statusMessage = "No cellular information returned.\n\nRetrying..."
+                )
             }
             return
         }
@@ -647,7 +540,7 @@ class MainActivity : ComponentActivity() {
 
             val deployment = getDeploymentMode()
 
-            outputText.text =
+            val msg =
                 if (deployment == "NSA") {
                     "5G NSA DETECTED\n\n" +
                             "NR measurement is currently unavailable.\n" +
@@ -659,6 +552,7 @@ class MainActivity : ComponentActivity() {
                             "Retrying..."
                 }
 
+            uiState = uiState.copy(statusMessage = msg)
             updateStatus()
         }
     }

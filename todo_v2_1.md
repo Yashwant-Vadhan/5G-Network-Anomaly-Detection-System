@@ -639,12 +639,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-006: Home screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Logging and Streaming status (icon + word), RSRP/RSRQ/SINR cards, network-type chip, sample counter, Start/Stop; no anomaly verdicts on the phone (G9).
 **Dependencies:** T19-003, T19-005
 **Acceptance Criteria:**
-- [ ] Touch targets ≥ 48 dp
-- [ ] TalkBack labels on every control
+- [x] Touch targets ≥ 48 dp
+- [x] TalkBack labels on every control
 **Estimated Effort:** 90 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

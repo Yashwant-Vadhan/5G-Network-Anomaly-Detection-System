@@ -25,4 +25,25 @@
     <string name="current_reading_header">CURRENT READING\n============================\n\n</string>
     <string name="current_reading_footer">============================\nSamples Stored  : %1$d\n\nCSV stores ALL samples.\nScreen shows CURRENT sample.</string>
     <string name="share_csv_title">Share 5G Telemetry CSV</string>
+
+    <!-- Home Screen strings (T19-006) -->
+    <string name="logging_active">Logging Active</string>
+    <string name="logging_idle">Logging Idle</string>
+    <string name="streaming_active">Streaming Active</string>
+    <string name="streaming_idle">Streaming Inactive</string>
+    <string name="network_unknown">UNKNOWN</string>
+    <string name="samples_counter">Samples: %1$d</string>
+    <string name="btn_pairing">Pairing</string>
+    <string name="btn_privacy">Privacy</string>
+    <string name="metric_rsrp_title">SS-RSRP</string>
+    <string name="metric_rsrq_title">SS-RSRQ</string>
+    <string name="metric_sinr_title">SS-SINR</string>
+    <string name="metric_rsrp_subtitle">Secondary Sync Power</string>
+    <string name="metric_rsrq_subtitle">Secondary Sync Quality</string>
+    <string name="metric_sinr_subtitle">Signal to Noise Ratio</string>
+    <string name="cd_start_collection">Start 5G telemetry collection</string>
+    <string name="cd_stop_collection">Stop 5G telemetry collection</string>
+    <string name="cd_save_csv">Save and share CSV file</string>
+    <string name="cd_pairing_screen">Open pairing screen</string>
+    <string name="cd_consent_screen">Open privacy consent screen</string>
 </resources>
