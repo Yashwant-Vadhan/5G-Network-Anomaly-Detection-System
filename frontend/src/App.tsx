@@ -300,7 +300,17 @@ function AppContent({
               <PairingPanel
                 connectionState={liveConnectionState}
                 samples={liveSamples}
-                onSessionEnded={() => setIsPairingOpen(false)}
+                onSessionStarted={() => {
+                  setLiveSamples([]);
+                  setLiveEvents([]);
+                  setLiveConnectionState('WAITING');
+                }}
+                onSessionEnded={() => {
+                  setIsPairingOpen(false);
+                  setLiveSamples([]);
+                  setLiveEvents([]);
+                  setLiveConnectionState('WAITING');
+                }}
               />
             </div>
           )}

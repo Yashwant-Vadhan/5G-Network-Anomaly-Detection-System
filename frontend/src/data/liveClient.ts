@@ -243,7 +243,11 @@ export class LiveClient {
       for (const ev of snap.open_events || []) {
         this.events.set(ev.event_id, ev);
       }
-      this.setState('LIVE');
+      if (snap.state === 'WAITING' || !snap.latest_sample) {
+        this.setState(snap.state || 'WAITING');
+      } else {
+        this.setState(snap.state || 'LIVE');
+      }
       for (const l of this.listeners) l.onSnapshot?.(snap);
     } else if (type === 'sample') {
       const ev = msg as unknown as LiveSampleEvent;

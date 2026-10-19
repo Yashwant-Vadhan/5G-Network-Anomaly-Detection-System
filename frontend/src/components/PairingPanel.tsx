@@ -450,7 +450,7 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
                   border: isConnected ? '1px solid #16a34a' : '1px solid #d97706',
                 }}
               >
-                {isConnected ? '🟢 Phone Connected' : '⏳ Waiting for phone...'}
+                {isConnected ? '🟢 Phone Connected' : '⏳ Waiting for phone connection...'}
               </span>
               <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
                 Session: <code>{session.session_id}</code>
