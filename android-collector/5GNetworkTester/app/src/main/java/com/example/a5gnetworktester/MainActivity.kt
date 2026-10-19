@@ -24,6 +24,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.a5gnetworktester.streaming.AlertNotificationManager
+import com.example.a5gnetworktester.streaming.C7Alert
 import com.example.a5gnetworktester.streaming.StreamClient
 import com.example.a5gnetworktester.streaming.TelemetryDispatcher
 
@@ -59,16 +61,27 @@ class MainActivity : ComponentActivity() {
      */
     private var latestDisplayInfo: TelephonyDisplayInfo? = null
 
+    private lateinit var alertNotificationManager: AlertNotificationManager
+
     companion object {
 
         private const val PERMISSION_REQUEST_CODE = 100
 
         private const val SAMPLE_INTERVAL = 3000L
 
-        private val REQUIRED_PERMISSIONS = arrayOf(
-            Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
+        private val REQUIRED_PERMISSIONS: Array<String>
+            get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                arrayOf(
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            } else {
+                arrayOf(
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            }
     }
 
 
@@ -104,6 +117,8 @@ class MainActivity : ComponentActivity() {
 
         telephonyManager =
             getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+
+        alertNotificationManager = AlertNotificationManager(this)
 
         createUI()
 

@@ -689,13 +689,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-019: Phone: show server alerts as local notifications
-**Status:** ⬜
+**Status:** ✅
 **Description:** Handle C7 `alert` messages by posting a standard Android notification (normal importance channel) with title/body from the message; request the notification permission on versions that require it (verify); tapping opens the status screen. No sound pattern customisation.
 **Dependencies:** T12-004, T13-006
 **Acceptance Criteria:**
-- [ ] Notification text equals the C9 title/body
-- [ ] Permission denial handled gracefully
-- [ ] Duplicate alert ids notify once
+- [x] Notification text equals the C9 title/body
+- [x] Permission denial handled gracefully
+- [x] Duplicate alert ids notify once
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
