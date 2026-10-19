@@ -6,6 +6,9 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -195,6 +198,17 @@ class StreamClient(
             nrarfcn = nrarfcn
         )
 
+        return sendSample(payload, sentAt, edge)
+    }
+
+    fun sendSample(
+        payload: C7SamplePayload,
+        sentAt: String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(Date()),
+        edge: Map<String, Any?>? = null
+    ): Long {
+        currentSeq++
+        val seqToSend = currentSeq
+
         val sample = C7IngestSample(
             seq = seqToSend,
             sent_at = sentAt,
@@ -207,6 +221,35 @@ class StreamClient(
         }
 
         return seqToSend
+    }
+
+    fun sendCsvRow(
+        row: String,
+        sentAt: String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(Date())
+    ): Long {
+        val parts = row.split(",")
+        require(parts.size == 18) { "Invalid CSV row: expected 18 columns, got ${parts.size}" }
+        val payload = C7SamplePayload(
+            timestamp = parts[0].trim(),
+            device = parts[1].trim(),
+            manufacturer = parts[2].trim(),
+            android = parts[3].trim(),
+            operator = parts[4].trim(),
+            network_type = parts[5].trim(),
+            deployment_mode = parts[6].trim(),
+            display_override = parts[7].trim(),
+            registered = parts[8].trim().toBooleanStrictOrNull() ?: false,
+            ss_rsrp = parts[9].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            ss_rsrq = parts[10].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            ss_sinr = parts[11].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            csi_rsrp = parts[12].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            csi_rsrq = parts[13].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            csi_sinr = parts[14].trim().takeIf { it != "NA" }?.toDoubleOrNull(),
+            pci = parts[15].trim().takeIf { it != "NA" }?.toIntOrNull(),
+            nci = parts[16].trim().takeIf { it != "NA" }?.toLongOrNull(),
+            nrarfcn = parts[17].trim().takeIf { it != "NA" }?.toIntOrNull()
+        )
+        return sendSample(payload, sentAt)
     }
 
     fun handleIncomingMessage(text: String) {

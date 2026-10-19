@@ -244,4 +244,17 @@ class StreamClientTest {
         assertEquals("alt-1", receivedAlert?.alert_id)
         assertEquals("HIGH", receivedAlert?.severity)
     }
+
+    @Test
+    fun sendCsvRow_parsesCorrectlyAndIncrementsSeq() {
+        val client = StreamClient(
+            wsEndpointUrl = "ws://127.0.0.1:8000/api/v1/ingest",
+            ingestToken = "test-token",
+            clientInfo = mockDeviceInfo
+        )
+
+        val csvRow = "01-10-26 18:26:32,SM-A156E,samsung,16,airtel,LTE,NSA,NR_NSA,false,-97.0,-12.0,3.0,NA,NA,NA,861,0,629952"
+        val seq = client.sendCsvRow(csvRow)
+        assertEquals(1L, seq)
+    }
 }

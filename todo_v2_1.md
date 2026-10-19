@@ -708,12 +708,12 @@ all UI text in `strings.xml`.
 **Owner:** Yashwant
 
 #### T19-012: INTERNET permission, WebSocket hook and debug-only localhost config
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add `INTERNET`; wire the stream hook after a row is appended (one call, exceptions swallowed and counted); debug-build-only network-security config allowing `ws://localhost` for `adb reverse`; release uses `wss://` only. Reuses `T12-002`–`T12-004` for the client, queue and reconnect.
 **Dependencies:** T19-002, T12-002
 **Acceptance Criteria:**
-- [ ] Release build rejects cleartext
-- [ ] Collection unaffected when the server is down (G18)
+- [x] Release build rejects cleartext
+- [x] Collection unaffected when the server is down (G18)
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
