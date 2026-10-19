@@ -1144,12 +1144,12 @@ before citing it.
 **Owner:** Yashwant
 
 #### T14-018: Definition-of-Done v2 audit
-**Status:** ⬜
+**Status:** ✅
 **Description:** `docs/definition_of_done_v2.md`: each PRD_v2 Must Have, KPI and G17–G26 with an evidence link (test, doc, or measurement) or an honest ❌.
 **Dependencies:** T14-006, T14-017, T14-015, T14-016, T16-019, T17-009, T18-014, T19-014
 **Acceptance Criteria:**
-- [ ] No item without evidence or an explicit gap
-- [ ] Both authors sign off in the PR
+- [x] No item without evidence or an explicit gap
+- [x] Both authors sign off in the PR
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
@@ -1166,12 +1166,12 @@ before citing it.
 **Owner:** Yashwant
 
 #### T14-020: Update slides and the demo script
-**Status:** ⬜
+**Status:** ✅
 **Description:** Add live-path slides, a 5-minute demo script with a pre-recorded fallback (replay at 5×), and the v2 non-claims slide.
 **Dependencies:** T14-017
 **Acceptance Criteria:**
-- [ ] Fallback demo needs no phone
-- [ ] Non-claims slide present
+- [x] Fallback demo needs no phone
+- [x] Non-claims slide present
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Sushil
@@ -1218,12 +1218,12 @@ and alert decisions are byte-identical.
 **Owner:** Sushil
 
 #### T15-004: O-RAN feasibility note (no code)
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** `docs/oran_feasibility_note.md`: what UE-side measurements could and could not inform an operator-side RIC, what access would be needed, why this project cannot implement it. Verify every statement against current primary sources or mark it unverified; state 'NOT IMPLEMENTED'.
 **Dependencies:** T14-019
 **Acceptance Criteria:**
-- [ ] No implementation claims
-- [ ] Unverified statements marked
+- [x] No implementation claims
+- [x] Unverified statements marked
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Sushil
