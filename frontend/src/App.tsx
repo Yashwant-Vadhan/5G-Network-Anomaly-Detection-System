@@ -3,7 +3,7 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { PAGES } from './constants/pages';
 import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
-import { DemoBundle, ConnectionState } from './types/contracts';
+import { DemoBundle, ConnectionState, ScoredSample, EventRecord } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
 import { CellsNetwork } from './pages/CellsNetwork';
@@ -15,6 +15,7 @@ import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 import { ConnectionChip } from './components/ConnectionChip';
 import { PairingPanel } from './components/PairingPanel';
+import { LiveClient } from './data/liveClient';
 
 export function sanitizeErrorMessage(err: unknown): string {
   if (!err) return '';
@@ -45,6 +46,68 @@ function AppContent({
   const [liveConnectionState, setLiveConnectionState] =
     useState<ConnectionState>(initialConnectionState);
   const [isPairingOpen, setIsPairingOpen] = useState(false);
+  const [liveSamples, setLiveSamples] = useState<ScoredSample[]>([]);
+  const [liveEvents, setLiveEvents] = useState<EventRecord[]>([]);
+
+  useEffect(() => {
+    if (mode !== 'live' || typeof window === 'undefined' || import.meta.env.MODE === 'test') {
+      return;
+    }
+
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host || '127.0.0.1:3000';
+      const wsUrl = `${protocol}//${host}/api/v1/live`;
+      const httpBaseUrl = window.location.origin || 'http://127.0.0.1:3000';
+
+      const client = new LiveClient({
+        wsUrl,
+        httpBaseUrl,
+        staleTimeoutMs: 15000,
+      });
+
+      const unsubscribe = client.subscribe({
+        onStateChange: state => {
+          setLiveConnectionState(state);
+        },
+        onSample: sample => {
+          setLiveSamples(prev => [...prev, sample]);
+        },
+        onSnapshot: snap => {
+          if (snap.latest_sample) {
+            setLiveSamples(prev => {
+              if (prev.some(s => s.seq === snap.latest_sample?.seq)) return prev;
+              return [...prev, snap.latest_sample!];
+            });
+          }
+          if (snap.open_events && snap.open_events.length > 0) {
+            setLiveEvents(snap.open_events);
+          }
+        },
+        onEvent: event => {
+          setLiveEvents(prev => {
+            const idx = prev.findIndex(e => e.event_id === event.event_id);
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = event;
+              return next;
+            }
+            return [...prev, event];
+          });
+        },
+      });
+
+      client.connect();
+
+      return () => {
+        unsubscribe();
+        client.disconnect();
+      };
+    } catch {
+      // In testing environments where WebSocket is mocked or unavailable
+    }
+  }, [mode]);
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('nads_theme') as 'light' | 'dark') || 'light';
   });
@@ -165,7 +228,11 @@ function AppContent({
           )}
           <ConnectionChip
             state={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
-            lastSampleTime={currentSample?.timestamp as string}
+            lastSampleTime={
+              (mode === 'live' && liveSamples.length > 0
+                ? (liveSamples[liveSamples.length - 1].timestamp as string)
+                : currentSample?.timestamp) as string
+            }
           />
           <button
             onClick={toggleTheme}
@@ -232,6 +299,7 @@ function AppContent({
             <div style={{ marginBottom: '20px' }}>
               <PairingPanel
                 connectionState={liveConnectionState}
+                samples={liveSamples}
                 onSessionEnded={() => setIsPairingOpen(false)}
               />
             </div>
@@ -520,9 +588,17 @@ function AppContent({
               path="/overview"
               element={
                 <Overview
-                  currentSample={currentSample}
-                  prevSample={prevSample}
-                  events={events}
+                  currentSample={
+                    mode === 'live' && liveSamples.length > 0
+                      ? liveSamples[liveSamples.length - 1]
+                      : currentSample
+                  }
+                  prevSample={
+                    mode === 'live' && liveSamples.length > 1
+                      ? liveSamples[liveSamples.length - 2]
+                      : prevSample
+                  }
+                  events={mode === 'live' ? liveEvents : events}
                   connectionState={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
                 />
               }
