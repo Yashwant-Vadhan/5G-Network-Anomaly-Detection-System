@@ -48,11 +48,19 @@ class MainActivity : ComponentActivity() {
     private var streamClient: StreamClient? = null
 
     /*
+     * Incremental CSV writer persisting measurements as collected (T19-004, Guardrail G18).
+     */
+    private var currentSessionWriter: IncrementalCsvWriter? = null
+
+    /*
      * Telemetry dispatcher ensuring CSV logging executes independently
      * and prior to any streaming hook (Guardrail G18, T12-007, T19-012).
      */
     private val dispatcher = TelemetryDispatcher(
-        onLogCsv = { row -> csvRows.add(row) },
+        onLogCsv = { row ->
+            csvRows.add(row)
+            currentSessionWriter?.appendRow(row)
+        },
         onStream = { row -> streamClient?.sendCsvRow(row) }
     )
 
@@ -437,6 +445,18 @@ class MainActivity : ComponentActivity() {
          * CSV header.
          */
         csvRows.add(CsvBuilder.CSV_HEADER)
+
+        /*
+         * Initialize incremental session writer (T19-004, Guardrail G18).
+         * Each subsequent sample will be appended and flushed immediately to file.
+         */
+        try {
+            val directory = getExternalFilesDir(null) ?: filesDir
+            currentSessionWriter?.close()
+            currentSessionWriter = IncrementalCsvWriter(IncrementalCsvWriter.createSessionFile(directory))
+        } catch (_: Exception) {
+            currentSessionWriter = null
+        }
 
 
         /*
@@ -885,7 +905,7 @@ class MainActivity : ComponentActivity() {
 
 
     /*
-     * Saves all collected measurements to CSV.
+     * Saves all collected measurements to CSV and offers sharing (T19-004, T19-011).
      */
     private fun saveCsv() {
 
@@ -899,42 +919,21 @@ class MainActivity : ComponentActivity() {
 
 
         try {
-
             val directory =
-                getExternalFilesDir(null)
+                getExternalFilesDir(null) ?: filesDir
 
-
-            if (directory == null) {
-                uiState = uiState.copy(
-                    latestReading = null,
-                    statusMessage = getString(R.string.storage_access_error)
-                )
-                return
+            val activeWriter = currentSessionWriter
+            val file = if (activeWriter != null && activeWriter.file.exists() && activeWriter.file.length() > 0) {
+                activeWriter.close()
+                currentSessionWriter = null
+                activeWriter.file
+            } else {
+                activeWriter?.close()
+                currentSessionWriter = null
+                val fallbackFile = IncrementalCsvWriter.createSessionFile(directory)
+                fallbackFile.writeText(csvRows.joinToString("\n") + "\n")
+                fallbackFile
             }
-
-
-            val fileName =
-                "5G_measurements_" +
-                        SimpleDateFormat(
-                            "yyyyMMdd_HHmmss",
-                            Locale.getDefault()
-                        ).format(Date()) +
-                        ".csv"
-
-
-            val file =
-                File(
-                    directory,
-                    fileName
-                )
-
-
-            /*
-             * Write every collected sample.
-             */
-            file.writeText(
-                csvRows.joinToString("\n")
-            )
 
 
             /*
@@ -945,7 +944,7 @@ class MainActivity : ComponentActivity() {
                         "============================\n\n" +
                         "Samples Saved : ${csvRows.size - 1}\n\n" +
                         "File Name:\n" +
-                        "$fileName\n\n" +
+                        "${file.name}\n\n" +
                         "Path:\n" +
                         "${file.absolutePath}\n\n" +
                         "============================\n" +
@@ -955,6 +954,8 @@ class MainActivity : ComponentActivity() {
                 latestReading = null,
                 statusMessage = msg
             )
+
+            offerShare(file)
 
         } catch (e: Exception) {
 
@@ -966,6 +967,29 @@ class MainActivity : ComponentActivity() {
                 latestReading = null,
                 statusMessage = msg
             )
+        }
+    }
+
+    private fun offerShare(file: File) {
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this,
+                "${packageName}.provider",
+                file
+            )
+            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(
+                android.content.Intent.createChooser(
+                    shareIntent,
+                    getString(R.string.share_csv_title)
+                )
+            )
+        } catch (_: Exception) {
+            // Sharing may not be available on headless/test environments
         }
     }
 
@@ -1004,6 +1028,8 @@ class MainActivity : ComponentActivity() {
         )
 
         unregisterDisplayCallback()
+        currentSessionWriter?.close()
+        currentSessionWriter = null
 
         super.onDestroy()
     }

@@ -617,12 +617,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-004: Persist rows incrementally
-**Status:** ⬜
+**Status:** ✅
 **Description:** Append each row to the session file as collected (so a killed app keeps data); 'finish' closes and offers share; keep the file name pattern `5G_measurements_yyyyMMdd_HHmmss.csv`.
 **Dependencies:** T19-003
 **Acceptance Criteria:**
-- [ ] Force-stop mid-session leaves a valid CSV
-- [ ] Final file equals the old in-memory output for the same rows
+- [x] Force-stop mid-session leaves a valid CSV
+- [x] Final file equals the old in-memory output for the same rows
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

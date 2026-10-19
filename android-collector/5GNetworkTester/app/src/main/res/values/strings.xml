@@ -24,4 +24,5 @@
     <string name="storage_access_error">Unable to access app storage.</string>
     <string name="current_reading_header">CURRENT READING\n============================\n\n</string>
     <string name="current_reading_footer">============================\nSamples Stored  : %1$d\n\nCSV stores ALL samples.\nScreen shows CURRENT sample.</string>
+    <string name="share_csv_title">Share 5G Telemetry CSV</string>
 </resources>
