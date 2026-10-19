@@ -264,13 +264,13 @@ key values appear, empty/error states, filters, replay player.
 **Owner:** Sushil
 
 #### T16-019: Playwright e2e and screenshots
-**Status:** ⬜
+**Status:** ✅
 **Description:** Smoke path through all six pages in light and dark, 1280 and 375 px; save screenshots to `docs/screens_react/`; compare visually with the Streamlit screenshots for content parity (manual sign-off).
 **Dependencies:** T16-016
 **Acceptance Criteria:**
-- [ ] e2e runs in CI
-- [ ] Screenshots committed
-- [ ] Reviewer sign-off recorded
+- [x] e2e runs in CI
+- [x] Screenshots committed
+- [x] Reviewer sign-off recorded (docs/screens_react/review_signoff.md)
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
