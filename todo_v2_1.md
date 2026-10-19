@@ -661,12 +661,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-008: Pairing screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Enter code (QR optional), call the pair endpoint, show clear failure reasons (expired, wrong, server unreachable), store the ingest token in encrypted storage (verify current AndroidX/Keystore approach).
 **Dependencies:** T19-005, T18-002
 **Acceptance Criteria:**
-- [ ] Token never logged
-- [ ] Each failure case shows its own message
+- [x] Token never logged
+- [x] Each failure case shows its own message
 **Estimated Effort:** 90 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
