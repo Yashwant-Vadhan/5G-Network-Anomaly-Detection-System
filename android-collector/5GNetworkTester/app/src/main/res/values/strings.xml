@@ -12,4 +12,16 @@
     <string name="network_nr_nsa">5G NSA</string>
     <string name="network_nr_sa">5G SA</string>
     <string name="network_lte">LTE</string>
+
+    <!-- Additional UI & Notification Strings (T19-005) -->
+    <string name="status_running">RUNNING</string>
+    <string name="status_format">Collection : %1$s\nSamples    : %2$d\nDeployment : %3$s\nAnomaly Detection : NOT YET</string>
+    <string name="waiting_measurement">Waiting for current 5G measurement...</string>
+    <string name="cell_info_error">CELL INFO ERROR\n\nError code : %1$d\nDetail     : %2$s\n\nRetrying...</string>
+    <string name="cell_info_none">None</string>
+    <string name="collection_error">Collection error: %1$s</string>
+    <string name="no_measurements_to_save">No measurements available to save.</string>
+    <string name="storage_access_error">Unable to access app storage.</string>
+    <string name="current_reading_header">CURRENT READING\n============================\n\n</string>
+    <string name="current_reading_footer">============================\nSamples Stored  : %1$d\n\nCSV stores ALL samples.\nScreen shows CURRENT sample.</string>
 </resources>

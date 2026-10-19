@@ -388,8 +388,7 @@ class MainActivity : ComponentActivity() {
         /*
          * Clear previous display.
          */
-        outputText.text =
-            "Waiting for current 5G measurement..."
+        outputText.text = getString(R.string.waiting_measurement)
 
 
         updateStatus()
@@ -480,11 +479,8 @@ class MainActivity : ComponentActivity() {
                             detail: Throwable?
                         ) {
                             runOnUiThread {
-                                outputText.text =
-                                    "CELL INFO ERROR\n\n" +
-                                            "Error code : $errorCode\n" +
-                                            "Detail     : ${detail?.message ?: "None"}\n\n" +
-                                            "Retrying..."
+                                val detailMsg = detail?.message ?: getString(R.string.cell_info_none)
+                                outputText.text = getString(R.string.cell_info_error, errorCode, detailMsg)
                             }
                         }
                     }
@@ -501,9 +497,7 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
 
             runOnUiThread {
-
-                outputText.text =
-                    "Collection error: ${e.message}"
+                outputText.text = getString(R.string.collection_error, e.message ?: "")
             }
         }
     }
@@ -842,13 +836,17 @@ class MainActivity : ComponentActivity() {
             }
 
 
-        statusText.text =
-            "Collection : ${
-                if (collecting) "RUNNING" else "STOPPED"
-            }\n" +
-                    "Samples    : $sampleCount\n" +
-                    "Deployment : ${getDeploymentMode()}\n" +
-                    "Anomaly Detection : NOT YET"
+        val runningState = if (collecting) {
+            getString(R.string.status_running)
+        } else {
+            getString(R.string.status_stopped)
+        }
+        statusText.text = getString(
+            R.string.status_format,
+            runningState,
+            sampleCount,
+            getDeploymentMode()
+        )
     }
 
 
@@ -858,10 +856,7 @@ class MainActivity : ComponentActivity() {
     private fun saveCsv() {
 
         if (csvRows.size <= 1) {
-
-            outputText.text =
-                "No measurements available to save."
-
+            outputText.text = getString(R.string.no_measurements_to_save)
             return
         }
 
@@ -873,10 +868,7 @@ class MainActivity : ComponentActivity() {
 
 
             if (directory == null) {
-
-                outputText.text =
-                    "Unable to access app storage."
-
+                outputText.text = getString(R.string.storage_access_error)
                 return
             }
 

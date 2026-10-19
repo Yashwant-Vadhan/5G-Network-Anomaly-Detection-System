@@ -628,12 +628,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-005: Compose theme from the DESIGN tokens
-**Status:** ⬜
+**Status:** ✅
 **Description:** Use the existing `Color.kt/Theme.kt/Type.kt`: light and dark schemes, typography, spacing, status colours only for status; move strings to `strings.xml`.
 **Dependencies:** T19-001
 **Acceptance Criteria:**
-- [ ] Dark theme follows system setting
-- [ ] Contrast checked for text pairs
+- [x] Dark theme follows system setting
+- [x] Contrast checked for text pairs
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

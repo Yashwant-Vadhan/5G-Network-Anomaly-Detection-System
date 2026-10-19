@@ -1,54 +1,58 @@
 package com.example.a5gnetworktester.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+val DarkColorScheme = darkColorScheme(
+    primary = DarkPrimary,
     onPrimary = Color.White,
+    primaryContainer = DarkSurfaceHover,
+    onPrimaryContainer = DarkText,
+    secondary = DarkPrimaryHover,
     onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    background = DarkBg,
+    onBackground = DarkText,
+    surface = DarkSurface,
+    onSurface = DarkText,
+    surfaceVariant = DarkSurfaceHover,
+    onSurfaceVariant = DarkTextMuted,
+    outline = DarkBorder,
+    error = StatusAnomalyDark,
+    onError = DarkBg
 )
 
+val LightColorScheme = lightColorScheme(
+    primary = LightPrimary,
+    onPrimary = Color.White,
+    primaryContainer = LightSurfaceHover,
+    onPrimaryContainer = LightText,
+    secondary = LightPrimaryHover,
+    onSecondary = Color.White,
+    background = LightBg,
+    onBackground = LightText,
+    surface = LightSurface,
+    onSurface = LightText,
+    surfaceVariant = LightSurfaceHover,
+    onSurfaceVariant = LightTextMuted,
+    outline = LightBorder,
+    error = StatusAnomalyLight,
+    onError = Color.White
+)
+
+/**
+ * 5G-NADS Collector theme composed from DESIGN tokens (T19-005).
+ * Follows system dark/light theme setting by default.
+ */
 @Composable
 fun _5GNetworkTesterTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
