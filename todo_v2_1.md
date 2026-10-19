@@ -650,12 +650,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-007: Consent screen
-**Status:** ⬜
+**Status:** ✅
 **Description:** Shows what is sent and not sent using the shared text from `docs/privacy.md`; streaming cannot start until accepted (G28); acceptance stored locally with version.
 **Dependencies:** T19-005, T18-012
 **Acceptance Criteria:**
-- [ ] No network call before consent
-- [ ] Text matches docs/privacy.md
+- [x] No network call before consent
+- [x] Text matches docs/privacy.md
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
