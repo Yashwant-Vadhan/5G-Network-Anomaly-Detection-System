@@ -595,12 +595,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-002: Extract buildCsvRow() with a golden test (G32)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Pull the row-building code out of `processNrCell()` into a pure function; unit-test fixed fake inputs against exact expected CSV lines (NA handling, timestamp format `dd-MM-yy HH:mm:ss`, 18 columns); no behaviour change.
 **Dependencies:** T19-001
 **Acceptance Criteria:**
-- [ ] Golden tests pass before and after
-- [ ] Header unchanged (C1)
+- [x] Golden tests pass before and after
+- [x] Header unchanged (C1)
 **Estimated Effort:** 60 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

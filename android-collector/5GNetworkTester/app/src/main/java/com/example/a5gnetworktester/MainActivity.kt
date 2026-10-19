@@ -382,13 +382,7 @@ class MainActivity : ComponentActivity() {
         /*
          * CSV header.
          */
-        csvRows.add(
-            "timestamp,device,manufacturer,android,operator," +
-                    "network_type,deployment_mode,display_override," +
-                    "registered,ss_rsrp,ss_rsrq,ss_sinr," +
-                    "csi_rsrp,csi_rsrq,csi_sinr," +
-                    "pci,nci,nrarfcn"
-        )
+        csvRows.add(CsvBuilder.CSV_HEADER)
 
 
         /*
@@ -734,7 +728,7 @@ class MainActivity : ComponentActivity() {
          * Store the complete sample in CSV.
          */
         val row =
-            listOf(
+            buildCsvRow(
                 timestamp,
                 device,
                 manufacturer,
@@ -753,7 +747,7 @@ class MainActivity : ComponentActivity() {
                 pci,
                 nci,
                 nrarfcn
-            ).joinToString(",")
+            )
 
 
         csvRows.add(row)
@@ -807,25 +801,10 @@ class MainActivity : ComponentActivity() {
 
     /*
      * Converts unavailable integer measurements to NA.
-     *
-     * 2147483647 = Int.MAX_VALUE
      */
     private fun metricValue(
         value: Int
-    ): String {
-
-        return if (
-            value == Int.MAX_VALUE ||
-            value == Int.MIN_VALUE
-        ) {
-
-            "NA"
-
-        } else {
-
-            value.toString()
-        }
-    }
+    ): String = CsvBuilder.metricValue(value)
 
 
     /*
@@ -834,20 +813,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun intMetricValue(
         value: Int
-    ): String {
-
-        return if (
-            value == Int.MAX_VALUE ||
-            value == Int.MIN_VALUE
-        ) {
-
-            "NA"
-
-        } else {
-
-            value.toString()
-        }
-    }
+    ): String = CsvBuilder.metricValue(value)
 
 
     /*
@@ -855,20 +821,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun longMetricValue(
         value: Long
-    ): String {
-
-        return if (
-            value == Long.MAX_VALUE ||
-            value == Long.MIN_VALUE
-        ) {
-
-            "NA"
-
-        } else {
-
-            value.toString()
-        }
-    }
+    ): String = CsvBuilder.metricValue(value)
 
 
     /*
