@@ -92,23 +92,28 @@ export function loadAndValidateBundle(raw: unknown): BundleValidationResult {
 }
 
 export async function fetchDemoBundle(
-  url = '/data/demo_bundle.json'
+  url = './demo-bundle.json'
 ): Promise<BundleValidationResult> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return {
-        bundle: null,
-        error: `Could not load demo bundle (HTTP ${response.status} from ${url}). Ensure the bundle exists by running 'python scripts/build_demo_bundle.py --out frontend/public/data/demo_bundle.json'.`,
-      };
+  const candidateUrls = [url, './data/demo_bundle.json', '/data/demo_bundle.json'];
+  let lastErr = '';
+
+  for (const targetUrl of candidateUrls) {
+    try {
+      const response = await fetch(targetUrl);
+      if (response.ok) {
+        const data = await response.json();
+        return loadAndValidateBundle(data);
+      }
+      lastErr = `HTTP ${response.status} from ${targetUrl}`;
+    } catch (err: unknown) {
+      lastErr = err instanceof Error ? err.message : String(err);
     }
-    const data = await response.json();
-    return loadAndValidateBundle(data);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      bundle: null,
-      error: `Failed to fetch demo bundle from ${url} (${msg}). Run 'python scripts/build_demo_bundle.py --out frontend/public/data/demo_bundle.json'.`,
-    };
   }
+
+  return {
+    bundle: null,
+    error:
+      `Could not load demo bundle (${lastErr}). ` +
+      "Run 'python scripts/build_demo_bundle.py --source sample --public'.",
+  };
 }

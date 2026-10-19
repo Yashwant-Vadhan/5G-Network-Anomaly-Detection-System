@@ -500,13 +500,13 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Sushil
 
 #### T18-009: Deploy the static demo to GitHub Pages
-**Status:** ⬜
+**Status:** ✅
 **Description:** Vite `base` set for repo sub-path (`/5G-Network-Anomaly-Detection-System/`), `HashRouter` for client routing without 404s, Actions workflow publishing `frontend/dist` with the **public (hashed)** bundle; verify deep links and bundle loading under the sub-path. (Verified: GitHub Pages soft limit 100 GB/month bandwidth, 1 GB site storage; https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#usage-limits, 2026-10-12).
 **Dependencies:** T16-019, T10-010
 **Acceptance Criteria:**
-- [ ] Public URL loads all six pages
-- [ ] Bundle contains no raw cell IDs (check in CI)
-- [ ] Footer notice visible
+- [x] Public URL loads all six pages
+- [x] Bundle contains no raw cell IDs (check in CI)
+- [x] Footer notice visible
 **Estimated Effort:** 60 min
 **Assigned To:** DevOps
 **Owner:** Yashwant

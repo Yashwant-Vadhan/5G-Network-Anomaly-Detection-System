@@ -28,7 +28,7 @@ export interface DataProviderProps {
 export const DataProvider: React.FC<DataProviderProps> = ({
   children,
   initialBundle = null,
-  bundleUrl = '/data/demo_bundle.json',
+  bundleUrl = './demo-bundle.json',
 }) => {
   const [bundle, setBundle] = useState<DemoBundle | null>(initialBundle);
   const [loading, setLoading] = useState<boolean>(!initialBundle);
