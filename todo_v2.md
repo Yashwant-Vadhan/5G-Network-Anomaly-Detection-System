@@ -488,13 +488,13 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-002: Implement StreamClient (WebSocket, hello/sample/ack)
-**Status:** ⬜
+**Status:** ✅
 **Description:** Package `...streaming`: OkHttp WebSocket (verify current version), serialise the existing measurement object to C7 `sample` (null for NA, sentinels sent as-is), generate and persist a random UUID `client_id`, send `hello` with `resume_from_seq`, handle `hello_ack`, `ack`, `error`, `alert`. All I/O off the main thread.
 **Dependencies:** T19-008, T11-011
 **Acceptance Criteria:**
-- [ ] Serialisation equals the golden C7 example byte-for-byte after canonicalisation
-- [ ] No hardware identifiers in any message
-- [ ] Fatal error codes stop reconnect loops
+- [x] Serialisation equals the golden C7 example byte-for-byte after canonicalisation
+- [x] No hardware identifiers in any message
+- [x] Fatal error codes stop reconnect loops
 **Estimated Effort:** 90 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
