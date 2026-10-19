@@ -253,4 +253,3 @@ PAIRING_ATTEMPT_WINDOW_SECONDS: int = 60
 # tune on non-evaluation data.
 # Inactivity threshold in seconds after which an idle ephemeral live session is reaped (15 min).
 IDLE_SESSION_TIMEOUT_SECONDS: int = 900
-

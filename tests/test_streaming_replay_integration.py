@@ -13,7 +13,6 @@ and validates:
 from __future__ import annotations
 
 import csv
-import json
 import threading
 import time
 from datetime import UTC, datetime, timedelta
@@ -22,9 +21,9 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import pytest
 from fastapi.testclient import TestClient
 
+import streaming.store
 from ml.anomaly_analysis import detect
 from ml.config import RAW_COLUMNS
 from ml.preprocessing import (
@@ -34,14 +33,12 @@ from ml.preprocessing import (
     flag_invalid,
     parse_timestamps,
 )
-import streaming.store
 from streaming.connection import ConnectionTracker
 from streaming.engine import StreamingEngine
 from streaming.hub import LiveHub
 from streaming.schema import SCHEMA_VERSION
 from streaming.server import ServerConfig, create_app
 from streaming.session_manager import SessionManager
-
 
 SAMPLE_CSV = Path("data/sample/sample_measurements.csv")
 
@@ -150,9 +147,7 @@ def _assert_batch_on_capture_equals_live(
         assert bool(b_row["baseline_flag"]) == bool(s_sample.baseline_flag), (
             f"Row {idx}: baseline_flag mismatch"
         )
-        assert bool(b_row["if_flag"]) == bool(s_sample.if_flag), (
-            f"Row {idx}: if_flag mismatch"
-        )
+        assert bool(b_row["if_flag"]) == bool(s_sample.if_flag), f"Row {idx}: if_flag mismatch"
         assert str(b_row["anomaly_type"]) == str(s_sample.anomaly_type), (
             f"Row {idx}: anomaly_type mismatch: {b_row['anomaly_type']} != {s_sample.anomaly_type}"
         )
@@ -170,7 +165,7 @@ def test_replay_server_live_subscriber_integration(tmp_path: Path):
     """End-to-end integration test: replay -> server -> live subscriber (T11-017)."""
     assert SAMPLE_CSV.is_file(), f"Sample CSV missing: {SAMPLE_CSV}"
 
-    with open(SAMPLE_CSV, "r", encoding="utf-8") as f:
+    with open(SAMPLE_CSV, encoding="utf-8") as f:
         input_rows = list(csv.DictReader(f))
     total_samples = len(input_rows)
     assert total_samples > 0

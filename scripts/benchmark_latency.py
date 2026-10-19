@@ -12,9 +12,6 @@ Streamlit version, and network setup, evaluating honestly against the 2.0 s p95 
 from __future__ import annotations
 
 import argparse
-import json
-import math
-import os
 import platform
 import sys
 import time
@@ -33,7 +30,6 @@ from streaming.engine import StreamingEngine
 from streaming.metrics import calculate_percentile
 from streaming.schema import IngestSample
 from streaming.session_manager import SessionManager
-
 
 SAMPLE_CSV = Path("data/sample/sample_measurements.csv")
 RESULTS_V2_PATH = Path("docs/results_v2.md")

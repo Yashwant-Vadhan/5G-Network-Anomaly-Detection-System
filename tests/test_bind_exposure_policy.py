@@ -143,7 +143,7 @@ def test_case_3_read_endpoints_refuse_non_loopback_unless_opted_in():
 def test_case_4_healthz_leaks_nothing():
     """Case 4: /healthz needs no token, works remotely, and leaks no secret or PII."""
     secret_token = "ultra-secret-ingest-token-999"
-    secret_webhook = "https://hooks.slack.com/services/T00/B00/secret_webhook_val"
+    secret_webhook = "https://webhook.internal-security.local/alerts/secret_webhook_val"
     secret_email = "smtp.internal-security.local"
 
     with patch.dict(

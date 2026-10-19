@@ -25,7 +25,6 @@ from streaming.event_tracker import EventTracker, ImmutableEventError
 from streaming.schema import (
     MAX_MESSAGE_BYTES,
     AlertRecord,
-    EventRecord,
     ScoredSample,
 )
 from streaming.server import ConfigError, ServerConfig
@@ -449,7 +448,5 @@ def test_g1_prime_collector_measurement_path_has_no_ml_or_edge_dependencies() ->
         text = gradle_file.read_text(encoding="utf-8", errors="replace")
         if "app" in gradle_file.parts:
             assert "edge-inference" not in text.lower(), (
-                f"Guardrail G1′ violation: edge-inference referenced in "
-                f"{gradle_file}"
+                f"Guardrail G1′ violation: edge-inference referenced in {gradle_file}"
             )
-

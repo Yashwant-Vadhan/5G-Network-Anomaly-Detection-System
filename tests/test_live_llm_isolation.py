@@ -10,14 +10,10 @@ from __future__ import annotations
 
 import os
 import socket
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from agents.llm_explainer import explain_diagnosis, is_llm_enabled
-from streaming.alerts.channels.in_app import InAppChannel
-from streaming.alerts.dispatcher import AlertDispatcher, format_alert_body_with_template
+from streaming.alerts.dispatcher import format_alert_body_with_template
 from streaming.alerts.policy import AlertStateTracker, decide
 from streaming.engine import StreamingEngine
 from streaming.event_tracker import EventTracker
@@ -62,7 +58,6 @@ def test_live_path_without_llm_and_no_network() -> None:
             engine = StreamingEngine()
             tracker = EventTracker(session_id="offline-sess", device="Pixel 8", enable_agents=False)
             alert_tracker = AlertStateTracker()
-            dispatcher = AlertDispatcher([InAppChannel()])
 
             samples = [
                 _sample_payload(1, -85.0, 18.0),

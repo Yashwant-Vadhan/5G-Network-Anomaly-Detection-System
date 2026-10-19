@@ -16,7 +16,6 @@ import argparse
 import asyncio
 import json
 import sys
-import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -327,6 +326,7 @@ def run_scenario_3_dashboard_restart() -> dict[str, Any]:
 
 def run_scenario_4_phone_sleep_wake() -> dict[str, Any]:
     """Scenario 4: Phone Sleep / Inactivity and Wake."""
+
     class MockClock:
         def __init__(self):
             self.mono = 1000.0
@@ -440,8 +440,7 @@ def run_scenario_5_duplicate_seq() -> dict[str, Any]:
         "fault": "Client re-sends seq=3 after receiving cumulative ack 5",
         "expected": "Idempotent immediate ack for seq=3; duplicate recorded; 5 unique rows stored",
         "observed": (
-            f"Ack returned={re_ack_valid}, duplicate metric={dup_count}, "
-            f"stored rows={stored_rows}"
+            f"Ack returned={re_ack_valid}, duplicate metric={dup_count}, stored rows={stored_rows}"
         ),
         "data_loss": 0,
         "passed": passed,
@@ -450,6 +449,7 @@ def run_scenario_5_duplicate_seq() -> dict[str, Any]:
 
 def run_scenario_6_slow_subscriber() -> dict[str, Any]:
     """Scenario 6: Slow Subscriber Backpressure."""
+
     async def _test():
         hub = LiveHub(default_queue_size=3)
         sub_id, queue = await hub.subscribe(queue_size=3)

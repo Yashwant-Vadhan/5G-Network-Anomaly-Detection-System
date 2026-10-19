@@ -229,9 +229,7 @@ class ServerConfig:
 
         idle_reaper_raw = os.environ.get("NADS_IDLE_SESSION_TIMEOUT_SECONDS", "").strip()
         try:
-            idle_timeout = (
-                int(idle_reaper_raw) if idle_reaper_raw else IDLE_SESSION_TIMEOUT_SECONDS
-            )
+            idle_timeout = int(idle_reaper_raw) if idle_reaper_raw else IDLE_SESSION_TIMEOUT_SECONDS
         except ValueError:
             idle_timeout = IDLE_SESSION_TIMEOUT_SECONDS
 
@@ -268,9 +266,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 class OriginEnforcementMiddleware(BaseHTTPMiddleware):
     """Enforce Origin allow-list for HTTP requests (T18-006)."""
 
-    def __init__(
-        self, app: Any, allowed_origins: list[str], is_public: bool = False
-    ) -> None:
+    def __init__(self, app: Any, allowed_origins: list[str], is_public: bool = False) -> None:
         super().__init__(app)
         self.allowed_origins = set(allowed_origins)
         self.is_public = is_public
@@ -477,10 +473,12 @@ def create_app(
                     target = os.path.join(sdir, rel)
                     if rel and os.path.isfile(target):
                         from fastapi.responses import FileResponse
+
                         return FileResponse(target)
                     idx_p = os.path.join(sdir, "index.html")
                     if os.path.isfile(idx_p):
                         from fastapi.responses import FileResponse
+
                         return FileResponse(idx_p)
 
         corr_id = get_correlation_id(request)
@@ -500,9 +498,8 @@ def create_app(
 
     @app.exception_handler(404)
     async def not_found_handler(request: Request, exc: Exception) -> Response:
-        return await http_exception_handler(
-            request, HTTPException(status_code=404, detail="Not Found")
-        )
+        detail = exc.detail if isinstance(exc, HTTPException) else "Not Found"
+        return await http_exception_handler(request, HTTPException(status_code=404, detail=detail))
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
@@ -725,7 +722,6 @@ def create_app(
 
                     hello_src = getattr(hello, "source", None) or "phone"
                     app.state.session_sources[session_id] = hello_src
-
 
                     # Live capture store for telemetry retention
                     if config.retention_enabled:
@@ -1052,10 +1048,7 @@ def create_app(
 
         result = list(app.state.alerts.values())
         if ack is not None:
-            result = [
-                a for a in result
-                if (a.acknowledged_at is not None) == ack
-            ]
+            result = [a for a in result if (a.acknowledged_at is not None) == ack]
         if since is not None:
             result = [a for a in result if a.created_at >= since]
         return result[offset : offset + limit]
@@ -1068,11 +1061,7 @@ def create_app(
         # Rate limiting: 60 ack requests per minute per IP
         client_ip = request.client.host if request.client else "127.0.0.1"
         now_ts = time.time()
-        recent = [
-            t
-            for t in app.state.alert_ack_attempts.get(client_ip, [])
-            if t > now_ts - 60.0
-        ]
+        recent = [t for t in app.state.alert_ack_attempts.get(client_ip, []) if t > now_ts - 60.0]
         if len(recent) >= 60:
             raise HTTPException(
                 status_code=429,
@@ -1175,9 +1164,7 @@ def create_app(
         now_ts = time.time()
         window = config.session_creation_window_seconds
         creations = [
-            t
-            for t in app.state.ip_session_creations.get(client_ip, [])
-            if t > now_ts - window
+            t for t in app.state.ip_session_creations.get(client_ip, []) if t > now_ts - window
         ]
         if len(creations) >= config.max_session_creations_per_ip:
             raise HTTPException(
@@ -1343,9 +1330,7 @@ def create_app(
         return DeleteLiveSessionResponse(status="deleted", session_id=session_id)
 
     @app.get("/api/v1/live-sessions/{session_id}/export.csv")
-    async def export_live_session_csv(
-        session_id: str, request: Request
-    ) -> Response:
+    async def export_live_session_csv(session_id: str, request: Request) -> Response:
         """Export in-memory session telemetry as C1 CSV with viewer auth (T18-005/G29)."""
         verify_viewer_auth(request, session_id)
         if session_id not in app.state.active_live_sessions:
@@ -1411,9 +1396,7 @@ def create_app(
         auth_session_id: str | None = None
         if config.require_live_auth or config.mode == "public":
             try:
-                auth_frame_text = await asyncio.wait_for(
-                    websocket.receive_text(), timeout=5.0
-                )
+                auth_frame_text = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
             except TimeoutError:
                 await websocket.close(
                     code=4401, reason="Auth timeout: first-frame ticket required within 5s"
@@ -1442,9 +1425,7 @@ def create_app(
             # Single-use pop
             ticket_record = app.state.live_session_tickets.pop(ticket_str, None)
             if ticket_record is None:
-                await websocket.close(
-                    code=4401, reason="Unauthorized: Invalid or reused ticket"
-                )
+                await websocket.close(code=4401, reason="Unauthorized: Invalid or reused ticket")
                 return
 
             sess_id, exp_dt = ticket_record
@@ -1465,9 +1446,7 @@ def create_app(
                     latest_sess_id = sess_buf.session_id
 
             target_sess_id = auth_session_id or latest_sess_id
-            latest_sample = (
-                app.state.latest_samples.get(target_sess_id) if target_sess_id else None
-            )
+            latest_sample = app.state.latest_samples.get(target_sess_id) if target_sess_id else None
             open_events = [
                 e
                 for e in app.state.session_events.get(target_sess_id, [])
@@ -1548,6 +1527,7 @@ def create_app(
             app.mount("/data", StaticFiles(directory=data_dir_static), name="data")
 
         if os.path.isfile(index_file):
+
             @app.get("/", include_in_schema=False)
             async def serve_index() -> Response:
                 return FileResponse(index_file)

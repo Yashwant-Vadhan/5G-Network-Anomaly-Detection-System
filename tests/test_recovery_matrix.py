@@ -319,6 +319,7 @@ def test_recovery_case_3_dashboard_restart():
 
 def test_recovery_case_4_phone_sleep_stale_and_wake():
     """Scenario 4: Phone sleeps (>10s gap), state transitions to STALE, wakes and resumes."""
+
     class FakeClock:
         def __init__(self):
             self.mono = 1000.0
@@ -333,6 +334,7 @@ def test_recovery_case_4_phone_sleep_stale_and_wake():
         def advance(self, s):
             self.mono += s
             from datetime import timedelta
+
             self.wall += timedelta(seconds=s)
 
     clock = FakeClock()

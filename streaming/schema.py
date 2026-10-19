@@ -80,7 +80,6 @@ class IngestHello(BaseModel):
     source: StreamSource = "phone"
 
 
-
 class EdgeSampleInfo(BaseModel):
     """Optional advisory edge inference score sent alongside a sample."""
 

@@ -71,6 +71,7 @@ def _make_dummy_alert(alert_id: str = "alt-001", session_id: str = "sess-1") -> 
 
 def test_raising_channel_never_reaches_engine() -> None:
     """Exceptions from failing/raising channels are isolated and recorded as FAILED."""
+
     async def _run() -> None:
         bad_channel = RaisingChannel()
         good_channel = InAppChannel(hub=None, alerts_path=Path("build/test_alerts.jsonl"))
@@ -104,6 +105,7 @@ def test_raising_channel_never_reaches_engine() -> None:
 
 def test_timeout_channel_handled_with_retry() -> None:
     """Slow channel exceeding per-channel timeout is aborted and retried without blocking."""
+
     async def _run() -> None:
         slow_channel = SlowTimingOutChannel()
         dispatcher = AlertDispatcher(channels=[slow_channel], timeout_seconds=0.05, max_retries=1)
@@ -121,6 +123,7 @@ def test_timeout_channel_handled_with_retry() -> None:
 
 def test_in_app_channel_appends_valid_c9_per_line(tmp_path: Path) -> None:
     """in_app.py appends exactly one valid C9 JSON line per alert to alerts.jsonl."""
+
     async def _run() -> None:
         test_jsonl = tmp_path / "alerts.jsonl"
         hub = LiveHub()

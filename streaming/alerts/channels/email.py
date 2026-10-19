@@ -78,9 +78,11 @@ class EmailChannel:
         self.from_addr = from_addr or os.getenv("NADS_ALERT_EMAIL_FROM", "alerts@5g-nads.internal")
 
         raw_to = os.getenv("NADS_ALERT_EMAIL_TO", "")
-        self.to_addrs = to_addrs if to_addrs is not None else [
-            t.strip() for t in raw_to.split(",") if t.strip()
-        ]
+        self.to_addrs = (
+            to_addrs
+            if to_addrs is not None
+            else [t.strip() for t in raw_to.split(",") if t.strip()]
+        )
         self.timeout_seconds = timeout_seconds
         self.dry_run = dry_run
         inc_ev_env = os.getenv("NADS_ALERT_INCLUDE_EVIDENCE", "false").lower() in (

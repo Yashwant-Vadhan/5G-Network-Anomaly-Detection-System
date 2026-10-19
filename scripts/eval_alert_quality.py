@@ -84,9 +84,7 @@ def evaluate_alert_quality(
 
         sm = SessionManager(max_rows=10000)
         engine = StreamingEngine(session_manager=sm)
-        tracker = EventTracker(
-            session_id=f"alert-eval-{sess_id}", device=dev, enable_agents=False
-        )
+        tracker = EventTracker(session_id=f"alert-eval-{sess_id}", device=dev, enable_agents=False)
         alert_tracker = AlertStateTracker()
 
         sess_alerts = 0
@@ -113,9 +111,7 @@ def evaluate_alert_quality(
                     elif "Transition" in reason_key:
                         suppression_counts["Transition only"] += 1
                     else:
-                        suppression_counts[reason_key] = (
-                            suppression_counts.get(reason_key, 0) + 1
-                        )
+                        suppression_counts[reason_key] = suppression_counts.get(reason_key, 0) + 1
 
         duration_hours = (n_samples * SAMPLING_SECONDS) / 3600.0
         alert_rate = sess_alerts / duration_hours if duration_hours > 0 else 0.0

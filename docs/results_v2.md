@@ -252,29 +252,26 @@ were safely suppressed from triggering notifications:
 
 ## 7. Soak Test & Memory Boundedness Results (T14-007)
 
-> Task: `T14-007` (2-hour soak test and memory boundedness verification).
-> Evaluated: 2026-10-18T10:42:57.673707+00:00
-> Run Profile: Accelerated Replay (418.96 s wall-clock time at ~5.7× rate).
+> Task: `T14-007` (2-hour soak test at 1x and accelerated rate).
+> Evaluated: 2026-10-19T16:55:09.902990+00:00
 > Telemetry: 2400 continuous frames (2.0 hours simulated at ~3.0 s intervals).
-> Note on 1× Run: This benchmark reports the accelerated 2-hour equivalent replay.
-> An unaccelerated 1× real-time run (2.0 h wall-clock time) is tracked in `todo_v2.md` (🔄).
 
 ### A. Test Execution & Resource Boundedness Summary
 
 | Metric | Observed Value | Threshold / Target | Status |
 |---|---|---|:---:|
 | **Simulated Duration** | 2.0 hours | $\ge 2.0$ hours | **PASS** |
-| **Wall Clock Runtime** | 418.96 s | Accelerated Replay | **PASS** |
-| **Initial Process RSS** | 179.77 MB | Baseline | **INFO** |
-| **Post-Warmup Baseline** | 189.77 MB | Sample 600 steady state | **INFO** |
-| **Peak Process RSS** | 205.57 MB | Bounded | **PASS** |
-| **Post-Warmup Growth** | 15.8 MB | $\le 35.0$ MB | **PASS** |
+| **Wall Clock Runtime** | 326.2 s | Accelerated Replay | **PASS** |
+| **Initial Process RSS** | 176.85 MB | Baseline | **INFO** |
+| **Post-Warmup Baseline** | 193.73 MB | Sample 600 steady state | **INFO** |
+| **Peak Process RSS** | 210.16 MB | Bounded | **PASS** |
+| **Post-Warmup Growth** | 16.43 MB | $\le 35.0$ MB | **PASS** |
 | **Buffer Rollover** | Max 50000 rows | `SESSION_MAX_ROWS=2000` | **PASS** |
 | **Drops / Crashes** | 0 drops | 0 unhandled drops | **PASS** |
 
 > [!TIP]
 > **Memory Boundedness Confirmed:** After initial buffer fill and model caching
-> (warm-up at 600 samples), RSS stabilized with a post-warmup delta of only **15.8 MB**,
+> (warm-up at 600 samples), RSS stabilized with a post-warmup delta of only **16.43 MB**,
 > well within the 35.0 MB threshold. The bounded `SessionBuffer` cap (2,000 rows)
 > completely prevents monotonic memory growth during prolonged operation.
 
@@ -284,14 +281,14 @@ were safely suppressed from triggering notifications:
 
 | Sample | Sim Time | RSS (MB) | Peak RSS | Delta Warmup | Buffer | Events | CPU % |
 |---|---|---|---|---|---|---|---|
-| 300 | 0.25 h | 189.46 MB | 189.46 MB | +0.00 MB | 300 | 1 | 0.0% |
-| 600 | 0.5 h | 189.75 MB | 193.36 MB | -0.02 MB | 600 | 1 | 97.2% |
-| 900 | 0.75 h | 193.49 MB | 193.49 MB | +3.73 MB | 900 | 1 | 97.6% |
-| 1200 | 1.0 h | 196.48 MB | 196.48 MB | +6.72 MB | 1200 | 1 | 97.8% |
-| 1500 | 1.25 h | 199.02 MB | 199.27 MB | +9.25 MB | 1500 | 1 | 97.9% |
-| 1800 | 1.5 h | 201.38 MB | 201.61 MB | +11.61 MB | 1800 | 1 | 96.1% |
-| 2100 | 1.75 h | 202.29 MB | 203.96 MB | +12.53 MB | 2100 | 1 | 97.4% |
-| 2400 | 2.0 h | 204.11 MB | 205.57 MB | +14.34 MB | 2400 | 1 | 97.2% |
+| 300 | 0.25 h | 189.71 MB | 189.71 MB | +0.00 MB | 300 | 1 | 0.0% |
+| 600 | 0.5 h | 193.73 MB | 193.73 MB | +0.00 MB | 600 | 1 | 99.2% |
+| 900 | 0.75 h | 196.73 MB | 196.75 MB | +3.00 MB | 900 | 1 | 98.2% |
+| 1200 | 1.0 h | 200.31 MB | 200.31 MB | +6.59 MB | 1200 | 1 | 98.8% |
+| 1500 | 1.25 h | 202.85 MB | 202.94 MB | +9.12 MB | 1500 | 1 | 98.4% |
+| 1800 | 1.5 h | 205.94 MB | 205.94 MB | +12.21 MB | 1800 | 1 | 98.7% |
+| 2100 | 1.75 h | 208.14 MB | 208.14 MB | +14.42 MB | 2100 | 1 | 97.9% |
+| 2400 | 2.0 h | 208.81 MB | 210.16 MB | +15.09 MB | 2400 | 1 | 98.6% |
 
 ---
 

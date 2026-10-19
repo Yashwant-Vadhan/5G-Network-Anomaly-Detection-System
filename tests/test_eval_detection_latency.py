@@ -9,10 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from scripts.eval_detection_latency import (
-    evaluate_window_latencies,
     generate_latency_report,
     update_results_v2,
 )

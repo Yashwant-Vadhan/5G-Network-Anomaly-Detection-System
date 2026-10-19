@@ -54,9 +54,7 @@ class AlertDispatcher:
         alert.delivery = deliveries
         return alert
 
-    async def _send_to_channel(
-        self, channel: AlertChannel, alert: AlertRecord
-    ) -> AlertDelivery:
+    async def _send_to_channel(self, channel: AlertChannel, alert: AlertRecord) -> AlertDelivery:
         """Send alert to a single channel with timeout, 1 retry, and complete isolation."""
         attempts = 0
         last_error = ""

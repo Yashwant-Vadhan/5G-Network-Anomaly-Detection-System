@@ -55,9 +55,7 @@ class PhoneChannel:
             try:
                 return self.connection_resolver(session_id)
             except Exception as e:
-                logger.warning(
-                    "Error resolving connection for session %s: %s", session_id, e
-                )
+                logger.warning("Error resolving connection for session %s: %s", session_id, e)
                 return None
         if self.active_connections is not None:
             return self.active_connections.get(session_id)

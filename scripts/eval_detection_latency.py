@@ -159,12 +159,8 @@ def evaluate_window_latencies(
             float(np.mean(if_latencies) * SAMPLING_SECONDS) if if_latencies else None
         ),
         "base_detected_count": len(base_detected),
-        "base_detection_rate": (
-            len(base_detected) / total_events if total_events > 0 else 0.0
-        ),
-        "base_mean_latency_samples": (
-            float(np.mean(base_latencies)) if base_latencies else None
-        ),
+        "base_detection_rate": (len(base_detected) / total_events if total_events > 0 else 0.0),
+        "base_mean_latency_samples": (float(np.mean(base_latencies)) if base_latencies else None),
         "base_mean_latency_seconds": (
             float(np.mean(base_latencies) * SAMPLING_SECONDS) if base_latencies else None
         ),
@@ -194,9 +190,7 @@ def generate_latency_report(eval_summary: dict[str, Any]) -> str:
             prov_s = "None"
 
         alt_s = str(e["first_alert"]) if e["first_alert"] is not None else "None"
-        sess_short = (
-            e["session_id"].replace("5G_measurements_", "").replace("-Movement", "")
-        )
+        sess_short = e["session_id"].replace("5G_measurements_", "").replace("-Movement", "")
         lbl_abbr = (
             e["label"]
             .replace("SUDDEN_SIGNAL_DEGRADATION", "SUDDEN_DEG")

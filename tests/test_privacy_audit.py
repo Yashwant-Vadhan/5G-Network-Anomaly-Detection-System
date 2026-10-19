@@ -7,8 +7,9 @@ with privacy invariants and zero leakage of auth tokens, hardware IDs, or PII.
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pydantic
 import pytest
@@ -114,8 +115,6 @@ def test_c9_email_formatting_no_credential_leak(sample_alert: AlertRecord) -> No
     assert "bearer" not in email_text.lower()
     assert "token=" not in email_text.lower()
 
-
-import asyncio
 
 def test_webhook_channel_url_privacy(
     sample_alert: AlertRecord, caplog: pytest.LogCaptureFixture

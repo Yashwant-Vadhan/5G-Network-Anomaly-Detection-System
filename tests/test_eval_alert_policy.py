@@ -7,7 +7,6 @@ from pathlib import Path
 from scripts.eval_alert_policy import (
     evaluate_dataset,
     generate_alert_policy_report,
-    run_all_evaluations,
 )
 
 

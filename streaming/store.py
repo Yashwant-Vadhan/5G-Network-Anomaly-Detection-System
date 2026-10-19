@@ -192,7 +192,6 @@ class LiveCaptureStore:
         if self.status == "CLOSED":
             return
 
-
         self.status = status
         self.flush()
         if self._file and not self._file.closed:

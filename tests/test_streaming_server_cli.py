@@ -77,7 +77,7 @@ def test_server_config_validate_enforces_bind_policy():
 
 def test_startup_logs_enabled_channels_without_secrets(caplog: pytest.LogCaptureFixture):
     """Startup log lists enabled alert channels without leaking secret credentials or URLs."""
-    secret_webhook = "https://discord.com/api/webhooks/99999/super_secret_webhook_token"
+    secret_webhook = "https://internal-alerts.local/webhooks/99999/super_secret_webhook_token"
     secret_email_host = "smtp.super-secret-mail.internal"
 
     with patch.dict(

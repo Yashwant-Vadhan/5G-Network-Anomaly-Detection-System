@@ -47,8 +47,6 @@ def test_streaming_security_doc_line_lengths() -> None:
     """Verify strict adherence to <= 100 characters per line."""
     lines = SECURITY_DOC_PATH.read_text(encoding="utf-8").splitlines()
     violations = [
-        (idx + 1, len(line), line[:40])
-        for idx, line in enumerate(lines)
-        if len(line) > 100
+        (idx + 1, len(line), line[:40]) for idx, line in enumerate(lines) if len(line) > 100
     ]
     assert not violations, f"Line length violations found: {violations}"

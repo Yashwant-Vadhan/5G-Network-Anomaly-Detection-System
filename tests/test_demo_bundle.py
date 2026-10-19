@@ -119,7 +119,20 @@ def ensure_processed_sources() -> tuple[Path, Path, Path]:
     scores_path = Path("data/processed/scores.csv")
     events_path = Path("data/processed/events_diagnosed.json")
     prep_log_path = Path("data/processed/preprocess_log.json")
+    need_regen = False
     if not (scores_path.exists() and events_path.exists() and prep_log_path.exists()):
+        need_regen = True
+    else:
+        try:
+            import pandas as pd
+
+            df = pd.read_csv(scores_path)
+            if len(df) < 10:
+                need_regen = True
+        except Exception:
+            need_regen = True
+
+    if need_regen:
         from pipelines.run_pipeline import run_pipeline
 
         run_pipeline(

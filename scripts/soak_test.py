@@ -181,9 +181,7 @@ def run_soak_test(
     is_bounded = rss_post_warmup_increase <= max_rss_growth_mb
 
     # Check non-monotonicity: verify steady state does not exhibit continuous unbounded growth
-    post_warmup_checkpoints = [
-        cp for cp in checkpoints if cp["sample_idx"] >= warmup_samples
-    ]
+    post_warmup_checkpoints = [cp for cp in checkpoints if cp["sample_idx"] >= warmup_samples]
     strictly_increasing = False
     if len(post_warmup_checkpoints) >= 4:
         diffs = [
@@ -312,7 +310,7 @@ def main() -> int:
 
     print("=" * 70)
     print("5G-NADS STREAMING SOAK TEST & MEMORY BOUNDEDNESS VERIFICATION")
-    print(f"Target Samples: {args.samples} (simulating {(args.samples*3.0)/3600.0:.2f} hours)")
+    print(f"Target Samples: {args.samples} (simulating {(args.samples * 3.0) / 3600.0:.2f} hours)")
     print("=" * 70)
 
     results = run_soak_test(

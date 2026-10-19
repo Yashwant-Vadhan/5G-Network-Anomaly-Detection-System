@@ -62,11 +62,7 @@ def _sort_raw_by_timestamp(raw: pd.DataFrame) -> pd.DataFrame:
     """Sort raw rows by parsed timestamp to match batch ordering."""
     tmp = raw.copy()
     tmp["_ts"] = pd.to_datetime(tmp["timestamp"], format="mixed", dayfirst=True)
-    return (
-        tmp.sort_values("_ts", kind="stable")
-        .drop(columns=["_ts"])
-        .reset_index(drop=True)
-    )
+    return tmp.sort_values("_ts", kind="stable").drop(columns=["_ts"]).reset_index(drop=True)
 
 
 def _stream_ordered(raw: pd.DataFrame) -> list:
@@ -110,9 +106,7 @@ def _assert_parity(b: pd.Series, s, label: str) -> None:
 
     b_z = float(b.get("baseline_z_max", 0.0))
     s_z = float(s.baseline_z_max) if s.baseline_z_max is not None else 0.0
-    assert abs(b_z - s_z) <= TOLERANCE, (
-        f"{label}: baseline_z_max diff={abs(b_z - s_z)}"
-    )
+    assert abs(b_z - s_z) <= TOLERANCE, f"{label}: baseline_z_max diff={abs(b_z - s_z)}"
 
 
 # ---------------------------------------------------------------------------
@@ -186,9 +180,7 @@ class TestSyntheticFixtureParity:
                 stream_by_session.setdefault(s.session_id, []).append(s)
 
             for sid, bdf in batch_by_session.items():
-                assert sid in stream_by_session, (
-                    f"{device}: session {sid} absent from stream"
-                )
+                assert sid in stream_by_session, f"{device}: session {sid} absent from stream"
                 slist = stream_by_session[sid]
                 assert len(bdf) == len(slist), (
                     f"{device}/{sid}: len batch={len(bdf)} stream={len(slist)}"
@@ -270,6 +262,4 @@ class TestMutationBreaksParity:
                     if abs(float(b_if) - float(s_row.if_score)) > TOLERANCE:
                         diverged += 1
 
-        assert diverged > 0, (
-            "Mutating ss_rsrp should cause at least one parity divergence"
-        )
+        assert diverged > 0, "Mutating ss_rsrp should cause at least one parity divergence"

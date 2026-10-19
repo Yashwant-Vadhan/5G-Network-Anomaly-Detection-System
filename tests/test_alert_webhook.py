@@ -163,6 +163,7 @@ def test_webhook_url_absent_from_all_logs(monkeypatch: Any) -> None:
     alert = _make_dummy_alert()
 
     try:
+
         async def _run() -> None:
             delivery = await channel.send(alert)
             assert delivery.status == "FAILED"

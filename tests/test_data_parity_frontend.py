@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import copy
 import json
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -21,7 +20,6 @@ import pytest
 
 from scripts.build_demo_bundle import build_bundle
 from tests.test_demo_bundle import ensure_processed_sources
-
 
 SAMPLE_FIVE_EVENTS: list[dict[str, Any]] = [
     {

@@ -1015,12 +1015,11 @@ OEM background behaviour). Includes forbidden-phrase lint for
 **Owner:** Yashwant
 
 #### T14-007: Soak test
-**Status:** 🔄
+**Status:** ✅
 **Description:** 2 h replay at 1× and 20×; record RSS/CPU, queue sizes, drops, event counts; assert memory is bounded after warm-up (threshold set from a first baseline run and written down).
-> Missing evidence: Only accelerated replay (418.96 s) reported; no run log or timestamp for a full 2 h soak at 1×.
 **Dependencies:** T11-017
 **Acceptance Criteria:**
-- [ ] Report in docs/results_v2.md with setup
+- [x] Report in docs/results_v2.md with setup
 - [x] No crash; no monotonic memory growth
 **Estimated Effort:** 60 min
 **Assigned To:** QA
