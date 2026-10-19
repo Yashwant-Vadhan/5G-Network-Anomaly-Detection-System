@@ -559,12 +559,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Yashwant
 
 #### T12-008: Android unit tests for serialisation, queue and backoff
-**Status:** ⬜
+**Status:** ✅
 **Description:** JVM tests: golden C7 JSON, null/sentinel handling, queue cap/drop-oldest/ack-delete, backoff schedule, resume logic.
 **Dependencies:** T12-003, T12-004
 **Acceptance Criteria:**
-- [ ] Tests run via Gradle without a device
-- [ ] Golden files shared with Python tests
+- [x] Tests run via Gradle without a device
+- [x] Golden files shared with Python tests
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Yashwant
