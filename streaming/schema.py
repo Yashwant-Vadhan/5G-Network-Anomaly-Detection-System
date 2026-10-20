@@ -834,3 +834,15 @@ class DeleteLiveSessionResponse(BaseModel):
 
     status: str = "deleted"
     session_id: str
+
+
+class BatchIngestResponse(BaseModel):
+    """Response payload for HTTP batch ingest fallback (T15-001)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    accepted: int = Field(default=0, ge=0)
+    duplicates: int = Field(default=0, ge=0)
+    last_seq_acked: int = Field(default=0, ge=0)
+    session_id: str | None = None
+

@@ -1181,13 +1181,13 @@ before citing it.
 *Goal: Optional work after Phase 14 is accepted; none of it may be claimed as implemented without tests.*
 
 #### T15-001: HTTP batch ingest fallback
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** `POST /api/v1/ingest/batch` accepting an array of C7 `sample` objects using the same validation, auth, dedupe and rate limits; Android flushes via it when WebSocket upgrade fails.
 **Dependencies:** T14-019
 **Acceptance Criteria:**
-- [ ] Same golden examples validate
-- [ ] Duplicates ignored (G19)
-- [ ] Auth required
+- [x] Same golden examples validate
+- [x] Duplicates ignored (G19)
+- [x] Auth required
 **Estimated Effort:** 90 min
 **Assigned To:** Backend
 **Owner:** Yashwant

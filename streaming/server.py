@@ -24,6 +24,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import (
+    Body,
     Depends,
     FastAPI,
     Header,
@@ -68,6 +69,7 @@ from streaming.metrics import get_stream_metrics, reset_stream_metrics
 from streaming.schema import (
     Ack,
     AlertRecord,
+    BatchIngestResponse,
     CreateLiveSessionResponse,
     DeleteLiveSessionResponse,
     ErrorDetail,
@@ -435,6 +437,9 @@ def create_app(
     app.state.ip_session_creations: dict[str, list[float]] = {}
     app.state.pairing_failed_attempts: dict[str, list[float]] = {}
     app.state.pairing_lockouts: dict[str, float] = {}
+    app.state.session_ingested_seqs: dict[str, set[int]] = {}
+    app.state.session_last_seq_acked: dict[str, int] = {}
+    app.state.session_trackers: dict[str, EventTracker] = {}
 
     # Middleware
     app.add_middleware(CorrelationIdMiddleware)
@@ -956,6 +961,212 @@ def create_app(
                     await app.state.hub.broadcast(disc_ev, session_id=session_id)
             if store is not None and not store.is_closed:
                 store.close(status="INCOMPLETE")
+
+    # --------------------------------------------------------------------------
+    # HTTP Batch Ingest Endpoint (T15-001)
+    # --------------------------------------------------------------------------
+    @app.post("/api/v1/ingest/batch", response_model=BatchIngestResponse)
+    async def http_batch_ingest(
+        request: Request,
+        body: Any = Body(...),
+        authorization: str | None = Header(default=None),
+        token: str | None = Query(default=None),
+    ) -> BatchIngestResponse:
+        """HTTP batch telemetry ingest fallback accepting an array of C7 sample objects.
+
+        Implements:
+        1. Authentication matching WebSocket ingest (ingest token or per-session token).
+        2. Strict Contract C7 schema validation on each sample.
+        3. Guardrail G19 deduplication: duplicate sequence numbers are ignored without corrupting metrics.
+        4. Rate limiting enforcement against operational limits.
+        """
+        # 0. Check Origin allow-list if present (T18-006)
+        origin = request.headers.get("origin")
+        if config.allowed_origins and origin:
+            if origin not in config.allowed_origins:
+                raise HTTPException(status_code=403, detail="Forbidden: Origin not allowed")
+
+        # 1. Authentication: global ingest_token or per-session token
+        auth_token = None
+        if authorization and authorization.startswith("Bearer "):
+            auth_token = authorization.split(" ", 1)[1].strip()
+        if not auth_token:
+            auth_token = token or request.query_params.get("token")
+
+        session_tokens = getattr(request.app.state, "session_ingest_tokens", {})
+        is_valid_session_token = bool(auth_token and auth_token in session_tokens)
+        is_valid_global_token = bool(
+            config.ingest_token
+            and auth_token
+            and hmac.compare_digest(auth_token.encode("utf-8"), config.ingest_token.encode("utf-8"))
+        )
+
+        if config.ingest_token:
+            if not (is_valid_session_token or is_valid_global_token):
+                raise HTTPException(status_code=401, detail="Unauthorized")
+
+        connected_session_id = session_tokens.get(auth_token) if is_valid_session_token and auth_token else None
+
+        # 2. Extract sample array (accepts either list of samples or {"samples": [...]})
+        if isinstance(body, list):
+            sample_list = body
+        elif isinstance(body, dict):
+            sample_list = body.get("samples")
+            if not isinstance(sample_list, list):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Batch payload must be a JSON array of sample objects or contain a 'samples' array",
+                )
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="Batch payload must be a JSON array of sample objects",
+            )
+
+        # 3. Rate limiting check (T15-001)
+        max_rate = float(config.max_msgs_per_min)
+        if len(sample_list) > max_rate:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded: batch size {len(sample_list)} exceeds maximum {int(max_rate)} messages per batch",
+            )
+
+        # 4. Strict Validation of each sample adhering to Contract C7
+        validated_samples: list[IngestSample] = []
+        for idx, item in enumerate(sample_list):
+            if not isinstance(item, dict):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Sample at index {idx} must be a JSON object",
+                )
+            schema_ver = item.get("schema_version", 2)
+            if schema_ver != 2:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Unsupported schema_version {schema_ver} at index {idx}; expected 2",
+                )
+            msg_type = item.get("type")
+            if msg_type != "sample":
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid message type '{msg_type}' at index {idx}; expected 'sample'",
+                )
+            try:
+                sample_obj = IngestSample.model_validate(item)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Validation error for sample at index {idx}: {e}",
+                )
+            validated_samples.append(sample_obj)
+
+        if not validated_samples:
+            return BatchIngestResponse(
+                accepted=0,
+                duplicates=0,
+                last_seq_acked=0,
+                session_id=connected_session_id,
+            )
+
+        # 5. Resolve session
+        session_id = connected_session_id
+        if not session_id:
+            req_sid = request.headers.get("x-session-id") or request.query_params.get("session_id")
+            if req_sid:
+                session_id = req_sid
+            else:
+                first_dev = validated_samples[0].payload.device
+                sess_mgr: SessionManager = app.state.session_manager
+                sess_buf = sess_mgr.get_or_create_session(client_id=first_dev, device=first_dev)
+                session_id = sess_buf.session_id
+
+        # 6. Process samples with deduplication (Guardrail G19)
+        accepted = 0
+        duplicates = 0
+        seen_seqs = app.state.session_ingested_seqs.setdefault(session_id, set())
+        last_seq_acked = app.state.session_last_seq_acked.get(session_id, 0)
+
+        engine: StreamingEngine | None = app.state.engine
+
+        for sample in validated_samples:
+            if sample.seq in seen_seqs:
+                duplicates += 1
+                # Duplicates ignored without crashing or corrupting metrics (G19)
+                continue
+
+            seen_seqs.add(sample.seq)
+            accepted += 1
+            if sample.seq > last_seq_acked:
+                last_seq_acked = sample.seq
+
+            # Process through inference engine if available
+            scored = None
+            if engine is not None:
+                try:
+                    cid = sample.payload.device
+                    scored = engine.process(sample, client_id=cid)
+                except Exception as e:
+                    logger.error("Error processing batch sample seq %d: %s", sample.seq, e)
+
+            # Raw and scored session buffering (bounded to SESSION_MAX_ROWS)
+            raw_buf = app.state.session_raw_samples.setdefault(session_id, [])
+            if len(raw_buf) >= SESSION_MAX_ROWS:
+                raw_buf.pop(0)
+            raw_buf.append(sample.payload.model_dump(mode="python"))
+
+            if scored is not None:
+                app.state.latest_samples[session_id] = scored
+                scored_buf = app.state.session_samples.setdefault(session_id, [])
+                if len(scored_buf) >= SESSION_MAX_ROWS:
+                    scored_buf.pop(0)
+                scored_buf.append(scored)
+                get_stream_metrics(session_id).record_sample(scored)
+
+                # Fan-out to live dashboard subscribers
+                now_iso = datetime.now(UTC).isoformat()
+                if app.state.hub is not None:
+                    await app.state.hub.broadcast(
+                        LiveSampleEvent(
+                            server_time=now_iso,
+                            session_id=session_id,
+                            sample=scored,
+                        ),
+                        session_id=session_id,
+                    )
+
+                # Event tracker evaluation
+                tracker = app.state.session_trackers.setdefault(
+                    session_id, EventTracker(session_id=session_id, device=sample.payload.device)
+                )
+                action, evt = tracker.process_sample(scored)
+                if evt is not None:
+                    ev_records = app.state.session_events.setdefault(session_id, [])
+                    ev_records.append(evt)
+                    if app.state.hub is not None:
+                        if action == "OPEN":
+                            await app.state.hub.broadcast(
+                                LiveEventOpen(server_time=now_iso, session_id=session_id, event=evt),
+                                session_id=session_id,
+                            )
+                        elif action == "CLOSED":
+                            await app.state.hub.broadcast(
+                                LiveEventClosed(server_time=now_iso, session_id=session_id, event=evt),
+                                session_id=session_id,
+                            )
+                        elif action == "UPDATE":
+                            await app.state.hub.broadcast(
+                                LiveEventUpdate(server_time=now_iso, session_id=session_id, event=evt),
+                                session_id=session_id,
+                            )
+
+        app.state.session_last_seq_acked[session_id] = last_seq_acked
+
+        return BatchIngestResponse(
+            accepted=accepted,
+            duplicates=duplicates,
+            last_seq_acked=last_seq_acked,
+            session_id=session_id,
+        )
 
     # --------------------------------------------------------------------------
     # REST Endpoints (T11-014 / Contract C8)
