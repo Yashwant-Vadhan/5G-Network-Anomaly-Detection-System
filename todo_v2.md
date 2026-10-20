@@ -584,9 +584,9 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 #### T12-010: Real-device live session test
 **Status:** ⬜ · 🧑 Human-only
 **Description:** Run a 20-minute walking session on the Redmi streaming to the server (USB or Wi-Fi) with two forced disconnects; verify seq continuity, live capture CSV vs phone CSV row match, and dashboard events.
-**Dependencies:** T19-009, T19-006, T11-014
+**Dependencies:** T19-009, T19-015, T19-006, T11-014
 **Acceptance Criteria:**
-- [ ] Phone CSV and live capture match except documented drops
+- [ ] 20-minute session: phone CSV and live capture match except documented drops
 - [ ] All gaps reported in Stream Health data
 - [ ] Result recorded in docs/results_v2.md
 **Estimated Effort:** 60 min

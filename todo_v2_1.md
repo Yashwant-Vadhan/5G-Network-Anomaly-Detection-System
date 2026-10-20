@@ -33,7 +33,7 @@
 | T13-020 Dashboard smoke tests | T17-009 |
 | T15-002 Per-role tokens | T18-002 (per-session tokens) |
 
-**Dependency patches** (apply in `todo_v2.md`): wherever an active task depended on a superseded one, use the replacement above (e.g. `T12-010` → T19-009, T19-006; `T12-018` → T19-006; `T12-002` → T19-008; `T14-008` → T17-007). Add to `T14-018`: **T16-019, T17-009, T18-014, T19-014**. `T13-001`…`T13-009` (alert engine) are kept. Phase 15 tasks stay optional.
+**Dependency patches** (apply in `todo_v2.md`): wherever an active task depended on a superseded one, use the replacement above (e.g. `T12-010` → T19-009, T19-015, T19-006; `T12-018` → T19-006; `T12-002` → T19-008; `T14-008` → T17-007). Add to `T14-018`: **T16-019, T17-009, T18-014, T19-014**. `T13-001`…`T13-009` (alert engine) are kept. Phase 15 tasks stay optional.
 
 ---
 
@@ -672,11 +672,10 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-009: Foreground service for sampling and streaming
-**Status:** ⬜ · 🧑 Human-only
-**Description:** Move the 3 s loop into a foreground service with a notification; declare foreground service type (`dataSync` with `FOREGROUND_SERVICE_DATA_SYNC` or `specialUse`/`connectedDevice`; verified Android 15+ timeout rules enforce max 6 h in 24 h for `dataSync` with `Service.onTimeout(int, int)` callback where service must call `stopSelf()`, ref: https://developer.android.com/about/versions/15/behavior-changes-15#data-sync-timeout [verified 2026-10-12]); handle screen-off and OEM battery restrictions on Redmi and Samsung; screen-on fallback.
+**Status:** ⬜
+**Description:** Move the 3 s loop into a foreground service with a notification; declare foreground service type (`dataSync` with `FOREGROUND_SERVICE_DATA_SYNC` or `specialUse`/`connectedDevice`; verified Android 15+ timeout rules enforce max 6 h in 24 h for `dataSync` with `Service.onTimeout(int, int)` callback where service must call `stopSelf()`, ref: https://developer.android.com/about/versions/15/behavior-changes-15#data-sync-timeout [verified 2026-10-12]); handle screen-off and OEM battery restrictions on Redmi and Samsung; screen-on fallback. Verify service-type rules from current Android docs for targetSdk 37; if unverifiable, mark BLOCKED.
 **Dependencies:** T19-004
 **Acceptance Criteria:**
-- [ ] 20 min screen-off session on each phone, or the failure documented per device
 - [ ] Notification states what is running
 - [ ] Service handles Android 15+ timeout callback cleanly
 **Estimated Effort:** 90 min
@@ -741,6 +740,16 @@ all UI text in `strings.xml`.
 **Assigned To:** QA
 **Owner:** Sushil
 
+#### T19-015: Device test: 20-min screen-off collection on both phones
+**Status:** ⬜ · 🧑 Human-only
+**Description:** Test 20-minute screen-off collection on Redmi and Samsung phones using the foreground service.
+**Dependencies:** T19-009
+**Acceptance Criteria:**
+- [ ] 20-min screen-off session on each phone with csv_gap_report output recorded, or the failure documented per device
+**Estimated Effort:** 45 min
+**Assigned To:** QA
+**Owner:** Yashwant
+
 ---
 
 ## Appendix
@@ -761,10 +770,10 @@ About **20.75 h** of sequential work (planning estimate): T10-001 → T10-004 �
 | Phase 16 — React Foundation & Static Demo | 9.25 h | 14.50 h |
 | Phase 17 — React Live Mode | 3.75 h | 7.75 h |
 | Phase 18 — Hosted Backend, Pairing & Deployment | 6.25 h | 11.00 h |
-| Phase 19 — Android UI Refresh, Pairing & Persistence | 11.75 h | 2.75 h |
-| **Total, edge included** | **77.50 h** (71 tasks) | **74.50 h** (69 tasks) |
+| Phase 19 — Android UI Refresh, Pairing & Persistence | 12.50 h | 2.75 h |
+| **Total, edge included** | **78.25 h** (72 tasks) | **74.50 h** (69 tasks) |
 | of which optional edge inference (T12-011..T12-018) | 9.25 h | 0.75 h |
-| **Total, edge dropped** | **68.25 h** | **73.75 h** |
+| **Total, edge dropped** | **69.00 h** | **73.75 h** |
 
 If edge inference is dropped, move ~2.5–3 h of Phase 14/18 tasks from Sushil to Yashwant. Tasks tagged 🧑 need phones, an Azure account, or a human at a device. The v2.1 total is larger than `todo_v2.md`'s 52.75 h / 49.5 h because it adds the React rebuild, hosting and Android refresh, and removes 17.25 h of superseded Streamlit/Android work.
 
@@ -775,7 +784,7 @@ If edge inference is dropped, move ~2.5–3 h of Phase 14/18 tasks from Sushil t
 4. **Android (Yashwant):** T19-001 → T19-002 (golden test) → T19-003 → T19-004 → T19-005 → T19-006/007/012 → T12-002..004 → T19-008, T19-009.
 5. **Hosted backend (Sushil):** T18-001 → T18-002 → T18-003/004/005 → T18-012; Yashwant: T18-007 → T18-008 → T18-011.
 6. **React live mode:** T17-001 → T17-002..T17-008, T17-010 → T17-009.
-7. **Validation:** T18-013, T18-014, T19-013, T19-014, T12-009 (include a cellular-link run), then Phase 14 and T14-018/019.
+7. **Validation:** T18-013, T18-014, T19-013, T19-014, T19-015, T12-009 (include a cellular-link run), then Phase 14 and T14-018/019.
 
 ### Risk register (v2.1 additions)
 | Risk | Tasks | Likelihood | Mitigation |
@@ -784,7 +793,7 @@ If edge inference is dropped, move ~2.5–3 h of Phase 14/18 tasks from Sushil t
 | Abuse of an open public endpoint (session spam, code guessing) | T18-004, T18-013 | Medium | Per-IP limits, lockout, session cap, idle reaper; can fall back to invite codes |
 | Azure free tier unsuitable for always-on WebSocket (billing, ingress idle timeout, cold start) | T18-011, T18-015 | Medium (UNVERIFIED) | Verify in docs first; 15 s pings; fallback: local mode + static demo only |
 | Android refactor changes collected data | T19-002, T19-003, T19-014 | Low–Medium | Golden test before UI work, UiState step separate from UI step, before/after real-phone regression |
-| Foreground-service rules for `targetSdk 37` / OEM battery management stop collection | T19-009 | High | Verify docs; per-device tests; document unsupported behaviour; screen-on fallback |
+| Foreground-service rules for `targetSdk 37` / OEM battery management stop collection | T19-009, T19-015 | High | Verify docs; per-device tests; document unsupported behaviour; screen-on fallback |
 | Frontend drifts from Python results | T16-004, T16-018, T16-020 | Medium | Bundle tests, parity test, no-logic lint |
 | Charting library cannot handle gap breaks/markers/size | T16-001 | Low | Time-boxed spike before building pages |
 | GitHub Pages sub-path / deep-link breakage | T18-009 | Low | Hash routing, base path test in CI |
