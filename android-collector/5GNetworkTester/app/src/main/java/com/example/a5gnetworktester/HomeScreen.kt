@@ -457,6 +457,10 @@ private fun ControlBar(
     onStopClick: () -> Unit,
     onSaveCsvClick: () -> Unit
 ) {
+    val cdStart = stringResource(R.string.cd_start_collection)
+    val cdStop = stringResource(R.string.cd_stop_collection)
+    val cdSave = stringResource(R.string.cd_save_csv)
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm)
@@ -469,9 +473,9 @@ private fun ControlBar(
                 Button(
                     onClick = onStartClick,
                     modifier = Modifier
-                        .weight(1f)
+                        .then(if (sampleCount > 0) Modifier.weight(1f) else Modifier.fillMaxWidth())
                         .heightIn(min = 48.dp)
-                        .semantics { contentDescription = "Start 5G telemetry collection" },
+                        .semantics { contentDescription = cdStart },
                     colors = ButtonDefaults.buttonColors(containerColor = LightPrimary),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -481,13 +485,30 @@ private fun ControlBar(
                         fontWeight = FontWeight.Bold
                     )
                 }
+
+                if (sampleCount > 0) {
+                    OutlinedButton(
+                        onClick = onSaveCsvClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .semantics { contentDescription = cdSave },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.btn_save_csv),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             } else {
                 Button(
                     onClick = onStopClick,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .heightIn(min = 48.dp)
-                        .semantics { contentDescription = "Stop 5G telemetry collection" },
+                        .semantics { contentDescription = cdStop },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -497,22 +518,6 @@ private fun ControlBar(
                         fontWeight = FontWeight.Bold
                     )
                 }
-            }
-
-            OutlinedButton(
-                onClick = onSaveCsvClick,
-                enabled = sampleCount > 0,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .semantics { contentDescription = "Save and share CSV file" },
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.btn_save_csv),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
             }
         }
     }

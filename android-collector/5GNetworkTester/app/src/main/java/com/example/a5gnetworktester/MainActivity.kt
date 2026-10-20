@@ -344,11 +344,12 @@ class MainActivity : ComponentActivity() {
     }
 
     /*
-     * Stops collection via CollectorForegroundService (T19-009).
+     * Stops collection via CollectorForegroundService (T19-009) and automatically shares CSV (T19-011).
      */
     private fun stopCollection() {
         CollectorForegroundService.stop(this)
         BatteryOptimizationHelper.setScreenOnFallback(this, false)
+        saveCsv()
     }
 
 
