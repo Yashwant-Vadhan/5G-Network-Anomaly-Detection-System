@@ -46,4 +46,12 @@
     <string name="cd_save_csv">Save and share CSV file</string>
     <string name="cd_pairing_screen">Open pairing screen</string>
     <string name="cd_consent_screen">Open privacy consent screen</string>
+
+    <!-- Foreground Service & Notification Strings (T19-009) -->
+    <string name="notification_channel_name">5G Telemetry Collection</string>
+    <string name="notification_channel_desc">Ongoing collection of 5G cellular telemetry</string>
+    <string name="notification_service_title">NADS Collector Running</string>
+    <string name="notification_content_format">Collecting 5G telemetry • %1$d samples • %2$s</string>
+    <string name="notification_action_stop">Stop</string>
+    <string name="timeout_stopped_message">Collection stopped: Android 15+ 6-hour dataSync timeout reached.</string>
 </resources>

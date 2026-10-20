@@ -19,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -173,6 +175,14 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        lifecycleScope.launch {
+            CollectorForegroundService.uiStateFlow.collect { state ->
+                uiState = state
+                collecting = state.isCollecting
+                BatteryOptimizationHelper.setScreenOnFallback(this@MainActivity, state.isCollecting)
+            }
+        }
+
         if (!hasPermissions()) {
 
             ActivityCompat.requestPermissions(
@@ -313,113 +323,32 @@ class MainActivity : ComponentActivity() {
 
 
     /*
-     * Starts continuous measurement collection.
+     * Starts continuous measurement collection via CollectorForegroundService (T19-009).
      */
     private fun startCollection() {
-
         if (!hasPermissions()) {
-
             ActivityCompat.requestPermissions(
                 this,
                 REQUIRED_PERMISSIONS,
                 PERMISSION_REQUEST_CODE
             )
-
             return
         }
-
 
         if (collecting) {
             return
         }
 
-
-        collecting = true
-
-        csvRows.clear()
-
-
-        /*
-         * CSV header.
-         */
-        csvRows.add(CsvBuilder.CSV_HEADER)
-
-        /*
-         * Initialize incremental session writer (T19-004, Guardrail G18).
-         * Each subsequent sample will be appended and flushed immediately to file.
-         */
-        try {
-            val directory = getExternalFilesDir(null) ?: filesDir
-            currentSessionWriter?.close()
-            currentSessionWriter = IncrementalCsvWriter(IncrementalCsvWriter.createSessionFile(directory))
-        } catch (_: Exception) {
-            currentSessionWriter = null
-        }
-
-
-        /*
-         * Clear previous display via UiState.
-         */
-        uiState = uiState.copy(
-            isCollecting = true,
-            sampleCount = 0,
-            deploymentMode = getDeploymentMode(),
-            latestReading = null,
-            statusMessage = getString(R.string.waiting_measurement)
-        )
-
-
-        /*
-         * Collect immediately.
-         */
-        collectSample()
-
-
-        /*
-         * Continue every 3 seconds.
-         */
-        handler.postDelayed(
-            collectionRunnable,
-            SAMPLE_INTERVAL
-        )
+        CollectorForegroundService.streamClient = streamClient
+        CollectorForegroundService.start(this)
     }
 
-
     /*
-     * Repeated measurement task.
-     */
-    private val collectionRunnable = object : Runnable {
-
-        override fun run() {
-
-            if (!collecting) {
-                return
-            }
-
-
-            collectSample()
-
-
-            handler.postDelayed(
-                this,
-                SAMPLE_INTERVAL
-            )
-        }
-    }
-
-
-    /*
-     * Stops collection.
+     * Stops collection via CollectorForegroundService (T19-009).
      */
     private fun stopCollection() {
-
-        collecting = false
-
-        handler.removeCallbacks(
-            collectionRunnable
-        )
-
-        updateStatus()
+        CollectorForegroundService.stop(this)
+        BatteryOptimizationHelper.setScreenOnFallback(this, false)
     }
 
 
@@ -789,10 +718,10 @@ class MainActivity : ComponentActivity() {
      */
     private fun updateStatus() {
         val sampleCount =
-            if (csvRows.isEmpty()) {
+            if (CollectorForegroundService.csvRows.isEmpty()) {
                 0
             } else {
-                csvRows.size - 1
+                CollectorForegroundService.csvRows.size - 1
             }
 
         uiState = uiState.copy(
@@ -807,8 +736,10 @@ class MainActivity : ComponentActivity() {
      * Saves all collected measurements to CSV and offers sharing (T19-004, T19-011).
      */
     private fun saveCsv() {
+        val directory = getExternalFilesDir(null) ?: filesDir
+        val file = CollectorForegroundService.finalizeCsv(directory)
 
-        if (csvRows.size <= 1) {
+        if (file == null) {
             uiState = uiState.copy(
                 latestReading = null,
                 statusMessage = getString(R.string.no_measurements_to_save)
@@ -816,24 +747,8 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-
         try {
-            val directory =
-                getExternalFilesDir(null) ?: filesDir
-
-            val activeWriter = currentSessionWriter
-            val file = if (activeWriter != null && activeWriter.file.exists() && activeWriter.file.length() > 0) {
-                activeWriter.close()
-                currentSessionWriter = null
-                activeWriter.file
-            } else {
-                activeWriter?.close()
-                currentSessionWriter = null
-                val fallbackFile = IncrementalCsvWriter.createSessionFile(directory)
-                fallbackFile.writeText(csvRows.joinToString("\n") + "\n")
-                fallbackFile
-            }
-
+            val samplesCount = if (CollectorForegroundService.csvRows.isEmpty()) 0 else CollectorForegroundService.csvRows.size - 1
 
             /*
              * Show the exact saved path via UiState.
@@ -841,7 +756,7 @@ class MainActivity : ComponentActivity() {
             val msg =
                 "CSV SAVED SUCCESSFULLY\n" +
                         "============================\n\n" +
-                        "Samples Saved : ${csvRows.size - 1}\n\n" +
+                        "Samples Saved : $samplesCount\n\n" +
                         "File Name:\n" +
                         "${file.name}\n\n" +
                         "Path:\n" +
@@ -949,23 +864,17 @@ class MainActivity : ComponentActivity() {
             }
         )
         streamClient = client
+        CollectorForegroundService.streamClient = client
         client.connect()
     }
 
     override fun onDestroy() {
-
-        collecting = false
-
-        handler.removeCallbacks(
-            collectionRunnable
-        )
-
         unregisterDisplayCallback()
-        currentSessionWriter?.close()
-        currentSessionWriter = null
-        streamClient?.disconnect()
-        streamClient = null
-
+        if (!collecting) {
+            CollectorForegroundService.streamClient = null
+            streamClient?.disconnect()
+            streamClient = null
+        }
         super.onDestroy()
     }
 }

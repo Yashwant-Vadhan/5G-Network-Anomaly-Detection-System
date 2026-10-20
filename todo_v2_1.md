@@ -672,12 +672,12 @@ from static files plus API; non-root user; health check; `make docker-build dock
 **Owner:** Yashwant
 
 #### T19-009: Foreground service for sampling and streaming
-**Status:** ⬜
+**Status:** ✅
 **Description:** Move the 3 s loop into a foreground service with a notification; declare foreground service type (`dataSync` with `FOREGROUND_SERVICE_DATA_SYNC` or `specialUse`/`connectedDevice`; verified Android 15+ timeout rules enforce max 6 h in 24 h for `dataSync` with `Service.onTimeout(int, int)` callback where service must call `stopSelf()`, ref: https://developer.android.com/about/versions/15/behavior-changes-15#data-sync-timeout [verified 2026-10-12]); handle screen-off and OEM battery restrictions on Redmi and Samsung; screen-on fallback. Verify service-type rules from current Android docs for targetSdk 37; if unverifiable, mark BLOCKED.
 **Dependencies:** T19-004
 **Acceptance Criteria:**
-- [ ] Notification states what is running
-- [ ] Service handles Android 15+ timeout callback cleanly
+- [x] Notification states what is running
+- [x] Service handles Android 15+ timeout callback cleanly
 **Estimated Effort:** 90 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant
