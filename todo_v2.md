@@ -1228,12 +1228,12 @@ and alert decisions are byte-identical.
 **Owner:** Sushil
 
 #### T15-005: Refresh the iOS collection note (no code)
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Re-check current iOS telephony API restrictions from Apple's documentation and update the v1 note (T9-006, `docs/ios_collection_note.md`) with dated, sourced statements; state 'NOT IMPLEMENTED'.
 **Dependencies:** T14-019
 **Acceptance Criteria:**
-- [ ] Each claim cites a source or is marked unverified
-- [ ] Date of check recorded
+- [x] Each claim cites a source or is marked unverified
+- [x] Date of check recorded
 **Estimated Effort:** 60 min
 **Assigned To:** Backend
 **Owner:** Yashwant
