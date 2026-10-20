@@ -696,12 +696,12 @@ all UI text in `strings.xml`.
 **Owner:** Sushil
 
 #### T19-011: Share/export the saved CSV
-**Status:** ⬜ · ➕ Optional
+**Status:** ✅ · ➕ Optional
 **Description:** Android share intent for the finished file (FileProvider; verify current best practice).
 **Dependencies:** T19-004
 **Acceptance Criteria:**
-- [ ] File shares to Drive/WhatsApp/email on a device
-- [ ] Shared file equals the saved file
+- [x] File shares to Drive/WhatsApp/email on a device
+- [x] Shared file equals the saved file
 **Estimated Effort:** 45 min
 **Assigned To:** Full-stack (Android)
 **Owner:** Yashwant

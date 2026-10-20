@@ -785,26 +785,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun offerShare(file: File) {
-        try {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                this,
-                "${packageName}.provider",
-                file
-            )
-            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                type = "text/csv"
-                putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivity(
-                android.content.Intent.createChooser(
-                    shareIntent,
-                    getString(R.string.share_csv_title)
-                )
-            )
-        } catch (_: Exception) {
-            // Sharing may not be available on headless/test environments
-        }
+        val title = getString(R.string.share_csv_title)
+        CsvShareHelper.shareCsvFile(
+            activity = this,
+            file = file,
+            chooserTitle = title
+        )
     }
 
 
