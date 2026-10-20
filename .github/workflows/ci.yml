@@ -82,6 +82,9 @@ jobs:
     name: build container image
     runs-on: ubuntu-latest
     needs: [quality, frontend]
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - name: Checkout
@@ -96,8 +99,9 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: 5gnads-app:test
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
 
 
