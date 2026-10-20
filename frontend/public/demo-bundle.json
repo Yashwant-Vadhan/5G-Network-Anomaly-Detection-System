@@ -143,7 +143,7 @@
   "generated_at": "2026-09-30 22:55:07+00:00",
   "model_meta": {
     "contamination": 0.05,
-    "created_at": "2026-10-17T13:35:48.789230+00:00",
+    "created_at": "2026-10-19T17:55:09.811053+00:00",
     "feature_columns": [
       "ss_rsrp",
       "ss_rsrq",
@@ -166,11 +166,11 @@
     ],
     "feature_hash": "dbddab46e94b9cb26b7f0b82826673ed3c3c47f5ede86b650f462200169f358f",
     "model_name": "if_v1",
-    "model_sha256": "f95e3c48f6d8ec4914b712439af44cca3f2aa194444e2f39c70f6d5111e176ec",
+    "model_sha256": "58104c8107e67ef1e2723a58f7c8c58509ef58bfe8efbf1e13cff1b29a7fbc55",
     "model_version": "1.0.0",
     "n_estimators": 100,
     "random_state": 42,
-    "scaler_sha256": "3c87ff469ad3cd7405272203e722ce26fa94a66d0c326669d2aa6c41cf3ffeb3",
+    "scaler_sha256": "d3037bd2db88b8f3e747fae02dcf6250b459fea95cb562220d6f75d583e3fa15",
     "sklearn_version": "1.9.1",
     "training_data_sha256": "7fa777f25d98c75eca19ee31f24a4c2d0533cb3981e939fcc4a6be49cd6b4e36",
     "training_rows": 66
@@ -180,23 +180,23 @@
     "cell_ids": "hashed",
     "cell_lookup": {
       "Cell-A": {
-        "hash": "39085ee6450d58e5",
+        "hash": "6c0f0a08bfdc532e",
         "type": "PCI"
       },
       "Cell-B": {
-        "hash": "fcd5e45ff8fb5501",
+        "hash": "c4ae26b9c52c01dc",
         "type": "PCI"
       },
       "NCI-A": {
-        "hash": "94aa0f1e49d4b204",
+        "hash": "fa3fe5a29bd58b62",
         "type": "NCI"
       },
       "NCI-B": {
-        "hash": "83a2950bdcd418b7",
+        "hash": "be0c8a4cfda289ec",
         "type": "NCI"
       }
     },
-    "salt_hash": "52fda9cc978fdc4a",
+    "salt_hash": "ff853bfec6f6798e",
     "time": "device-local, no timezone"
   },
   "quality": {
@@ -1796,7 +1796,7 @@
       "start": "2026-09-30 22:51:39+00:00"
     }
   ],
-  "source": "processed",
+  "source": "sample",
   "transitions": [
     {
       "device": "2406ERN9CI",

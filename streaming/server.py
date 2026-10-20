@@ -24,7 +24,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import (
-    Body,
     Depends,
     FastAPI,
     Header,
@@ -968,7 +967,6 @@ def create_app(
     @app.post("/api/v1/ingest/batch", response_model=BatchIngestResponse)
     async def http_batch_ingest(
         request: Request,
-        body: Any = Body(...),
         authorization: str | None = Header(default=None),
         token: str | None = Query(default=None),
     ) -> BatchIngestResponse:
@@ -977,7 +975,7 @@ def create_app(
         Implements:
         1. Authentication matching WebSocket ingest (ingest token or per-session token).
         2. Strict Contract C7 schema validation on each sample.
-        3. Guardrail G19 deduplication: duplicate sequence numbers are ignored without corrupting metrics.
+        3. Guardrail G19 deduplication: duplicate sequence numbers are ignored.
         4. Rate limiting enforcement against operational limits.
         """
         # 0. Check Origin allow-list if present (T18-006)
@@ -1005,9 +1003,19 @@ def create_app(
             if not (is_valid_session_token or is_valid_global_token):
                 raise HTTPException(status_code=401, detail="Unauthorized")
 
-        connected_session_id = session_tokens.get(auth_token) if is_valid_session_token and auth_token else None
+        connected_session_id = (
+            session_tokens.get(auth_token) if is_valid_session_token and auth_token else None
+        )
 
         # 2. Extract sample array (accepts either list of samples or {"samples": [...]})
+        try:
+            body = await request.json()
+        except Exception as e:
+            raise HTTPException(
+                status_code=422,
+                detail="Batch payload must be valid JSON",
+            ) from e
+
         if isinstance(body, list):
             sample_list = body
         elif isinstance(body, dict):
@@ -1015,7 +1023,10 @@ def create_app(
             if not isinstance(sample_list, list):
                 raise HTTPException(
                     status_code=422,
-                    detail="Batch payload must be a JSON array of sample objects or contain a 'samples' array",
+                    detail=(
+                        "Batch payload must be a JSON array of sample objects "
+                        "or contain a 'samples' array"
+                    ),
                 )
         else:
             raise HTTPException(
@@ -1028,7 +1039,10 @@ def create_app(
         if len(sample_list) > max_rate:
             raise HTTPException(
                 status_code=429,
-                detail=f"Rate limit exceeded: batch size {len(sample_list)} exceeds maximum {int(max_rate)} messages per batch",
+                detail=(
+                    f"Rate limit exceeded: batch size {len(sample_list)} exceeds maximum "
+                    f"{int(max_rate)} messages per batch"
+                ),
             )
 
         # 4. Strict Validation of each sample adhering to Contract C7
@@ -1057,7 +1071,7 @@ def create_app(
                 raise HTTPException(
                     status_code=422,
                     detail=f"Validation error for sample at index {idx}: {e}",
-                )
+                ) from e
             validated_samples.append(sample_obj)
 
         if not validated_samples:
@@ -1145,17 +1159,23 @@ def create_app(
                     if app.state.hub is not None:
                         if action == "OPEN":
                             await app.state.hub.broadcast(
-                                LiveEventOpen(server_time=now_iso, session_id=session_id, event=evt),
+                                LiveEventOpen(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                ),
                                 session_id=session_id,
                             )
                         elif action == "CLOSED":
                             await app.state.hub.broadcast(
-                                LiveEventClosed(server_time=now_iso, session_id=session_id, event=evt),
+                                LiveEventClosed(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                ),
                                 session_id=session_id,
                             )
                         elif action == "UPDATE":
                             await app.state.hub.broadcast(
-                                LiveEventUpdate(server_time=now_iso, session_id=session_id, event=evt),
+                                LiveEventUpdate(
+                                    server_time=now_iso, session_id=session_id, event=evt
+                                ),
                                 session_id=session_id,
                             )
 

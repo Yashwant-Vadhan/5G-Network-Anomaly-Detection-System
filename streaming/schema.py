@@ -845,4 +845,3 @@ class BatchIngestResponse(BaseModel):
     duplicates: int = Field(default=0, ge=0)
     last_seq_acked: int = Field(default=0, ge=0)
     session_id: str | None = None
-

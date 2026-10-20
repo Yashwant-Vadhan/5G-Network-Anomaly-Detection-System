@@ -600,12 +600,12 @@ function AppContent({
                 <Overview
                   currentSample={
                     mode === 'live' && liveSamples.length > 0
-                      ? liveSamples[liveSamples.length - 1]
+                      ? (liveSamples[liveSamples.length - 1] as unknown as Record<string, unknown>)
                       : currentSample
                   }
                   prevSample={
                     mode === 'live' && liveSamples.length > 1
-                      ? liveSamples[liveSamples.length - 2]
+                      ? (liveSamples[liveSamples.length - 2] as unknown as Record<string, unknown>)
                       : prevSample
                   }
                   events={mode === 'live' ? liveEvents : events}

@@ -21,9 +21,7 @@ from streaming.server import ServerConfig, create_app
 
 @pytest.fixture
 def golden_sample() -> dict[str, Any]:
-    fixture_path = (
-        Path(__file__).parent / "fixtures" / "stream" / "c7_ingest_sample.example.json"
-    )
+    fixture_path = Path(__file__).parent / "fixtures" / "stream" / "c7_ingest_sample.example.json"
     assert fixture_path.exists(), f"Golden fixture missing at {fixture_path}"
     return json.loads(fixture_path.read_text(encoding="utf-8"))
 
