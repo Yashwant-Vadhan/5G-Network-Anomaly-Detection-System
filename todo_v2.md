@@ -177,12 +177,12 @@ Each task: **Status · Description · Dependencies · Acceptance Criteria (check
 **Owner:** Sushil
 
 #### T10-012: Check the phone↔laptop link options on both test phones
-**Status:** 🔄 · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Verify that `adb reverse tcp:<port> tcp:<port>` works on the Redmi (Android 16 per `eda_findings.md`) and the Samsung SM-A156E with a trivial echo server; note Wi-Fi/hotspot reachability. Record results and any OEM quirks in `docs/decisions.md`. ⚠️ UNCLEAR: demo venue link.
 **Dependencies:** None
 **Acceptance Criteria:**
-- [ ] Result per device (works / fails / needs setting) recorded
-- [ ] Recommended demo link written down
+- [x] Result per device (works / fails / needs setting) recorded
+- [x] Recommended demo link written down
 **Estimated Effort:** 45 min
 **Assigned To:** DevOps
 **Owner:** Yashwant
