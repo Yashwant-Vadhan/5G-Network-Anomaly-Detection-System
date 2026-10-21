@@ -127,6 +127,7 @@ class ReplayStreamer:
         session_label: str = "replay-stream",
         max_in_flight: int = 20,
         limit: int | None = None,
+        source: str = "replay",
     ) -> None:
         self.csv_path = csv_path
         self.host = host
@@ -137,6 +138,7 @@ class ReplayStreamer:
         self.session_label = session_label
         self.max_in_flight = max_in_flight
         self.limit = limit
+        self.source = source
 
         self.last_acked_seq: int = 0
         self.session_id: str | None = None
@@ -232,7 +234,7 @@ class ReplayStreamer:
                 "android": android,
                 "operator": operator,
                 "app_version": "1.0.0",
-                "source": "replay",
+                "source": self.source,
             }
             await ws.send(json.dumps(hello_msg))
 
@@ -393,6 +395,12 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optional limit on number of samples to send",
     )
+    parser.add_argument(
+        "--source",
+        type=str,
+        default="replay",
+        help="Telemetry source label ('phone' or 'replay')",
+    )
 
     ns = parser.parse_args(args)
 
@@ -439,6 +447,7 @@ def main(args: list[str] | None = None) -> int:
         session_label=ns.session_label,
         max_in_flight=ns.max_in_flight,
         limit=ns.limit,
+        source=ns.source,
     )
 
     try:

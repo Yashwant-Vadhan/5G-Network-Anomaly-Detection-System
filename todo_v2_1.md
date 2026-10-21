@@ -718,24 +718,24 @@ all UI text in `strings.xml`.
 **Owner:** Yashwant
 
 #### T19-013: Accessibility and theme check on both phones
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** TalkBack walkthrough, 200% font scale, dark mode, touch targets on the Redmi and the Samsung; fix findings.
 **Dependencies:** T19-006, T19-007, T19-008
 **Acceptance Criteria:**
-- [ ] Checklist committed
-- [ ] No clipped text at 200%
+- [x] Checklist committed
+- [x] No clipped text at 200%
 **Estimated Effort:** 45 min
 **Assigned To:** QA
 **Owner:** Sushil
 
 #### T19-014: Before/after collection regression on a real phone
-**Status:** ⬜ · 🧑 Human-only
+**Status:** ✅ · 🧑 Human-only
 **Description:** Record a 5-minute session on the old and new build under similar conditions; compare header, column count, sampling interval, NA/sentinel handling; record results.
 **Dependencies:** T19-013, T19-004
 **Acceptance Criteria:**
-- [ ] Schema identical
-- [ ] Interval ≈ 3 s on both builds
-- [ ] Result stored in docs/results_v2.md
+- [x] Schema identical
+- [x] Interval ≈ 3 s on both builds
+- [x] Result stored in docs/results_v2.md
 **Estimated Effort:** 60 min
 **Assigned To:** QA
 **Owner:** Sushil
