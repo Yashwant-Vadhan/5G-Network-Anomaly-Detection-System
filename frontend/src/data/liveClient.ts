@@ -16,9 +16,52 @@ import {
   LiveEventOpen,
   LiveEventUpdate,
   LiveSampleEvent,
+  LiveSessionTicketResponse,
   ScoredSample,
   SnapshotEvent,
 } from '../types/contracts';
+
+/**
+ * Request a single-use WebSocket viewer ticket from backend (Contract C10 / T18-003).
+ * Uses credentials: 'include' to transmit the HttpOnly nads_viewer_session cookie.
+ * Never logs or caches the ticket.
+ */
+export async function fetchViewerTicket(
+  httpBaseUrl: string,
+  sessionId: string,
+  fetchFn?: typeof fetch
+): Promise<string> {
+  if (!sessionId || !sessionId.trim()) {
+    throw new Error('Session ID is required to fetch a viewer ticket');
+  }
+
+  const fetcher = fetchFn || (typeof fetch !== 'undefined' ? fetch : undefined);
+  if (!fetcher) {
+    throw new Error('Network client unavailable');
+  }
+
+  const cleanBase = httpBaseUrl.replace(/\/+$/, '');
+  const url = `${cleanBase}/api/v1/live-sessions/${encodeURIComponent(sessionId.trim())}/ticket`;
+
+  const res = await fetcher(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to obtain viewer ticket: HTTP ${res.status} ${res.statusText}`);
+  }
+
+  const data = (await res.json()) as LiveSessionTicketResponse;
+  if (!data || typeof data.ticket !== 'string' || !data.ticket.trim()) {
+    throw new Error('Malformed viewer ticket response');
+  }
+
+  return data.ticket;
+}
 
 export interface WebSocketLike {
   readyState: number;

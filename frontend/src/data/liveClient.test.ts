@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { LiveClient, WebSocketLike } from './liveClient';
+import { LiveClient, WebSocketLike, fetchViewerTicket } from './liveClient';
 import { ScoredSample, SnapshotEvent } from '../types/contracts';
 
 class FakeWebSocket implements WebSocketLike {
@@ -321,4 +321,142 @@ describe('LiveClient Connection State Machine & Auth (T17-001)', () => {
 
     vi.useRealTimers();
   });
+
+  describe('Viewer Ticket Fetching & Reconnection Freshness (C10 / T18-003)', () => {
+    it('fetches single-use ticket with credentials include and cleans URL', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          ticket: 'valid-test-ticket-xyz',
+          expires_at: '2026-10-21T18:00:30Z',
+        }),
+      });
+
+      const ticket = await fetchViewerTicket(
+        'http://localhost:8000/',
+        'live-session-1234',
+        mockFetch as unknown as typeof fetch
+      );
+
+      expect(ticket).toBe('valid-test-ticket-xyz');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:8000/api/v1/live-sessions/live-session-1234/ticket',
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    });
+
+    it('rejects with error when session ID is missing or empty without calling fetch', async () => {
+      const mockFetch = vi.fn();
+
+      await expect(
+        fetchViewerTicket('http://localhost:8000', '', mockFetch as unknown as typeof fetch)
+      ).rejects.toThrow('Session ID is required to fetch a viewer ticket');
+
+      await expect(
+        fetchViewerTicket('http://localhost:8000', '   ', mockFetch as unknown as typeof fetch)
+      ).rejects.toThrow('Session ID is required to fetch a viewer ticket');
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('handles HTTP error status on ticket request failure', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized viewer',
+      });
+
+      await expect(
+        fetchViewerTicket(
+          'http://localhost:8000',
+          'live-session-unauth',
+          mockFetch as unknown as typeof fetch
+        )
+      ).rejects.toThrow('Failed to obtain viewer ticket: HTTP 401 Unauthorized viewer');
+    });
+
+    it('handles malformed ticket JSON response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      });
+
+      await expect(
+        fetchViewerTicket(
+          'http://localhost:8000',
+          'live-session-malformed',
+          mockFetch as unknown as typeof fetch
+        )
+      ).rejects.toThrow('Malformed viewer ticket response');
+    });
+
+    it('obtains a fresh single-use ticket on reconnection without caching or URL leaks', async () => {
+      const createdSockets: FakeWebSocket[] = [];
+      const issuedTickets = ['ticket-one-111', 'ticket-two-222'];
+      let ticketCallCount = 0;
+
+      const mockGetTicket = vi.fn().mockImplementation(async () => {
+        const ticket = issuedTickets[ticketCallCount++] || 'ticket-fallback';
+        return ticket;
+      });
+
+      const client = new LiveClient({
+        wsUrl: 'ws://localhost:8000/api/v1/live',
+        httpBaseUrl: 'http://localhost:8000',
+        initialBackoffMs: 20,
+        maxBackoffMs: 50,
+        getTicket: mockGetTicket,
+        webSocketFactory: (url: string) => {
+          const s = new FakeWebSocket(url);
+          createdSockets.push(s);
+          return s;
+        },
+      });
+
+      await client.connect();
+      expect(client.getState()).toBe('WAITING');
+      await new Promise((r) => setTimeout(r, 25));
+
+      expect(createdSockets.length).toBe(1);
+      expect(mockGetTicket).toHaveBeenCalledTimes(1);
+      const firstSocket = createdSockets[0];
+      expect(firstSocket.sentMessages.length).toBe(1);
+      expect(JSON.parse(firstSocket.sentMessages[0])).toEqual({
+        type: 'auth',
+        ticket: 'ticket-one-111',
+      });
+      expect(firstSocket.url).toBe('ws://localhost:8000/api/v1/live');
+      expect(firstSocket.url).not.toContain('ticket');
+
+      // Simulate network disconnection (triggers scheduleReconnect with backoff)
+      firstSocket.close(1006, 'Abnormal closure');
+
+      // Wait for backoff reconnect and fake socket readyState open
+      await new Promise((r) => setTimeout(r, 80));
+
+      expect(createdSockets.length).toBe(2);
+      expect(mockGetTicket).toHaveBeenCalledTimes(2);
+      const secondSocket = createdSockets[1];
+      expect(secondSocket.sentMessages.length).toBe(1);
+      expect(JSON.parse(secondSocket.sentMessages[0])).toEqual({
+        type: 'auth',
+        ticket: 'ticket-two-222',
+      });
+      expect(secondSocket.url).toBe('ws://localhost:8000/api/v1/live');
+      expect(secondSocket.url).not.toContain('ticket');
+
+      // Ensure ticket 1 and ticket 2 are completely distinct
+      expect(JSON.parse(firstSocket.sentMessages[0]).ticket).not.toBe(
+        JSON.parse(secondSocket.sentMessages[0]).ticket
+      );
+    });
+  });
 });
+

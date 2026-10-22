@@ -91,6 +91,7 @@ describe('PairingPanel Component (T17-008)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/v1/live-sessions', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -227,7 +228,7 @@ describe('PairingPanel Component (T17-008)', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/live-sessions/live-test-sess-1234',
-      { method: 'DELETE' }
+      { method: 'DELETE', credentials: 'include' }
     );
     expect(onSessionEnded).toHaveBeenCalledTimes(1);
 

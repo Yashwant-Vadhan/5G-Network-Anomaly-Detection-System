@@ -3,7 +3,7 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { PAGES } from './constants/pages';
 import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
-import { DemoBundle, ConnectionState, ScoredSample, EventRecord } from './types/contracts';
+import { DemoBundle, ConnectionState, ScoredSample, EventRecord, CreateLiveSessionResponse } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
 import { CellsNetwork } from './pages/CellsNetwork';
@@ -15,7 +15,7 @@ import { ReplayProvider, useReplay } from './data/ReplayContext';
 import { ReplayPlayer } from './components/ReplayPlayer';
 import { ConnectionChip } from './components/ConnectionChip';
 import { PairingPanel } from './components/PairingPanel';
-import { LiveClient } from './data/liveClient';
+import { LiveClient, fetchViewerTicket } from './data/liveClient';
 
 export function sanitizeErrorMessage(err: unknown): string {
   if (!err) return '';
@@ -36,21 +36,40 @@ export function sanitizeErrorMessage(err: unknown): string {
 interface AppContentProps {
   initialMode?: 'demo' | 'live';
   initialConnectionState?: ConnectionState;
+  initialSessionId?: string | null;
+  fetchFn?: typeof fetch;
+  enableLiveClientInTest?: boolean;
 }
 
 function AppContent({
   initialMode = 'demo',
   initialConnectionState = 'REPLAY-SOURCE',
+  initialSessionId = null,
+  fetchFn = typeof fetch !== 'undefined' ? fetch : undefined,
+  enableLiveClientInTest = false,
 }: AppContentProps) {
   const [mode, setMode] = useState<'demo' | 'live'>(initialMode);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    if (initialSessionId) return initialSessionId;
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('nads_active_session_id');
+    }
+    return null;
+  });
   const [liveConnectionState, setLiveConnectionState] =
     useState<ConnectionState>(initialConnectionState);
+  const [liveErrorMessage, setLiveErrorMessage] = useState<string | null>(null);
   const [isPairingOpen, setIsPairingOpen] = useState(false);
   const [liveSamples, setLiveSamples] = useState<ScoredSample[]>([]);
   const [liveEvents, setLiveEvents] = useState<EventRecord[]>([]);
 
   useEffect(() => {
-    if (mode !== 'live' || typeof window === 'undefined' || import.meta.env.MODE === 'test') {
+    if (
+      mode !== 'live' ||
+      !activeSessionId ||
+      typeof window === 'undefined' ||
+      (import.meta.env.MODE === 'test' && !enableLiveClientInTest)
+    ) {
       return;
     }
 
@@ -64,6 +83,8 @@ function AppContent({
         wsUrl,
         httpBaseUrl,
         staleTimeoutMs: 15000,
+        fetchFn,
+        getTicket: () => fetchViewerTicket(httpBaseUrl, activeSessionId, fetchFn),
       });
 
       const unsubscribe = client.subscribe({
@@ -71,10 +92,37 @@ function AppContent({
           setLiveConnectionState(state);
         },
         onSample: sample => {
-          setLiveSamples(prev => [...prev, sample]);
+          setLiveSamples(prev => {
+            if (prev.some(s => s.seq === sample.seq)) return prev;
+            return [...prev, sample];
+          });
         },
-        onSnapshot: snap => {
-          if (snap.latest_sample) {
+        onSnapshot: async snap => {
+          if (activeSessionId) {
+            try {
+              const fetcher = fetchFn || (typeof fetch !== 'undefined' ? fetch : undefined);
+              if (fetcher) {
+                const res = await fetcher(
+                  `${httpBaseUrl}/api/v1/sessions/${encodeURIComponent(activeSessionId)}/samples?limit=1000`
+                );
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.samples && Array.isArray(data.samples) && data.samples.length > 0) {
+                    setLiveSamples(data.samples);
+                  } else if (snap.latest_sample) {
+                    setLiveSamples([snap.latest_sample]);
+                  }
+                }
+              }
+            } catch {
+              if (snap.latest_sample) {
+                setLiveSamples(prev => {
+                  if (prev.some(s => s.seq === snap.latest_sample?.seq)) return prev;
+                  return [...prev, snap.latest_sample!];
+                });
+              }
+            }
+          } else if (snap.latest_sample) {
             setLiveSamples(prev => {
               if (prev.some(s => s.seq === snap.latest_sample?.seq)) return prev;
               return [...prev, snap.latest_sample!];
@@ -95,6 +143,9 @@ function AppContent({
             return [...prev, event];
           });
         },
+        onError: err => {
+          setLiveErrorMessage(sanitizeErrorMessage(err));
+        },
       });
 
       client.connect();
@@ -106,7 +157,7 @@ function AppContent({
     } catch {
       // In testing environments where WebSocket is mocked or unavailable
     }
-  }, [mode]);
+  }, [mode, activeSessionId, fetchFn, enableLiveClientInTest]);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('nads_theme') as 'light' | 'dark') || 'light';
@@ -300,12 +351,23 @@ function AppContent({
               <PairingPanel
                 connectionState={liveConnectionState}
                 samples={liveSamples}
-                onSessionStarted={() => {
+                fetchFn={fetchFn}
+                onSessionStarted={(session: CreateLiveSessionResponse) => {
+                  setActiveSessionId(session.session_id);
+                  if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.setItem('nads_active_session_id', session.session_id);
+                  }
+                  setLiveErrorMessage(null);
                   setLiveSamples([]);
                   setLiveEvents([]);
                   setLiveConnectionState('WAITING');
                 }}
                 onSessionEnded={() => {
+                  setActiveSessionId(null);
+                  if (typeof sessionStorage !== 'undefined') {
+                    sessionStorage.removeItem('nads_active_session_id');
+                  }
+                  setLiveErrorMessage(null);
                   setIsPairingOpen(false);
                   setLiveSamples([]);
                   setLiveEvents([]);
@@ -352,8 +414,9 @@ function AppContent({
                   marginBottom: '12px',
                 }}
               >
-                Fix: Run &apos;python -m streaming.server --allow-remote-view&apos; or check
-                network and port.
+                {liveErrorMessage
+                  ? `Error: ${liveErrorMessage}`
+                  : "Fix: Run 'python -m streaming.server --allow-remote-view' or check network and port."}
               </div>
               <button
                 data-testid="retry-connection-btn"
@@ -576,10 +639,29 @@ function AppContent({
 
                 <div style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--color-text)' }}>
                   Active Subset:{' '}
-                  <strong>{currentSession?.session_id || selectedSessionId}</strong> (
-                  {samples.length} samples) · Device:{' '}
-                  <strong>{currentSession?.device || selectedDevice}</strong> · Operator:{' '}
-                  <strong>{currentSession?.operator || selectedOperator}</strong>
+                  <strong>
+                    {mode === 'live'
+                      ? activeSessionId
+                        ? `Live (${activeSessionId})`
+                        : 'No active session'
+                      : currentSession?.session_id || selectedSessionId}
+                  </strong>{' '}
+                  ({mode === 'live' ? liveSamples.length : samples.length} samples)
+                  {mode === 'live' && liveSamples.length > 0 && (
+                    <>
+                      {' '}· Device:{' '}
+                      <strong>{liveSamples[liveSamples.length - 1].device || 'phone'}</strong>
+                      {' '}· Operator:{' '}
+                      <strong>{liveSamples[liveSamples.length - 1].operator || 'Unknown'}</strong>
+                    </>
+                  )}
+                  {mode !== 'live' && (
+                    <>
+                      {' '}· Device:{' '}
+                      <strong>{currentSession?.device || selectedDevice}</strong> · Operator:{' '}
+                      <strong>{currentSession?.operator || selectedOperator}</strong>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -691,6 +773,9 @@ export interface AppProps {
   bundleUrl?: string;
   initialMode?: 'demo' | 'live';
   initialConnectionState?: ConnectionState;
+  initialSessionId?: string | null;
+  fetchFn?: typeof fetch;
+  enableLiveClientInTest?: boolean;
 }
 
 export default function App({
@@ -698,6 +783,9 @@ export default function App({
   bundleUrl,
   initialMode = 'demo',
   initialConnectionState = 'REPLAY-SOURCE',
+  initialSessionId = null,
+  fetchFn,
+  enableLiveClientInTest = false,
 }: AppProps = {}) {
   return (
     <DataProvider initialBundle={initialBundle} bundleUrl={bundleUrl}>
@@ -705,6 +793,9 @@ export default function App({
         <AppContent
           initialMode={initialMode}
           initialConnectionState={initialConnectionState}
+          initialSessionId={initialSessionId}
+          fetchFn={fetchFn}
+          enableLiveClientInTest={enableLiveClientInTest}
         />
       </ReplayProvider>
     </DataProvider>

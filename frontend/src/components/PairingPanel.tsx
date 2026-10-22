@@ -192,6 +192,7 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
     try {
       const res = await fetchFn(`${apiBaseUrl}/api/v1/live-sessions`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -217,6 +218,7 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
     try {
       await fetchFn(`${apiBaseUrl}/api/v1/live-sessions/${session.session_id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
     } catch {
       // Best-effort session closure

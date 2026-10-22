@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HashRouter } from 'react-router-dom';
 import App, { sanitizeErrorMessage } from './App';
 import { PAGES } from './constants/pages';
@@ -236,4 +236,62 @@ describe('App Shell & Navigation (T16-006 / T16-007)', () => {
       expect(sanitizeErrorMessage(null)).toBe('');
     });
   });
+
+  describe('Live Session Parent State & Pairing Integration', () => {
+    it('tracks active session_id on session start and clears on session end', async () => {
+      const mockSession = {
+        session_id: 'live-test-active-999',
+        pairing_code: 'PAIR9999',
+        expires_at: new Date(Date.now() + 600000).toISOString(),
+      };
+
+      const mockFetch = vi.fn().mockImplementation((_url: string, opts?: RequestInit) => {
+        if (opts?.method === 'DELETE') {
+          return Promise.resolve({ ok: true });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockSession,
+        });
+      });
+
+      render(
+        <HashRouter>
+          <App
+            initialBundle={mockBundle}
+            initialMode="live"
+            initialConnectionState="WAITING"
+            fetchFn={mockFetch as unknown as typeof fetch}
+          />
+        </HashRouter>
+      );
+
+      // Open pairing panel
+      const openBtn = screen.getByTestId('open-pairing-btn');
+      fireEvent.click(openBtn);
+
+      const startBtn = screen.getByTestId('start-session-btn');
+      await act(async () => {
+        fireEvent.click(startBtn);
+      });
+
+      // Session ID and pairing code should be displayed in panel
+      expect(screen.getByTestId('pairing-code-display')).toHaveTextContent('PAIR9999');
+      expect(screen.getByText('live-test-active-999')).toBeInTheDocument();
+
+      // End session
+      const endBtn = screen.getByTestId('end-session-btn');
+      await act(async () => {
+        fireEvent.click(endBtn);
+      });
+
+      // Session cleared, panel closed, returns to unstarted state
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v1/live-sessions/live-test-active-999',
+        { method: 'DELETE', credentials: 'include' }
+      );
+      expect(screen.queryByTestId('pairing-code-display')).not.toBeInTheDocument();
+    });
+  });
 });
+
