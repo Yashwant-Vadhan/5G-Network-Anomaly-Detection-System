@@ -677,14 +677,22 @@ def create_app(
 
                     # Check for SESSION_CONFLICT (close code 4409)
                     if hello.client_id in app.state.active_ingest_clients:
-                        err = ErrorMsg(
-                            code="SESSION_CONFLICT",
-                            message=f"Session conflict: active connection for {hello.client_id}",
-                            fatal=True,
-                        )
-                        await websocket.send_text(err.model_dump_json())
-                        await websocket.close(code=4409, reason="Session conflict")
-                        break
+                        existing_ws = app.state.active_ingest_clients[hello.client_id]
+                        if connected_session_id and existing_ws is not websocket:
+                            try:
+                                await existing_ws.close(code=4409, reason="Superseded by reconnect")
+                            except Exception:
+                                pass
+                            app.state.active_ingest_clients.pop(hello.client_id, None)
+                        else:
+                            err = ErrorMsg(
+                                code="SESSION_CONFLICT",
+                                message=f"Session conflict: active connection for {hello.client_id}",
+                                fatal=True,
+                            )
+                            await websocket.send_text(err.model_dump_json())
+                            await websocket.close(code=4409, reason="Session conflict")
+                            break
 
                     client_id = hello.client_id
                     device = hello.device
@@ -790,6 +798,17 @@ def create_app(
                         await websocket.send_text(err.model_dump_json())
                         continue
 
+                    # Sequence reset check: if client started a new collection run starting from seq 1 or jumped backwards
+                    if sample.seq < last_seq_acked:
+                        if (last_seq_acked - sample.seq >= 5) or (sample.seq == 1):
+                            logger.info(
+                                "Sequence reset detected for session %s: seq %d < last_seq_acked %d",
+                                session_id,
+                                sample.seq,
+                                last_seq_acked,
+                            )
+                            last_seq_acked = 0
+
                     # Idempotent re-ack if seq <= last_seq_acked
                     if sample.seq <= last_seq_acked:
                         if session_id:
@@ -817,7 +836,7 @@ def create_app(
                     engine: StreamingEngine | None = app.state.engine
                     if engine is not None:
                         try:
-                            scored = engine.process(sample, client_id=cid)
+                            scored = engine.process(sample, client_id=cid, session_id=session_id)
                         except SchemaError as e:
                             err = ErrorMsg(
                                 code="SCHEMA_ERROR",
@@ -1492,6 +1511,15 @@ def create_app(
         meta["last_active_at"] = now_dt
         session_id = meta["session_id"]
 
+        # Close any previous connection for this client so it does not SESSION_CONFLICT
+        if payload.client_id and payload.client_id in app.state.active_ingest_clients:
+            old_ws = app.state.active_ingest_clients.pop(payload.client_id, None)
+            if old_ws is not None:
+                try:
+                    await old_ws.close(code=4409, reason="Superseded by new pairing")
+                except Exception:
+                    pass
+
         ingest_token = secrets.token_urlsafe(32)
         meta["ingest_token"] = ingest_token
         app.state.session_ingest_tokens[ingest_token] = session_id
@@ -1544,6 +1572,16 @@ def create_app(
             token = meta.get("ingest_token")
             if token and token in app.state.session_ingest_tokens:
                 del app.state.session_ingest_tokens[token]
+            cid = meta.get("client_id")
+            if cid:
+                app.state.session_manager.close_session(cid)
+                if cid in app.state.active_ingest_clients:
+                    old_ws = app.state.active_ingest_clients.pop(cid, None)
+                    if old_ws is not None:
+                        try:
+                            await old_ws.close(code=1000, reason="Live session ended")
+                        except Exception:
+                            pass
 
         # Purge any tickets
         tickets_to_del = [
@@ -1556,6 +1594,7 @@ def create_app(
         app.state.session_samples.pop(session_id, None)
         app.state.session_raw_samples.pop(session_id, None)
         app.state.session_events.pop(session_id, None)
+        app.state.latest_samples.pop(session_id, None)
 
         response.delete_cookie(key="nads_viewer_session", path="/")
         return DeleteLiveSessionResponse(status="deleted", session_id=session_id)
@@ -1672,9 +1711,16 @@ def create_app(
             active_cids = list(app.state.active_ingest_clients.keys())
             latest_sess_id = None
             if active_cids:
-                sess_buf = app.state.session_manager.get_session(active_cids[-1])
-                if sess_buf:
-                    latest_sess_id = sess_buf.session_id
+                cid = active_cids[-1]
+                latest_sess_id = getattr(
+                    app.state.connection_tracker, "_client_to_session", {}
+                ).get(cid)
+                if not latest_sess_id:
+                    sess_buf = app.state.session_manager.get_session(cid)
+                    if sess_buf:
+                        latest_sess_id = sess_buf.session_id
+            if not latest_sess_id and app.state.active_live_sessions:
+                latest_sess_id = list(app.state.active_live_sessions.keys())[-1]
 
             target_sess_id = auth_session_id or latest_sess_id
             latest_sample = app.state.latest_samples.get(target_sess_id) if target_sess_id else None
@@ -1724,7 +1770,10 @@ def create_app(
                         server_time=datetime.now(UTC).isoformat(),
                         session_id=latest_sess_id,
                     )
-                    await websocket.send_text(hb.model_dump_json())
+                    try:
+                        await websocket.send_text(hb.model_dump_json())
+                    except Exception:
+                        break
                 except WebSocketDisconnect:
                     break
                 except Exception:

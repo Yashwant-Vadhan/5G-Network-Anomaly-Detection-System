@@ -269,3 +269,166 @@ def test_no_token_in_logs() -> None:
     finally:
         logger.removeHandler(handler)
         logger.setLevel(old_level)
+
+
+def test_end_to_end_paired_collector_telemetry_visible_on_dashboard() -> None:
+    """T18-003 / Task 7: End-to-end regression test.
+
+    Proves that telemetry sent by a paired Android collector (with collector dd-MM-yy
+    timestamp and potential session gaps) becomes visible to the dashboard on /api/v1/live
+    for the correct active session.
+    """
+    config = ServerConfig(
+        require_live_auth=True,
+        allow_remote_view=True,
+        mode="public",
+        allowed_origins=["http://testserver"],
+        retention_enabled=False,
+    )
+    app = create_app(config)
+    client = TestClient(app)
+
+    # 1. Dashboard initiates live session and receives HttpOnly viewer cookie
+    create_res = client.post("/api/v1/live-sessions")
+    assert create_res.status_code == 200
+    sess_data = create_res.json()
+    session_id = sess_data["session_id"]
+    pairing_code = sess_data["pairing_code"]
+
+    # 2. Android collector pairs using the 8-character code
+    pair_res = client.post(
+        "/api/v1/pair",
+        json={"pairing_code": pairing_code, "client_id": "android-redmi-123"},
+    )
+    assert pair_res.status_code == 200
+    pair_data = pair_res.json()
+    assert pair_data["session_id"] == session_id
+    ingest_token = pair_data["ingest_token"]
+
+    # 3. Dashboard requests single-use viewer ticket using viewer cookie
+    ticket_res = client.post(f"/api/v1/live-sessions/{session_id}/ticket")
+    assert ticket_res.status_code == 200
+    ticket = ticket_res.json()["ticket"]
+
+    # 4. Dashboard connects to /api/v1/live and authenticates with ticket in first frame
+    with client.websocket_connect("/api/v1/live", headers={"Origin": "http://testserver"}) as viewer_ws:
+        viewer_ws.send_text(json.dumps({"type": "auth", "ticket": ticket}))
+        initial_snap = viewer_ws.receive_json()
+        assert initial_snap["type"] == "snapshot"
+        assert initial_snap["session_id"] == session_id
+
+        # 5. Android collector connects to /api/v1/ingest with session token
+        with client.websocket_connect(
+            "/api/v1/ingest",
+            headers={"Authorization": f"Bearer {ingest_token}"},
+        ) as ingest_ws:
+            # Collector sends hello
+            ingest_ws.send_text(
+                json.dumps(
+                    make_hello(
+                        client_id="android-redmi-123",
+                        device="Redmi Note 12 5G",
+                        session_id=session_id,
+                    )
+                )
+            )
+            hello_ack = ingest_ws.receive_json()
+            assert hello_ack["type"] == "hello_ack"
+            assert hello_ack["session_id"] == session_id
+
+            # Viewer receives connection event transition to LIVE
+            conn_ev = viewer_ws.receive_json()
+            assert conn_ev["type"] == "connection"
+            assert conn_ev["session_id"] == session_id
+            assert conn_ev["state"] == "LIVE"
+
+            # Collector sends sample 1 using collector timestamp format ('dd-MM-yy HH:mm:ss')
+            sample_1 = {
+                "type": "sample",
+                "schema_version": 2,
+                "seq": 1,
+                "sent_at": "2026-10-22T10:15:00.123+05:30",
+                "payload": {
+                    "timestamp": "22-10-26 10:15:00",
+                    "device": "Redmi Note 12 5G",
+                    "manufacturer": "Xiaomi",
+                    "android": "14",
+                    "operator": "Jio 5G",
+                    "network_type": "5G NR",
+                    "deployment_mode": "SA",
+                    "display_override": "NONE",
+                    "registered": True,
+                    "ss_rsrp": -88.5,
+                    "ss_rsrq": -10.0,
+                    "ss_sinr": 21.0,
+                    "csi_rsrp": -89.0,
+                    "csi_rsrq": -10.5,
+                    "csi_sinr": 20.0,
+                    "pci": 312,
+                    "nci": 13322280247,
+                    "nrarfcn": 632000,
+                },
+            }
+            ingest_ws.send_text(json.dumps(sample_1))
+
+            # Dashboard receives LiveSampleEvent for active session (and optional connection state event)
+            msgs_received = []
+            while len([m for m in msgs_received if m.get("type") == "sample"]) < 1:
+                msgs_received.append(viewer_ws.receive_json())
+
+            sample_evs = [m for m in msgs_received if m.get("type") == "sample"]
+            live_ev_1 = sample_evs[0]
+            assert live_ev_1["session_id"] == session_id
+            assert live_ev_1["sample"]["session_id"] == session_id
+            assert live_ev_1["sample"]["seq"] == 1
+            assert live_ev_1["sample"]["ss_rsrp"] == -88.5
+            assert live_ev_1["sample"]["device"] == "Redmi Note 12 5G"
+
+            # Collector sends sample 2 after 120s gap (simulating the reported gap scenario)
+            sample_2 = {
+                "type": "sample",
+                "schema_version": 2,
+                "seq": 2,
+                "sent_at": "2026-10-22T10:17:00.456+05:30",
+                "payload": {
+                    "timestamp": "22-10-26 10:17:00",
+                    "device": "Redmi Note 12 5G",
+                    "manufacturer": "Xiaomi",
+                    "android": "14",
+                    "operator": "Jio 5G",
+                    "network_type": "5G NR",
+                    "deployment_mode": "SA",
+                    "display_override": "NONE",
+                    "registered": True,
+                    "ss_rsrp": -91.0,
+                    "ss_rsrq": -11.5,
+                    "ss_sinr": 18.0,
+                    "csi_rsrp": -92.0,
+                    "csi_rsrq": -12.0,
+                    "csi_sinr": 17.5,
+                    "pci": 312,
+                    "nci": 13322280247,
+                    "nrarfcn": 632000,
+                },
+            }
+            ingest_ws.send_text(json.dumps(sample_2))
+
+            # Dashboard receives sample 2 for the SAME active session ID without drops
+            while len([m for m in msgs_received if m.get("type") == "sample"]) < 2:
+                msgs_received.append(viewer_ws.receive_json())
+
+            sample_evs = [m for m in msgs_received if m.get("type") == "sample"]
+            live_ev_2 = sample_evs[1]
+            assert live_ev_2["session_id"] == session_id
+            assert live_ev_2["sample"]["session_id"] == session_id
+            assert live_ev_2["sample"]["seq"] == 2
+            assert live_ev_2["sample"]["ss_rsrp"] == -91.0
+
+    # 6. Verify ephemeral C1 CSV export contains both captured samples
+    csv_res = client.get(f"/api/v1/live-sessions/{session_id}/export.csv")
+    assert csv_res.status_code == 200
+    csv_lines = csv_res.text.strip().splitlines()
+    assert len(csv_lines) == 3  # header + 2 samples
+    assert "Redmi Note 12 5G" in csv_lines[1]
+    assert "Redmi Note 12 5G" in csv_lines[2]
+
