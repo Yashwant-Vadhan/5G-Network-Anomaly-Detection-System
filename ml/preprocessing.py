@@ -107,7 +107,9 @@ def parse_timestamps(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         Tuple of (clean_sorted_df, rejected_rows_df).
     """
     df = df.copy()
-    parsed_ts = pd.to_datetime(df["timestamp"], format="mixed", errors="coerce", utc=True)
+    parsed_ts = pd.to_datetime(
+        df["timestamp"], format="mixed", dayfirst=True, errors="coerce", utc=True
+    )
 
     invalid_mask = parsed_ts.isna()
     rejected_df = df[invalid_mask].copy()

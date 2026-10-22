@@ -141,6 +141,7 @@ class StreamingEngine:
         self,
         sample: IngestSample | dict[str, Any],
         client_id: str | None = None,
+        session_id: str | None = None,
         received_at: str | None = None,
     ) -> ScoredSample:
         """Process incoming ingest sample through buffer, features, scoring, and classification.
@@ -148,6 +149,7 @@ class StreamingEngine:
         Args:
             sample: IngestSample instance or raw dictionary.
             client_id: Optional client ID override (defaults to device name).
+            session_id: Optional explicit session ID override.
             received_at: Optional ISO-8601 server receipt timestamp.
 
         Returns:
@@ -185,6 +187,7 @@ class StreamingEngine:
             client_id=cid,
             row=coerced_row,
             seq=seq,
+            session_id=session_id,
         )
 
         # 3. Compute features on session buffer (no fillna / interpolation per G2)
@@ -264,7 +267,7 @@ class StreamingEngine:
             nci=_clean_val(curr_row.get("nci")),
             nrarfcn=_clean_val(curr_row.get("nrarfcn")),
             # Session & validity flags
-            session_id=str(curr_row.get("session_id", buffer.session_id)),
+            session_id=str(session_id or curr_row.get("session_id", buffer.session_id)),
             sample_idx=int(curr_row.get("sample_idx", curr_idx)),
             is_valid=bool(curr_row.get("is_valid", True)),
             model_eligible=bool(curr_row.get("model_eligible", True)),

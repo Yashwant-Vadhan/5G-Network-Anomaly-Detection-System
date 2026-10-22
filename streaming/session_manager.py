@@ -125,7 +125,7 @@ class SessionBuffer:
         ts = row_dict.get("timestamp")
         # Ensure timestamp is comparable
         if isinstance(ts, str):
-            ts_val = pd.to_datetime(ts, errors="coerce")
+            ts_val = pd.to_datetime(ts, format="mixed", dayfirst=True, errors="coerce")
         else:
             ts_val = ts
 
@@ -268,6 +268,7 @@ class SessionManager:
         device: str,
         reason: str = "cap",
         source_file: str | None = None,
+        session_id: str | None = None,
     ) -> SessionBuffer:
         """Close current session for client and create a new session buffer."""
         old_buffer = self._active_sessions.get(client_id)
@@ -289,7 +290,7 @@ class SessionManager:
                     client_id,
                 )
 
-        new_session_id = self._next_session_id(device)
+        new_session_id = session_id or self._next_session_id(device)
         new_buffer = SessionBuffer(
             client_id=client_id,
             session_id=new_session_id,
@@ -321,6 +322,7 @@ class SessionManager:
         row: dict[str, Any] | pd.Series,
         seq: int,
         device: str | None = None,
+        session_id: str | None = None,
     ) -> tuple[SessionBuffer, bool]:
         """Append sample to active session with gap detection and rollover.
 
@@ -329,6 +331,7 @@ class SessionManager:
             row: Validated Contract C2 sample row.
             seq: Ingest message sequence number.
             device: Device name (defaults to row['device'] if omitted).
+            session_id: Optional explicit session ID to preserve across rollover.
 
         Returns:
             Tuple of (active_session_buffer, appended_bool).
@@ -340,6 +343,7 @@ class SessionManager:
         buffer = self.get_or_create_session(
             client_id=client_id,
             device=dev,
+            session_id=session_id,
             source_file=source_file,
         )
 
@@ -359,14 +363,19 @@ class SessionManager:
                 device=dev,
                 reason="source_file_change",
                 source_file=source_file,
+                session_id=session_id,
             )
 
         # Check batch session-gap rule (>30s gap between consecutive samples)
         if len(buffer) > 0:
             last_row = buffer.get_latest_row()
             if last_row is not None and "timestamp" in last_row:
-                last_ts = pd.to_datetime(last_row["timestamp"], errors="coerce")
-                new_ts = pd.to_datetime(row_dict.get("timestamp"), errors="coerce")
+                last_ts = pd.to_datetime(
+                    last_row["timestamp"], format="mixed", dayfirst=True, errors="coerce"
+                )
+                new_ts = pd.to_datetime(
+                    row_dict.get("timestamp"), format="mixed", dayfirst=True, errors="coerce"
+                )
                 if pd.notna(last_ts) and pd.notna(new_ts):
                     delta_seconds = (new_ts - last_ts).total_seconds()
                     if delta_seconds > self.gap_seconds:
@@ -381,6 +390,7 @@ class SessionManager:
                             device=dev,
                             reason=f"time_gap_{delta_seconds:.1f}s",
                             source_file=source_file,
+                            session_id=session_id,
                         )
 
         if buffer.is_full():
@@ -389,6 +399,7 @@ class SessionManager:
                 device=dev,
                 reason="buffer_cap",
                 source_file=source_file,
+                session_id=session_id,
             )
 
         appended = buffer.append(row_dict, seq)
