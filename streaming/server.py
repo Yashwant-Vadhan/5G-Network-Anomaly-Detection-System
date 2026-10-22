@@ -687,7 +687,9 @@ def create_app(
                         else:
                             err = ErrorMsg(
                                 code="SESSION_CONFLICT",
-                                message=f"Session conflict: active connection for {hello.client_id}",
+                                message=(
+                                    f"Session conflict: active connection for {hello.client_id}"
+                                ),
                                 fatal=True,
                             )
                             await websocket.send_text(err.model_dump_json())
@@ -798,11 +800,24 @@ def create_app(
                         await websocket.send_text(err.model_dump_json())
                         continue
 
-                    # Sequence reset check: if client started a new collection run starting from seq 1 or jumped backwards
+                    cid = client_id or sample.payload.device
+                    sess_mgr: SessionManager = app.state.session_manager
+                    curr_buf = sess_mgr.get_session(cid)
+                    is_already_seen = bool(curr_buf is not None and curr_buf.has_seq(sample.seq))
+
+                    if is_already_seen:
+                        if session_id:
+                            get_stream_metrics(session_id).record_sample({"seq": sample.seq})
+                        re_ack = Ack(seq=sample.seq)
+                        await websocket.send_text(re_ack.model_dump_json())
+                        continue
+
+                    # Sequence reset check: if client started a new collection run from seq 1
+                    # or sequence jumped backwards by at least 5
                     if sample.seq < last_seq_acked:
                         if (last_seq_acked - sample.seq >= 5) or (sample.seq == 1):
                             logger.info(
-                                "Sequence reset detected for session %s: seq %d < last_seq_acked %d",
+                                "Sequence reset for session %s: seq %d < last_seq_acked %d",
                                 session_id,
                                 sample.seq,
                                 last_seq_acked,
@@ -830,8 +845,6 @@ def create_app(
                         )
                         await websocket.send_text(err.model_dump_json())
                         continue
-
-                    cid = client_id or sample.payload.device
 
                     engine: StreamingEngine | None = app.state.engine
                     if engine is not None:

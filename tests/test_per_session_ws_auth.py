@@ -311,7 +311,9 @@ def test_end_to_end_paired_collector_telemetry_visible_on_dashboard() -> None:
     ticket = ticket_res.json()["ticket"]
 
     # 4. Dashboard connects to /api/v1/live and authenticates with ticket in first frame
-    with client.websocket_connect("/api/v1/live", headers={"Origin": "http://testserver"}) as viewer_ws:
+    with client.websocket_connect(
+        "/api/v1/live", headers={"Origin": "http://testserver"}
+    ) as viewer_ws:
         viewer_ws.send_text(json.dumps({"type": "auth", "ticket": ticket}))
         initial_snap = viewer_ws.receive_json()
         assert initial_snap["type"] == "snapshot"
@@ -431,4 +433,3 @@ def test_end_to_end_paired_collector_telemetry_visible_on_dashboard() -> None:
     assert len(csv_lines) == 3  # header + 2 samples
     assert "Redmi Note 12 5G" in csv_lines[1]
     assert "Redmi Note 12 5G" in csv_lines[2]
-
