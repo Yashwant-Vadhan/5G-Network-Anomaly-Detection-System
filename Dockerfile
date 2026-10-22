@@ -43,7 +43,6 @@ COPY pipelines/ ./pipelines/
 COPY models/ ./models/
 COPY data/sample/ ./data/sample/
 COPY pyproject.toml ./
-COPY agents/ ./agents/
 # Copy compiled frontend SPA from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
