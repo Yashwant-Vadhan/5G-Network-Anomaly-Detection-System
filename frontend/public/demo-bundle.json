@@ -143,7 +143,7 @@
   "generated_at": "2026-09-30 22:55:07+00:00",
   "model_meta": {
     "contamination": 0.05,
-    "created_at": "2026-10-19T17:55:09.811053+00:00",
+    "created_at": "2026-10-17T13:35:48.789230+00:00",
     "feature_columns": [
       "ss_rsrp",
       "ss_rsrq",
@@ -166,11 +166,11 @@
     ],
     "feature_hash": "dbddab46e94b9cb26b7f0b82826673ed3c3c47f5ede86b650f462200169f358f",
     "model_name": "if_v1",
-    "model_sha256": "58104c8107e67ef1e2723a58f7c8c58509ef58bfe8efbf1e13cff1b29a7fbc55",
+    "model_sha256": "f95e3c48f6d8ec4914b712439af44cca3f2aa194444e2f39c70f6d5111e176ec",
     "model_version": "1.0.0",
     "n_estimators": 100,
     "random_state": 42,
-    "scaler_sha256": "d3037bd2db88b8f3e747fae02dcf6250b459fea95cb562220d6f75d583e3fa15",
+    "scaler_sha256": "3c87ff469ad3cd7405272203e722ce26fa94a66d0c326669d2aa6c41cf3ffeb3",
     "sklearn_version": "1.9.1",
     "training_data_sha256": "7fa777f25d98c75eca19ee31f24a4c2d0533cb3981e939fcc4a6be49cd6b4e36",
     "training_rows": 66

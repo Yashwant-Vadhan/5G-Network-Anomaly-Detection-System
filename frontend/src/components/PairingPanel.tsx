@@ -382,83 +382,123 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
             borderRadius: '6px',
           }}
         >
-          {/* QR Code Graphic */}
-          <SimpleQrCode text={session.pairing_code} />
-
-          {/* Code, Countdown & Status */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-              ENTER PAIRING CODE IN ANDROID COLLECTOR:
-            </div>
+          {isConnected ? (
             <div
-              data-testid="pairing-code-display"
+              data-testid="connected-phone-banner"
               style={{
-                fontSize: '28px',
-                fontWeight: 800,
-                letterSpacing: '4px',
-                fontFamily: 'var(--font-mono, monospace)',
-                color: isExpired ? '#ef4444' : 'var(--color-primary)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                width: '100%',
               }}
             >
-              {session.pairing_code}
-            </div>
-
-            {/* Countdown / Expiration */}
-            <div style={{ fontSize: '13px', color: 'var(--color-text)' }}>
-              {isExpired ? (
-                <div
-                  role="alert"
-                  data-testid="expired-notice"
-                  style={{ color: '#ef4444', fontWeight: 600 }}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span
+                  data-testid="pairing-status-badge"
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    padding: '4px 12px',
+                    borderRadius: '9999px',
+                    background: 'rgba(22, 163, 74, 0.15)',
+                    color: '#16a34a',
+                    border: '1px solid #16a34a',
+                  }}
                 >
-                  ⚠️ Pairing code has expired.{' '}
-                  <button
-                    onClick={handleStartSession}
+                  🟢 Phone Connected & Streaming Telemetry
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  Active Session: <code>{session.session_id}</code>
+                </span>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  Frames Ingested: <strong>{samples.length}</strong>
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+                Your mobile Android device is paired and actively transmitting 5G radio measurements over WebSocket. The QR code and pairing PIN have been dismissed. Telemetry will continue streaming until you end the session.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* QR Code Graphic */}
+              <SimpleQrCode text={session.pairing_code} />
+
+              {/* Code, Countdown & Status */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  ENTER PAIRING CODE IN ANDROID COLLECTOR:
+                </div>
+                <div
+                  data-testid="pairing-code-display"
+                  style={{
+                    fontSize: '28px',
+                    fontWeight: 800,
+                    letterSpacing: '4px',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    color: isExpired ? '#ef4444' : 'var(--color-primary)',
+                  }}
+                >
+                  {session.pairing_code}
+                </div>
+
+                {/* Countdown / Expiration */}
+                <div style={{ fontSize: '13px', color: 'var(--color-text)' }}>
+                  {isExpired ? (
+                    <div
+                      role="alert"
+                      data-testid="expired-notice"
+                      style={{ color: '#ef4444', fontWeight: 600 }}
+                    >
+                      ⚠️ Pairing code has expired.{' '}
+                      <button
+                        onClick={handleStartSession}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--color-primary)',
+                          textDecoration: 'underline',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Click here to retry and generate a new code.
+                      </button>
+                    </div>
+                  ) : (
+                    <span role="timer" aria-live="polite">
+                      Code expires in:{' '}
+                      <strong>
+                        {Math.floor((secondsRemaining ?? 0) / 60)}:
+                        {String((secondsRemaining ?? 0) % 60).padStart(2, '0')}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+
+                {/* Phone Connection State */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Status:</span>
+                  <span
+                    data-testid="pairing-status-badge"
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-primary)',
-                      textDecoration: 'underline',
-                      cursor: 'pointer',
-                      fontWeight: 700,
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      background: 'rgba(217, 119, 6, 0.15)',
+                      color: '#d97706',
+                      border: '1px solid #d97706',
                     }}
                   >
-                    Click here to retry and generate a new code.
-                  </button>
+                    ⏳ Waiting for phone connection...
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                    Session: <code>{session.session_id}</code>
+                  </span>
                 </div>
-              ) : (
-                <span role="timer" aria-live="polite">
-                  Code expires in:{' '}
-                  <strong>
-                    {Math.floor((secondsRemaining ?? 0) / 60)}:
-                    {String((secondsRemaining ?? 0) % 60).padStart(2, '0')}
-                  </strong>
-                </span>
-              )}
-            </div>
-
-            {/* Phone Connection State */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Status:</span>
-              <span
-                data-testid="pairing-status-badge"
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  background: isConnected ? 'rgba(22, 163, 74, 0.15)' : 'rgba(217, 119, 6, 0.15)',
-                  color: isConnected ? '#16a34a' : '#d97706',
-                  border: isConnected ? '1px solid #16a34a' : '1px solid #d97706',
-                }}
-              >
-                {isConnected ? '🟢 Phone Connected' : '⏳ Waiting for phone connection...'}
-              </span>
-              <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                Session: <code>{session.session_id}</code>
-              </span>
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>

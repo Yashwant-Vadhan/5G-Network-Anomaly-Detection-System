@@ -1,14 +1,17 @@
 /**
- * About & Limitations Page Component (T16-015).
+ * About & Limitations Page Component (Phase 13 / T16-015).
  *
  * Implements:
- * - Academic research prototype statement (Guardrail G31)
- * - Complete 13-item explicit non-claims list from PRD_v2 / TECH_RULES_v2
- * - Dataset summary (two devices, one operator, three mobility scenarios)
- * - Model metadata inspector (Isolation Forest if_v1)
- * - Privacy architecture note on cell anonymization (Guardrail G27/G28)
- * - Strict Guardrail G24 compliance: zero un-hedged 'real-time' claims
- * - Strict Guardrail G30 compliance: zero client-side ML or transition computations
+ * 1. About 5G-NADS
+ * 2. How It Works (Passive telemetry, dual-tier processing)
+ * 3. Data and Privacy (G27, G28, G29 compliance)
+ * 4. Detection Methods (Isolation Forest + Rolling Z-Score explained simply with technical expanders)
+ * 5. System Limitations & 13 Explicit Non-Claims (PRD_v2 / TECH_RULES_v2)
+ * 6. Technical Information & Reconciled Dataset Sample Counts
+ *
+ * Reconciled sample counts:
+ * - 5,528: Total Evaluation Dataset across academic research experiments (3,756 Redmi + 1,772 Samsung)
+ * - Loaded Session: Dynamic sample count currently in frontend memory
  */
 
 import { useData } from '../data/useData';
@@ -19,11 +22,13 @@ export interface AboutProps {
 }
 
 export function About({ bundleOverride }: AboutProps) {
-  const { bundle: contextBundle } = useData();
+  const { bundle: contextBundle, samples, currentSession } = useData();
   const bundle = bundleOverride || contextBundle;
 
   const modelMeta = bundle?.model_meta as Record<string, unknown> | undefined;
   const privacy = bundle?.privacy;
+
+  const activeLoadedCount = currentSession?.n ?? samples.length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -36,6 +41,7 @@ export function About({ bundleOverride }: AboutProps) {
             color: 'var(--color-text)',
             marginBottom: '4px',
           }}
+          aria-label="7. About & Limitations"
         >
           7. About & Limitations
         </h1>
@@ -65,9 +71,9 @@ export function About({ bundleOverride }: AboutProps) {
         modify the cellular operator network in any way.
       </div>
 
-      {/* 1. Dataset Summary */}
+      {/* Section 1: About 5G-NADS */}
       <section
-        aria-label="Dataset summary"
+        aria-label="About 5G-NADS overview"
         style={{
           background: 'var(--color-surface)',
           padding: '20px',
@@ -75,117 +81,59 @@ export function About({ bundleOverride }: AboutProps) {
           border: '1px solid var(--color-border)',
         }}
       >
-        <h2
-          style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-            marginBottom: '12px',
-          }}
-        >
-          Dataset Overview
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '8px' }}>
+          1. About 5G-NADS
         </h2>
-        <p
-          style={{
-            fontSize: '13px',
-            color: 'var(--color-text-muted)',
-            lineHeight: '1.6',
-            marginBottom: '16px',
-          }}
-        >
-          The evaluation dataset was gathered from physical commercial devices operating on Airtel
-          India 5G Non-Standalone (NSA) network infrastructure across three natural mobility
-          scenarios: Stationary Indoor, Walking Handover, and Driving Mobility.
+        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary, var(--color-text))', lineHeight: '1.6', margin: 0 }}>
+          5G Network Anomaly Detection and Diagnosis System (5G-NADS) is an end-to-end framework designed to diagnose
+          and explain radio degradation and connectivity anomalies using non-intrusive mobile measurements. It provides
+          both everyday users with clear, jargon-free explanations of their mobile connection quality, and telecom researchers
+          with deep 3GPP telemetry evidence.
         </p>
+      </section>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Total Valid Samples
+      {/* Section 2: How It Works */}
+      <section
+        aria-label="How it works"
+        style={{
+          background: 'var(--color-surface)',
+          padding: '20px',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '12px' }}>
+          2. How It Works
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          <div style={{ padding: '14px', background: 'var(--color-bg)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text)', marginBottom: '6px' }}>
+              📡 1. Passive Telemetry Capture
             </div>
-            <div
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: 'var(--color-text)',
-                marginTop: '4px',
-              }}
-            >
-              5,528
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              Redmi (3,756) · Samsung (1,772)
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              The Android client collects standard 3GPP radio metrics (SS-RSRP, SS-RSRQ, SS-SINR, PCI, NCI) at 1 Hz intervals via standard public telephony APIs.
             </div>
           </div>
-
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Hardware Diversity
+          <div style={{ padding: '14px', background: 'var(--color-bg)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text)', marginBottom: '6px' }}>
+              🧠 2. Dual-Layer Anomaly Detection
             </div>
-            <div
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: 'var(--color-text)',
-                marginTop: '4px',
-              }}
-            >
-              2 Phones
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              Xiaomi Redmi 13 5G · Samsung A15 5G
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              Telemetry passes through a server-side statistical rolling Z-score baseline filter and a pre-trained unsupervised Isolation Forest model in near-real-time.
             </div>
           </div>
-
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-              Carrier Environment
+          <div style={{ padding: '14px', background: 'var(--color-bg)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--color-text)', marginBottom: '6px' }}>
+              📋 3. Deterministic Diagnosis & Plain English
             </div>
-            <div
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: 'var(--color-text)',
-                marginTop: '4px',
-              }}
-            >
-              Airtel 5G NSA
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-              Band n78 (3500 MHz) · NR-ARFCN 629952
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              A 5-agent diagnosis pipeline analyzes temporal windows and cell transitions, transforming technical anomalies into actionable plain-English user recommendations.
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Privacy Architecture Note (Guardrail G27/G28) */}
+      {/* Section 3: Data and Privacy */}
       <section
         aria-label="Privacy architecture note"
         style={{
@@ -203,7 +151,7 @@ export function About({ bundleOverride }: AboutProps) {
             marginBottom: '8px',
           }}
         >
-          Privacy & Data Minimization Architecture (G27, G28)
+          3. Privacy & Data Minimization Architecture (G27, G28)
         </h2>
         <ul
           style={{
@@ -235,9 +183,9 @@ export function About({ bundleOverride }: AboutProps) {
         </ul>
       </section>
 
-      {/* 3. Trained Model Metadata */}
+      {/* Section 4: Detection Methods (Simplified + Expandable) */}
       <section
-        aria-label="Model metadata"
+        aria-label="Detection methods"
         style={{
           background: 'var(--color-surface)',
           padding: '20px',
@@ -245,69 +193,47 @@ export function About({ bundleOverride }: AboutProps) {
           border: '1px solid var(--color-border)',
         }}
       >
-        <h2
-          style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-            marginBottom: '12px',
-          }}
-        >
-          Active Anomaly Detection Model Metadata
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text)', marginBottom: '12px' }}>
+          4. Detection Methods
         </h2>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-            fontSize: '13px',
-          }}
-        >
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <span style={{ color: 'var(--color-text-muted)' }}>Model Architecture:</span>{' '}
-            <strong style={{ color: 'var(--color-text)' }}>
-              {String(modelMeta?.model_name || 'Isolation Forest (if_v1)')}
-            </strong>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+          <div style={{ padding: '12px', background: 'var(--color-bg)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 600, color: 'var(--color-text)', marginBottom: '4px' }}>
+              🌲 Isolation Forest (Machine Learning)
+            </div>
+            <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              <strong>Plain language:</strong> An intelligent algorithm that learns what normal signal measurements look like and flags unusual combinations that deviate from standard behavior.
+            </p>
+            <details style={{ marginTop: '8px' }}>
+              <summary style={{ cursor: 'pointer', color: 'var(--color-primary, #3b82f6)', fontSize: '12px', fontWeight: 500 }}>
+                Expand technical details
+              </summary>
+              <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                Unsupervised ensemble of isolation decision trees trained on normalized 3GPP radio features (SS-RSRP, SS-RSRQ, SS-SINR). Points requiring fewer partition splits to isolate receive higher anomaly scores. Target contamination factor: 5%.
+              </div>
+            </details>
           </div>
 
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <span style={{ color: 'var(--color-text-muted)' }}>Contamination Factor:</span>{' '}
-            <strong style={{ color: 'var(--color-text)' }}>
-              {String(modelMeta?.contamination ?? '0.05')}
-            </strong>
-          </div>
-
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '6px',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <span style={{ color: 'var(--color-text-muted)' }}>Diagnostic Agents:</span>{' '}
-            <strong style={{ color: 'var(--color-text)' }}>
-              5 Deterministic Agents (No LLM in path)
-            </strong>
+          <div style={{ padding: '12px', background: 'var(--color-bg)', borderRadius: '6px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontWeight: 600, color: 'var(--color-text)', marginBottom: '4px' }}>
+              📊 Rolling Z-Score (Statistical Baseline)
+            </div>
+            <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              <strong>Plain language:</strong> Continuously checks if current signal strength drops rapidly compared to your phone&apos;s recent average readings over the last several seconds.
+            </p>
+            <details style={{ marginTop: '8px' }}>
+              <summary style={{ cursor: 'pointer', color: 'var(--color-primary, #3b82f6)', fontSize: '12px', fontWeight: 500 }}>
+                Expand technical details
+              </summary>
+              <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                Computes running mean (μ) and standard deviation (σ) over rolling 30-sample sliding windows. Identifies sharp localized drops exceeding <code>Z &gt; 2.5</code> standard deviations from the moving baseline.
+              </div>
+            </details>
           </div>
         </div>
       </section>
 
-      {/* 4. Explicit Non-Claims (Full PRD_v2 List) */}
+      {/* Section 5: System Limitations & Explicit Non-Claims */}
       <section
         aria-label="Explicit non-claims list"
         style={{
@@ -325,7 +251,7 @@ export function About({ bundleOverride }: AboutProps) {
             marginBottom: '12px',
           }}
         >
-          ⚠️ Explicit System Non-Claims (PRD_v2 & TECH_RULES_v2)
+          ⚠️ 5. System Limitations & Explicit Non-Claims (PRD_v2 & TECH_RULES_v2)
         </h2>
         <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
           5G-NADS explicitly does not claim to provide any of the following capabilities:
@@ -393,6 +319,208 @@ export function About({ bundleOverride }: AboutProps) {
             coursework, not commercial deployment.
           </li>
         </ol>
+      </section>
+
+      {/* Section 6: Technical Information & Reconciled Dataset Metrics */}
+      <section
+        aria-label="Dataset summary"
+        style={{
+          background: 'var(--color-surface)',
+          padding: '20px',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: 'var(--color-text)',
+            marginBottom: '12px',
+          }}
+        >
+          6. Technical Information & Reconciled Dataset Metrics
+        </h2>
+        <p
+          style={{
+            fontSize: '13px',
+            color: 'var(--color-text-muted)',
+            lineHeight: '1.6',
+            marginBottom: '16px',
+          }}
+        >
+          To maintain honest data reporting (Phase 13.1), evaluation dataset counts are distinguished
+          from currently active in-memory session frames:
+        </p>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '16px',
+          }}
+        >
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Total Valid Samples (Research Evaluation)
+            </div>
+            <div
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: 'var(--color-text)',
+                marginTop: '4px',
+              }}
+            >
+              5,528
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              Redmi (3,756) · Samsung (1,772)
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Hardware Diversity
+            </div>
+            <div
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: 'var(--color-text)',
+                marginTop: '4px',
+              }}
+            >
+              2 Phones
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              Xiaomi Redmi 13 5G · Samsung A15 5G
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Carrier Environment
+            </div>
+            <div
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: 'var(--color-text)',
+                marginTop: '4px',
+              }}
+            >
+              Airtel 5G NSA
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              Band n78 (3500 MHz) · NR-ARFCN 629952
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+              Current Loaded Session Samples
+            </div>
+            <div
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: 'var(--color-primary, #3b82f6)',
+                marginTop: '4px',
+              }}
+            >
+              {activeLoadedCount.toLocaleString()}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              Active in frontend memory
+            </div>
+          </div>
+        </div>
+
+        {/* Model metadata region */}
+        <div
+          role="region"
+          aria-label="Model metadata"
+          style={{
+            marginTop: '16px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--color-border)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
+            fontSize: '13px',
+          }}
+        >
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span style={{ color: 'var(--color-text-muted)' }}>Model Architecture:</span>{' '}
+            <strong style={{ color: 'var(--color-text)' }}>
+              {String(modelMeta?.model_name || 'if_v1')}
+            </strong>
+          </div>
+
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span style={{ color: 'var(--color-text-muted)' }}>Contamination Factor:</span>{' '}
+            <strong style={{ color: 'var(--color-text)' }}>
+              {String(modelMeta?.contamination ?? '0.05')}
+            </strong>
+          </div>
+
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span style={{ color: 'var(--color-text-muted)' }}>Diagnostic Agents:</span>{' '}
+            <strong style={{ color: 'var(--color-text)' }}>
+              5 Deterministic Agents (Zero LLM in runtime path)
+            </strong>
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -19,6 +19,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useData } from '../data/useData';
 import { useReplay } from '../data/ReplayContext';
 import { formatVal } from './Overview';
+import { getAnomalyPresentation } from '../utils/anomalyExplanations';
 
 export type FlagFilter = 'both' | 'baseline' | 'if' | 'none';
 export type RollingWindow = '5m' | '15m' | '60m' | 'all';
@@ -85,6 +86,12 @@ interface GapInterval {
   durationSec: number;
 }
 
+export interface PanelExplanation {
+  whatItIs: string;
+  normalRange: string;
+  spikesMeaning: string;
+}
+
 interface PanelProps {
   title: string;
   unit: string;
@@ -98,6 +105,7 @@ interface PanelProps {
   color?: string;
   activeSampleIndex: number;
   onSelectSample: (index: number) => void;
+  explanation?: PanelExplanation;
 }
 
 export const SignalChartPanel: React.FC<PanelProps> = ({
@@ -113,6 +121,7 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
   color = '#2563eb',
   activeSampleIndex,
   onSelectSample,
+  explanation,
 }) => {
   const width = 800;
   const padding = { top: 20, right: 30, bottom: 25, left: 55 };
@@ -129,7 +138,15 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
     }
 
     const pts: { idx: number; val: number | null; timestamp: string }[] = [];
-    const anoms: { idx: number; val: number; timestamp: string; flags: string }[] = [];
+    const anoms: {
+      idx: number;
+      val: number;
+      timestamp: string;
+      flags: string;
+      anomalyType?: string;
+      ifScore?: number;
+      baselineZ?: number;
+    }[] = [];
     const gaps: GapInterval[] = [];
 
     for (let i = 0; i < samples.length; i++) {
@@ -194,6 +211,9 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
           val,
           timestamp: ts,
           flags: activeFlags.join(' + '),
+          anomalyType: String(s.anomaly_type || (s.if_flag ? 'STATISTICAL_ONLY' : 'NORMAL')),
+          ifScore: typeof s.if_score === 'number' ? s.if_score : undefined,
+          baselineZ: typeof s.baseline_max_z === 'number' ? s.baseline_max_z : undefined,
         });
       }
     }
@@ -315,10 +335,13 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
     return d;
   }, [rollingPoints, points, showRolling, yMin, yMax, samples.length]);
 
+  const [hoveredAnom, setHoveredAnom] = useState<typeof anomPoints[0] | null>(null);
+
   return (
     <div
       data-testid={`signal-panel-${field}`}
       style={{
+        position: 'relative',
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
         borderRadius: '8px',
@@ -496,6 +519,10 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
               role="button"
               aria-label={`Anomaly marker at ${anom.timestamp}: ${anom.val.toFixed(1)} ${unit}`}
               onClick={() => onSelectSample(anom.idx)}
+              onMouseEnter={() => setHoveredAnom(anom)}
+              onMouseLeave={() => setHoveredAnom(null)}
+              onFocus={() => setHoveredAnom(anom)}
+              onBlur={() => setHoveredAnom(null)}
               style={{ cursor: 'pointer' }}
             >
               <line
@@ -538,13 +565,124 @@ export const SignalChartPanel: React.FC<PanelProps> = ({
           />
         )}
       </svg>
+
+      {/* Rich Interactive Anomaly Inference Tooltip */}
+      {hoveredAnom && (
+        <div
+          data-testid="anomaly-inference-tooltip"
+          style={{
+            position: 'absolute',
+            zIndex: 25,
+            top: '38px',
+            right: '16px',
+            maxWidth: '360px',
+            background: 'var(--color-surface)',
+            border: '1.5px solid #dc2626',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35)',
+            pointerEvents: 'none',
+            fontSize: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 700, color: '#dc2626', fontSize: '13px' }}>
+              ⚠️ {getAnomalyPresentation({ anomalyType: hoveredAnom.anomalyType || 'NORMAL', isAnom: true }).humanTitle}
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              Sample #{hoveredAnom.idx}
+            </span>
+          </div>
+
+          <div style={{ color: 'var(--color-text)', lineHeight: 1.4 }}>
+            {getAnomalyPresentation({ anomalyType: hoveredAnom.anomalyType || 'NORMAL', isAnom: true }).whatHappened}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              fontSize: '11px',
+              paddingTop: '6px',
+              borderTop: '1px solid var(--color-border-subtle)',
+              color: 'var(--color-text-muted)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span>
+              {title}: <strong style={{ color: 'var(--color-text)' }}>{hoveredAnom.val.toFixed(1)} {unit}</strong>
+            </span>
+            {hoveredAnom.ifScore !== undefined && hoveredAnom.ifScore !== null && (
+              <span>
+                IF Score: <strong style={{ color: '#dc2626' }}>{Number(hoveredAnom.ifScore).toFixed(3)}</strong>
+              </span>
+            )}
+            {hoveredAnom.baselineZ !== undefined && hoveredAnom.baselineZ !== null && (
+              <span>
+                |Z| Max: <strong style={{ color: 'var(--color-text)' }}>{Number(hoveredAnom.baselineZ).toFixed(2)}</strong>
+              </span>
+            )}
+          </div>
+
+          <div style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>
+            💡 Click &apos;✕&apos; marker to jump scrubber directly to this event.
+          </div>
+        </div>
+      )}
+
+      {explanation && (
+        <div
+          data-testid="panel-explanation"
+          style={{
+            marginTop: '10px',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border-subtle)',
+            fontSize: '12px',
+            lineHeight: '1.5',
+            color: 'var(--color-text)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
+          <div>
+            <strong style={{ color: 'var(--color-primary)' }}>Visual Significance: </strong>
+            <span>{explanation.whatItIs}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+            <span>
+              <strong style={{ color: 'var(--color-text)' }}>Normal Range:</strong> {explanation.normalRange}
+            </span>
+            <span>
+              <strong style={{ color: 'var(--color-text)' }}>Spikes & Drops:</strong> {explanation.spikesMeaning}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export const SignalExplorer: React.FC = () => {
-  const { samples, sessions, selectedSessionId, setSelectedSessionId } = useData();
+export interface SignalExplorerProps {
+  liveSamples?: Record<string, unknown>[];
+  isLiveMode?: boolean;
+}
+
+export const SignalExplorer: React.FC<SignalExplorerProps> = ({ liveSamples, isLiveMode }) => {
+  const { samples: contextSamples, sessions, selectedSessionId, setSelectedSessionId } = useData();
   const { currentIndex, setCurrentIndex } = useReplay();
+
+  const samples = useMemo(() => {
+    if (isLiveMode) {
+      return liveSamples || [];
+    }
+    return contextSamples;
+  }, [isLiveMode, liveSamples, contextSamples]);
 
   const [flagFilter, setFlagFilter] = useState<FlagFilter>('both');
   const [showRolling, setShowRolling] = useState<boolean>(true);
@@ -630,6 +768,45 @@ export const SignalExplorer: React.FC = () => {
     }
   };
 
+  // Concise interval interpretation (Phase 8.3)
+  const intervalInterpretation = useMemo(() => {
+    if (!rsrpSummary || rsrpSummary.count === 0) {
+      return 'No valid measurements are available for the selected time interval.';
+    }
+    const spread = rsrpSummary.max - rsrpSummary.min;
+    if (spread >= 12) {
+      return 'Signal strength weakened noticeably during the selected period.';
+    }
+    if (rsrpSummary.mean < -110) {
+      return 'Signal levels remained consistently low across the selected window.';
+    }
+    return 'Signal measurements remained relatively stable across the selected interval.';
+  }, [rsrpSummary]);
+
+  if (isLiveMode && (!samples || samples.length === 0)) {
+    return (
+      <div
+        data-testid="signal-waiting-state"
+        style={{
+          padding: '48px 24px',
+          textAlign: 'center',
+          background: 'var(--color-surface)',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-muted)',
+        }}
+      >
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📡</div>
+        <h3 style={{ fontSize: '18px', margin: '0 0 8px 0', color: 'var(--color-text)' }}>
+          Waiting for Live Telemetry Stream
+        </h3>
+        <p style={{ fontSize: '14px', margin: 0, color: 'var(--color-text-muted)' }}>
+          Connected in Live Mode. Live 5G RF signal strength, quality, and anomaly scores will be plotted on all 4 charts continuously as samples arrive.
+        </p>
+      </div>
+    );
+  }
+
   if (!samples || samples.length === 0) {
     return (
       <div
@@ -655,6 +832,58 @@ export const SignalExplorer: React.FC = () => {
       data-testid="signal-explorer-page"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
     >
+      {/* Page Heading (Phase 8.1) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+          Signal Trends
+        </h1>
+        <p style={{ fontSize: '14px', margin: 0, color: 'var(--color-text-muted)' }}>
+          Explore how your phone's signal strength and quality change over time, and identify periods associated with detected events.
+        </p>
+      </div>
+
+      {/* Interval Interpretation Banner & Legends (Phase 8.3 & 8.4) */}
+      <section
+        style={{
+          background: 'var(--color-surface)',
+          padding: '14px 18px',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '18px' }}>📊</span>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text)' }}>
+            {intervalInterpretation}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '14px', height: '3px', background: 'var(--color-primary)', display: 'inline-block' }} />
+            <span>Actual measurement</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '14px', height: '0px', borderTop: '2px dashed var(--color-primary)', display: 'inline-block' }} />
+            <span>Rolling average</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#dc2626', fontWeight: 800 }}>✕</span>
+            <span>Detected anomaly</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '14px', height: '10px', background: 'rgba(148, 163, 184, 0.4)', border: '1px dashed #94a3b8', display: 'inline-block' }} />
+            <span>Missing data gap</span>
+          </div>
+        </div>
+      </section>
+
       {/* Session Switcher Strip & Controls */}
       <section
         style={{
@@ -867,7 +1096,7 @@ export const SignalExplorer: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Panel 1: RSRP */}
         <SignalChartPanel
-          title="SS-RSRP"
+          title="Signal Strength (SS-RSRP)"
           unit="dBm"
           field="ss_rsrp"
           rollingField="rolling_mean_ss_rsrp"
@@ -877,11 +1106,16 @@ export const SignalExplorer: React.FC = () => {
           color="#0284c7"
           activeSampleIndex={currentIndex}
           onSelectSample={setCurrentIndex}
+          explanation={{
+            whatItIs: "Direct 5G radio signal power received by the phone antenna from the cellular tower (gNodeB).",
+            normalRange: "> -80 dBm (Excellent) · -80 to -100 dBm (Good/Fair) · < -110 dBm (Weak / Cell edge)",
+            spikesMeaning: "Downward drops indicate physical obstruction (concrete/elevators), distance from tower, or coverage hole.",
+          }}
         />
 
         {/* Panel 2: RSRQ */}
         <SignalChartPanel
-          title="SS-RSRQ"
+          title="Signal Quality (SS-RSRQ)"
           unit="dB"
           field="ss_rsrq"
           rollingField="rolling_mean_ss_rsrq"
@@ -891,11 +1125,16 @@ export const SignalExplorer: React.FC = () => {
           color="#16a34a"
           activeSampleIndex={currentIndex}
           onSelectSample={setCurrentIndex}
+          explanation={{
+            whatItIs: "Overall radio reception quality, factoring in resource block allocation and spectrum interference.",
+            normalRange: "> -10 dB (Clean signal) · -11 to -15 dB (Normal) · < -19 dB (Severe interference / Congestion)",
+            spikesMeaning: "Dips indicate rising radio interference from neighboring cell towers or high sector network load.",
+          }}
         />
 
         {/* Panel 3: SINR */}
         <SignalChartPanel
-          title="SS-SINR"
+          title="Signal-to-Interference Ratio (SS-SINR)"
           unit="dB"
           field="ss_sinr"
           rollingField="rolling_mean_ss_sinr"
@@ -905,6 +1144,11 @@ export const SignalExplorer: React.FC = () => {
           color="#9333ea"
           activeSampleIndex={currentIndex}
           onSelectSample={setCurrentIndex}
+          explanation={{
+            whatItIs: "Signal-to-Interference-plus-Noise Ratio — represents transmission clarity and high-speed throughput capacity.",
+            normalRange: "> 15 dB (High-speed 5G downlink) · 5 to 15 dB (Adequate) · < 0 dB (High packet loss & lag)",
+            spikesMeaning: "Downward spikes trigger video buffering, stalled file downloads, and degraded voice call clarity.",
+          }}
         />
 
         {/* Panel 4: IF Score & 0.60 Threshold Line */}
@@ -919,6 +1163,11 @@ export const SignalExplorer: React.FC = () => {
           color="#d97706"
           activeSampleIndex={currentIndex}
           onSelectSample={setCurrentIndex}
+          explanation={{
+            whatItIs: "Machine learning anomaly score computed by Isolation Forest across multi-dimensional signal vectors.",
+            normalRange: "0.000 to 0.599 (Nominal network operation). Red dashed line marks the 0.60 anomaly threshold.",
+            spikesMeaning: "Spikes climbing above 0.60 flag statistically unusual signal combinations for automated multi-agent diagnosis.",
+          }}
         />
       </div>
 
@@ -949,7 +1198,7 @@ export const SignalExplorer: React.FC = () => {
             alignItems: 'center',
           }}
         >
-          <span>📋 Show Data Table Fallback ({windowedSamples.length} rows)</span>
+          <span>📋 Show Data Table — Individual Measurements ({windowedSamples.length} rows)</span>
           <span>{showTable ? '▲ Collapse' : '▼ Expand'}</span>
         </button>
 

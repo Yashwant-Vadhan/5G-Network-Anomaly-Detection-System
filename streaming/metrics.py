@@ -12,6 +12,7 @@ from collections import deque
 from datetime import UTC, datetime
 from typing import Any
 
+# pyrefly: ignore[missing-import]
 from pydantic import BaseModel
 
 from streaming.schema import MetricsResponse, ScoredSample
@@ -194,6 +195,9 @@ _DEFAULT_METRICS = StreamMetrics()
 def get_stream_metrics(session_id: str | None = None) -> StreamMetrics:
     """Retrieve or initialize the StreamMetrics instance for a given session."""
     if session_id is None:
+        if _SESSION_METRICS:
+            latest_key = next(iter(reversed(list(_SESSION_METRICS.keys()))))
+            return _SESSION_METRICS[latest_key]
         return _DEFAULT_METRICS
     if session_id not in _SESSION_METRICS:
         _SESSION_METRICS[session_id] = StreamMetrics()

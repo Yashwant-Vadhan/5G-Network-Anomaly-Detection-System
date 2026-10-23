@@ -1,4 +1,4 @@
-name: Deploy Static Demo to GitHub Pages
+name: CI/CD - Deploy Static Demo to GitHub Pages
 
 on:
   push:
@@ -54,6 +54,14 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Frontend lint (eslint)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend unit & integration tests (vitest)
+        working-directory: frontend
+        run: npm run test
 
       - name: Build frontend static distribution
         working-directory: frontend

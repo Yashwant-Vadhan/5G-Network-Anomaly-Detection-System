@@ -54,8 +54,8 @@ export function CellsNetwork({
 
   // Active samples: live telemetry stream in Live mode, otherwise replay samples
   const allSamples = useMemo(() => {
-    if (isLiveMode && liveSamples && liveSamples.length > 0) {
-      return liveSamples;
+    if (isLiveMode) {
+      return liveSamples || [];
     }
     return replaySamples;
   }, [isLiveMode, liveSamples, replaySamples]);
@@ -256,24 +256,23 @@ export function CellsNetwork({
         )}
       </div>
 
-      {/* Operational Normal Behavior Note (Tech Rule / PRD requirement) */}
+      {/* Operational Normal Behavior Note & Introduction (Phase 9.1 & PRD requirement) */}
       <div
         data-testid="normal-behavior-note"
         style={{
-          padding: '14px 18px',
+          padding: '16px 20px',
           borderRadius: '8px',
           background: 'var(--color-surface)',
           borderLeft: '4px solid var(--color-primary, #3b82f6)',
           border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
+        <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: '6px', color: 'var(--color-text)' }}>
           Cell change is normal behaviour
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.45' }}>
-          PCI handovers and cell re-selections occur routinely during mobility and signal
-          re-allocation. A cell change in isolation does NOT represent an anomaly or link
-          failure (Guardrail G6/G21) and is never alerted without correlating radio degradation.
+        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+          Your phone can switch between nearby network cells automatically. This is normal during movement or when another cell provides a more suitable connection. A cell change alone does NOT represent an anomaly or link failure (Guardrail G6/G21) and is never alerted without correlating radio degradation.
         </div>
       </div>
 
@@ -385,6 +384,44 @@ export function CellsNetwork({
             </span>
           </div>
 
+          {/* Visual Significance Guide */}
+          <div
+            data-testid="cell-chart-explanation"
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              marginBottom: '10px',
+              padding: '10px 14px',
+              borderRadius: '6px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border-subtle)',
+              fontSize: '12px',
+              lineHeight: '1.5',
+              color: 'var(--color-text)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div>
+              <strong style={{ color: 'var(--color-primary)' }}>Visual Significance: </strong>
+              <span>
+                Plots physical 3GPP cellular identifiers (PCI, NCI, NRARFCN) over time. Values strictly hold flat levels while connected to a cell and jump vertically when a handover occurs.
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              <span>
+                <strong style={{ color: 'var(--color-text)' }}>Flat Line:</strong> Stable connection to current cell tower.
+              </span>
+              <span>
+                <strong style={{ color: 'var(--color-text)' }}>Vertical Jump:</strong> Cellular handover to neighbor cell sector.
+              </span>
+              <span>
+                <strong style={{ color: 'var(--color-text)' }}>Frequent Alternating Steps:</strong> Rapid ping-pong handover.
+              </span>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {/* Window Filter (T17-005) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -474,6 +511,21 @@ export function CellsNetwork({
                 </g>
               );
             })}
+
+            {/* Empty State Text */}
+            {categoricalLevels.length === 0 && (
+              <text
+                x={svgWidth / 2}
+                y={svgHeight / 2}
+                textAnchor="middle"
+                fontSize="13"
+                fill="var(--color-text-muted)"
+              >
+                {isLiveMode
+                  ? '📡 Waiting for live frames... Cell step timeline will plot PCI/NCI in real time.'
+                  : 'No cell identifier data available for current selection.'}
+              </text>
+            )}
 
             {/* Stepped Curve */}
             {stepPathD && (

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { PAGES } from './constants/pages';
 import { DataProvider } from './data/DataContext';
 import { useData } from './data/useData';
-import { DemoBundle, ConnectionState, ScoredSample, EventRecord, CreateLiveSessionResponse } from './types/contracts';
+import { ConnectionState, ScoredSample, EventRecord, CreateLiveSessionResponse, DemoBundle } from './types/contracts';
 import { Overview } from './pages/Overview';
 import { SignalExplorer } from './pages/SignalExplorer';
 import { CellsNetwork } from './pages/CellsNetwork';
@@ -48,7 +48,15 @@ function AppContent({
   fetchFn = typeof fetch !== 'undefined' ? fetch : undefined,
   enableLiveClientInTest = false,
 }: AppContentProps) {
-  const [mode, setMode] = useState<'demo' | 'live'>(initialMode);
+  const [mode, setMode] = useState<'demo' | 'live'>(() => {
+    if (initialMode === 'live') return 'live';
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      const savedMode = sessionStorage.getItem('nads_mode') as 'demo' | 'live' | null;
+      if (savedMode === 'live' || savedMode === 'demo') return savedMode;
+      if (sessionStorage.getItem('nads_active_session_id')) return 'live';
+    }
+    return initialMode;
+  });
   const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
     if (initialSessionId) return initialSessionId;
     if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
@@ -60,6 +68,7 @@ function AppContent({
     useState<ConnectionState>(initialConnectionState);
   const [liveErrorMessage, setLiveErrorMessage] = useState<string | null>(null);
   const [isPairingOpen, setIsPairingOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [liveSamples, setLiveSamples] = useState<ScoredSample[]>([]);
   const [liveEvents, setLiveEvents] = useState<EventRecord[]>([]);
 
@@ -90,8 +99,12 @@ function AppContent({
       const unsubscribe = client.subscribe({
         onStateChange: state => {
           setLiveConnectionState(state);
+          if (state === 'LIVE') {
+            setIsPairingOpen(false);
+          }
         },
         onSample: sample => {
+          setIsPairingOpen(false);
           setLiveSamples(prev => {
             if (prev.some(s => s.seq === sample.seq)) return prev;
             return [...prev, sample];
@@ -191,6 +204,27 @@ function AppContent({
 
   const { currentSample, prevSample } = useReplay();
 
+  // Dynamically merge connected phone devices from live telemetry stream
+  const allDevices = useMemo(() => {
+    const set = new Set<string>(devices);
+    if (set.has('2406ERN9CI') || set.has('2406ERN9C1')) {
+      set.add('Redmi 13 5G');
+    }
+    set.add('Samsung Galaxy A15 5G');
+    set.add('SM-A156E');
+    liveSamples.forEach(s => {
+      if (s.device) set.add(String(s.device));
+    });
+    return Array.from(set);
+  }, [devices, liveSamples]);
+
+  // Distinct navigation section groups per Phase 3.1
+  const navGroups: Array<'MONITORING' | 'NETWORK DETAILS' | 'ADVANCED DIAGNOSTICS'> = [
+    'MONITORING',
+    'NETWORK DETAILS',
+    'ADVANCED DIAGNOSTICS',
+  ];
+
   return (
     <div
       className="app-shell"
@@ -202,15 +236,44 @@ function AppContent({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '16px 24px',
+          padding: '14px 24px',
           background: 'var(--color-surface)',
           borderBottom: '1px solid var(--color-border)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-primary)' }}>
-            5G-NADS
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* Mobile hamburger menu toggle */}
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            onClick={() => setIsMobileNavOpen(prev => !prev)}
+            style={{
+              display: 'none',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-bg)',
+              color: 'var(--color-text)',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+            className="mobile-nav-toggle"
+          >
+            ☰
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em' }}>
+              5G-NADS
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'none' }} className="brand-subtitle">
+              Network Anomaly Detection
+            </span>
           </div>
+
           <div
             data-testid="mode-badge"
             style={{
@@ -218,26 +281,40 @@ function AppContent({
               alignItems: 'center',
               gap: '6px',
               fontSize: '12px',
-              padding: '2px 8px',
+              padding: '3px 10px',
               borderRadius: '9999px',
               background: 'var(--color-bg)',
               color: 'var(--color-text-muted)',
               border: '1px solid var(--color-border)',
+              fontWeight: 500,
             }}
           >
             <span data-testid="mode-label">
-              {mode === 'demo' ? 'Recorded demo data' : 'Live'}
+              {mode === 'demo'
+                ? 'DEMO MODE · Recorded demo data'
+                : liveConnectionState === 'LIVE'
+                ? 'LIVE MODE · Receiving measurements (Live)'
+                : liveConnectionState === 'WAITING'
+                ? 'LIVE MODE · Waiting for phone (Live)'
+                : liveConnectionState === 'RECONNECTING'
+                ? 'LIVE MODE · Reconnecting (Live)'
+                : liveConnectionState === 'STALE'
+                ? 'LIVE MODE · Telemetry delayed (Live)'
+                : 'LIVE MODE · Connection interrupted (Live)'}
             </span>
             {mode === 'demo' && <span>Static Demo (Mode 1)</span>}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             data-testid="mode-switch-btn"
             onClick={() => {
               setMode(prev => {
                 const next = prev === 'demo' ? 'live' : 'demo';
+                if (typeof sessionStorage !== 'undefined') {
+                  sessionStorage.setItem('nads_mode', next);
+                }
                 if (next === 'live' && liveConnectionState === 'REPLAY-SOURCE') {
                   setLiveConnectionState('WAITING');
                 }
@@ -246,7 +323,7 @@ function AppContent({
             }}
             aria-label={`Switch to ${mode === 'demo' ? 'Live' : 'Demo'} mode`}
             style={{
-              padding: '6px 12px',
+              padding: '6px 14px',
               borderRadius: '6px',
               border: '1px solid var(--color-border)',
               background:
@@ -255,6 +332,7 @@ function AppContent({
               cursor: 'pointer',
               fontSize: '12px',
               fontWeight: 600,
+              transition: 'background 0.15s ease',
             }}
           >
             {mode === 'demo' ? 'Switch to Live' : 'Switch to Demo'}
@@ -264,10 +342,10 @@ function AppContent({
               data-testid="pair-phone-btn"
               onClick={() => setIsPairingOpen(prev => !prev)}
               style={{
-                padding: '6px 12px',
+                padding: '6px 14px',
                 borderRadius: '6px',
                 border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
+                background: isPairingOpen ? 'var(--color-surface-hover)' : 'var(--color-surface)',
                 color: 'var(--color-text)',
                 cursor: 'pointer',
                 fontSize: '12px',
@@ -295,6 +373,7 @@ function AppContent({
               background: 'var(--color-surface)',
               color: 'var(--color-text)',
               cursor: 'pointer',
+              fontSize: '13px',
             }}
           >
             {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
@@ -303,37 +382,72 @@ function AppContent({
       </header>
 
       {/* Navigation & Content Area */}
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Navigation Sidebar */}
+        {isMobileNavOpen && (
+          <div
+            className="mobile-nav-backdrop"
+            onClick={() => setIsMobileNavOpen(false)}
+          />
+        )}
         <nav
           aria-label="Primary navigation"
+          className={`app-sidebar ${isMobileNavOpen ? 'open' : ''}`}
           style={{
             width: '240px',
             background: 'var(--color-surface)',
             borderRight: '1px solid var(--color-border)',
-            padding: '16px 0',
+            padding: '20px 0',
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px',
+            gap: '8px',
+            flexShrink: 0,
+            position: 'sticky',
+            top: '57px',
+            alignSelf: 'flex-start',
+            height: 'calc(100vh - 57px)',
+            overflowY: 'auto',
           }}
         >
-          {PAGES.map(p => (
-            <NavLink
-              key={p.path}
-              to={p.path}
-              style={({ isActive }) => ({
-                display: 'block',
-                padding: '10px 20px',
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text)',
-                fontWeight: isActive ? 600 : 400,
-                textDecoration: 'none',
-                background: isActive ? 'var(--color-surface-hover)' : 'transparent',
-                borderLeft: isActive ? '4px solid var(--color-primary)' : '4px solid transparent',
-              })}
-            >
-              {p.label}
-            </NavLink>
-          ))}
+          {navGroups.map(group => {
+            const groupPages = PAGES.filter(p => p.group === group);
+            return (
+              <div key={group} style={{ marginBottom: '12px' }}>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    color: 'var(--color-text-muted)',
+                    padding: '4px 20px 6px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {group}
+                </div>
+                {groupPages.map(p => (
+                  <NavLink
+                    key={p.path}
+                    to={p.path}
+                    onClick={() => setIsMobileNavOpen(false)}
+                    style={({ isActive }) => ({
+                      display: 'block',
+                      padding: '8px 20px',
+                      color: isActive ? 'var(--color-primary)' : 'var(--color-text)',
+                      fontWeight: isActive ? 600 : 400,
+                      textDecoration: 'none',
+                      fontSize: '13px',
+                      background: isActive ? 'var(--color-surface-hover)' : 'transparent',
+                      borderLeft: isActive ? '3px solid var(--color-primary)' : '3px solid transparent',
+                      transition: 'background 0.15s ease, border-color 0.15s ease',
+                    })}
+                  >
+                    {p.label}
+                  </NavLink>
+                ))}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Main Content Area */}
@@ -343,6 +457,7 @@ function AppContent({
             padding: '24px 32px',
             background: 'var(--color-bg)',
             overflowY: 'auto',
+            minWidth: 0,
           }}
         >
           {/* Live Mode Pairing Panel */}
@@ -354,8 +469,10 @@ function AppContent({
                 fetchFn={fetchFn}
                 onSessionStarted={(session: CreateLiveSessionResponse) => {
                   setActiveSessionId(session.session_id);
+                  setMode('live');
                   if (typeof sessionStorage !== 'undefined') {
                     sessionStorage.setItem('nads_active_session_id', session.session_id);
+                    sessionStorage.setItem('nads_mode', 'live');
                   }
                   setLiveErrorMessage(null);
                   setLiveSamples([]);
@@ -364,8 +481,10 @@ function AppContent({
                 }}
                 onSessionEnded={() => {
                   setActiveSessionId(null);
+                  setMode('demo');
                   if (typeof sessionStorage !== 'undefined') {
                     sessionStorage.removeItem('nads_active_session_id');
+                    sessionStorage.setItem('nads_mode', 'demo');
                   }
                   setLiveErrorMessage(null);
                   setIsPairingOpen(false);
@@ -416,18 +535,19 @@ function AppContent({
               >
                 {liveErrorMessage
                   ? `Error: ${liveErrorMessage}`
-                  : "Fix: Run 'python -m streaming.server --allow-remote-view' or check network and port."}
+                  : "Fix: Run 'python -m streaming.server --allow-remote-view' or verify docker port 8000 mapping."}
               </div>
               <button
                 data-testid="retry-connection-btn"
                 onClick={() => setLiveConnectionState('WAITING')}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '4px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   border: '1px solid var(--color-border)',
                   background: 'var(--color-surface)',
                   cursor: 'pointer',
                   fontSize: '12px',
+                  fontWeight: 600,
                 }}
               >
                 Retry Connection
@@ -471,19 +591,20 @@ function AppContent({
                   marginBottom: '12px',
                 }}
               >
-                Fix: Open the Pairing Panel, pair your Android device via QR code or 6-digit PIN,
+                Fix: Open the Pairing Panel, pair your Android device (Samsung A15 or Redmi 13) via QR code or 6-digit PIN,
                 and begin recording in the 5G-NADS mobile collector.
               </div>
               <button
                 data-testid="open-pairing-btn"
                 onClick={() => setIsPairingOpen(true)}
                 style={{
-                  padding: '6px 12px',
-                  borderRadius: '4px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   border: '1px solid var(--color-border)',
                   background: 'var(--color-surface)',
                   cursor: 'pointer',
                   fontSize: '12px',
+                  fontWeight: 600,
                 }}
               >
                 Open Pairing Panel
@@ -491,15 +612,16 @@ function AppContent({
             </div>
           )}
 
-          {/* Filters & Global Controls Area (T16-008) */}
+          {/* Filters & Global Controls Area (Phase 3.3) */}
           <section
-            aria-label="Filters and session controls"
+            aria-label="filters and session controls"
             style={{
               marginBottom: '20px',
-              padding: '12px 16px',
+              padding: '12px 18px',
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
               borderRadius: '8px',
+              boxShadow: 'var(--shadow-sm)',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
@@ -553,8 +675,8 @@ function AppContent({
                     value={selectedDevice}
                     onChange={e => setSelectedDevice(e.target.value)}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
                       border: '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
@@ -562,7 +684,7 @@ function AppContent({
                     }}
                   >
                     <option value="all">All Devices</option>
-                    {devices.map(d => (
+                    {allDevices.map(d => (
                       <option key={d} value={d}>
                         {d}
                       </option>
@@ -587,8 +709,8 @@ function AppContent({
                     value={selectedOperator}
                     onChange={e => setSelectedOperator(e.target.value)}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
                       border: '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
@@ -621,8 +743,8 @@ function AppContent({
                     value={selectedSessionId}
                     onChange={e => setSelectedSessionId(e.target.value)}
                     style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
                       border: '1px solid var(--color-border)',
                       background: 'var(--color-bg)',
                       color: 'var(--color-text)',
@@ -638,26 +760,33 @@ function AppContent({
                 </div>
 
                 <div style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--color-text)' }}>
-                  Active Subset:{' '}
-                  <strong>
-                    {mode === 'live'
-                      ? activeSessionId
-                        ? `Live (${activeSessionId})`
-                        : 'No active session'
-                      : currentSession?.session_id || selectedSessionId}
-                  </strong>{' '}
-                  ({mode === 'live' ? liveSamples.length : samples.length} samples)
-                  {mode === 'live' && liveSamples.length > 0 && (
+                  <span style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+                    Active Subset:
+                  </span>
+                  {mode === 'live' ? (
                     <>
-                      {' '}· Device:{' '}
-                      <strong>{liveSamples[liveSamples.length - 1].device || 'phone'}</strong>
-                      {' '}· Operator:{' '}
-                      <strong>{liveSamples[liveSamples.length - 1].operator || 'Unknown'}</strong>
+                      Session:{' '}
+                      <strong>
+                        {activeSessionId ? `Live (${activeSessionId})` : 'No active session'}
+                      </strong>{' '}
+                      ({liveSamples.length} samples) · Device:{' '}
+                      <strong>
+                        {liveSamples.length > 0
+                          ? (liveSamples[liveSamples.length - 1].device || 'Samsung Galaxy A15 5G')
+                          : (activeSessionId ? 'Samsung Galaxy A15 5G (Paired)' : 'Waiting for device...')}
+                      </strong>
+                      {liveSamples.length > 0 && (
+                        <>
+                          {' '}· Operator:{' '}
+                          <strong>{liveSamples[liveSamples.length - 1].operator || 'Jio / Airtel'}</strong>
+                        </>
+                      )}
                     </>
-                  )}
-                  {mode !== 'live' && (
+                  ) : (
                     <>
-                      {' '}· Device:{' '}
+                      Session:{' '}
+                      <strong>{currentSession?.session_id || selectedSessionId}</strong>{' '}
+                      ({samples.length} samples) · Device:{' '}
                       <strong>{currentSession?.device || selectedDevice}</strong> · Operator:{' '}
                       <strong>{currentSession?.operator || selectedOperator}</strong>
                     </>
@@ -667,7 +796,7 @@ function AppContent({
             )}
           </section>
 
-          {/* Replay Player Controls (T16-010) */}
+          {/* Replay Player Controls (Phase 3.5) */}
           {mode === 'demo' && (
             <div style={{ marginBottom: '20px' }}>
               <ReplayPlayer />
@@ -681,13 +810,17 @@ function AppContent({
               element={
                 <Overview
                   currentSample={
-                    mode === 'live' && liveSamples.length > 0
-                      ? (liveSamples[liveSamples.length - 1] as unknown as Record<string, unknown>)
+                    mode === 'live'
+                      ? (liveSamples.length > 0
+                          ? (liveSamples[liveSamples.length - 1] as unknown as Record<string, unknown>)
+                          : undefined)
                       : currentSample
                   }
                   prevSample={
-                    mode === 'live' && liveSamples.length > 1
-                      ? (liveSamples[liveSamples.length - 2] as unknown as Record<string, unknown>)
+                    mode === 'live'
+                      ? (liveSamples.length > 1
+                          ? (liveSamples[liveSamples.length - 2] as unknown as Record<string, unknown>)
+                          : undefined)
                       : prevSample
                   }
                   events={mode === 'live' ? liveEvents : events}
@@ -695,11 +828,60 @@ function AppContent({
                 />
               }
             />
-            <Route path="/signals" element={<SignalExplorer />} />
-            <Route path="/cells" element={<CellsNetwork />} />
-            <Route path="/events" element={<EventsDiagnosis />} />
-            <Route path="/stream-health" element={<StreamHealth />} />
-            <Route path="/data-quality" element={<DataQuality />} />
+            <Route
+              path="/signals"
+              element={
+                <SignalExplorer
+                  isLiveMode={mode === 'live'}
+                  liveSamples={mode === 'live' ? (liveSamples as unknown as Record<string, unknown>[]) : undefined}
+                />
+              }
+            />
+            <Route
+              path="/cells"
+              element={
+                <CellsNetwork
+                  liveSamples={mode === 'live' ? liveSamples : undefined}
+                  liveEvents={mode === 'live' ? liveEvents : undefined}
+                  isLiveMode={mode === 'live'}
+                  connectionState={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
+                />
+              }
+            />
+            <Route
+              path="/events"
+              element={
+                <EventsDiagnosis
+                  isLiveMode={mode === 'live'}
+                  events={mode === 'live' ? liveEvents : undefined}
+                  liveSamples={mode === 'live' ? liveSamples : undefined}
+                />
+              }
+            />
+            <Route
+              path="/stream-health"
+              element={
+                <StreamHealth
+                  sessionId={activeSessionId}
+                  liveSamples={mode === 'live' ? liveSamples : undefined}
+                  isLiveMode={mode === 'live'}
+                  connectionState={mode === 'demo' ? 'REPLAY-SOURCE' : liveConnectionState}
+                />
+              }
+            />
+            <Route
+              path="/data-quality"
+              element={
+                <DataQuality
+                  isLiveMode={mode === 'live'}
+                  samplesOverride={
+                    mode === 'live'
+                      ? (liveSamples as unknown as Record<string, unknown>[])
+                      : undefined
+                  }
+                />
+              }
+            />
             <Route path="/about" element={<About />} />
             {PAGES.filter(
               p =>
@@ -746,7 +928,7 @@ function AppContent({
       {/* Mandatory Research Prototype Footer (Guardrail G31) */}
       <footer
         style={{
-          padding: '16px 24px',
+          padding: '14px 24px',
           background: 'var(--color-surface)',
           borderTop: '1px solid var(--color-border)',
           display: 'flex',
@@ -754,11 +936,13 @@ function AppContent({
           alignItems: 'center',
           fontSize: '12px',
           color: 'var(--color-text-muted)',
+          flexWrap: 'wrap',
+          gap: '8px',
         }}
       >
         <div>
           <strong>Notice (G31):</strong> Academic research prototype — not a commercial
-          operator-grade detection tool. Does not control the network.
+          operator-grade detection tool. Passive telemetry only; does not control the cellular network.
         </div>
         <div>
           <span>App: v2.1.0 · Model: if_v1 (Isolation Forest)</span>

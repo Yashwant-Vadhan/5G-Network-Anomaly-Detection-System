@@ -14,10 +14,12 @@
 import { useMemo } from 'react';
 import { useData } from '../data/useData';
 import { DemoBundle } from '../types/contracts';
+import { isValidMeasurement } from '../utils/measurement';
 
 export interface DataQualityProps {
   bundleOverride?: DemoBundle;
   samplesOverride?: Record<string, unknown>[];
+  isLiveMode?: boolean;
 }
 
 interface MissingStats {
@@ -42,13 +44,16 @@ interface DeploymentStats {
   total: number;
 }
 
-export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProps) {
+export function DataQuality({ bundleOverride, samplesOverride, isLiveMode = false }: DataQualityProps) {
   const { bundle: contextBundle, samples: contextSamples } = useData();
 
   const bundle = bundleOverride || contextBundle;
 
   // Extract all samples from bundle when available for full dataset quality view
   const samples = useMemo(() => {
+    if (isLiveMode) {
+      return samplesOverride || [];
+    }
     if (samplesOverride) return samplesOverride;
     if (bundle?.samples?.columns && bundle?.samples?.rows) {
       const cols = bundle.samples.columns;
@@ -61,14 +66,14 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
       });
     }
     return contextSamples;
-  }, [samplesOverride, bundle, contextSamples]);
+  }, [isLiveMode, samplesOverride, bundle, contextSamples]);
 
   // Check if synthetic fixture rows are present in active selection
   const hasSynthetic = useMemo(() => {
     return samples.some(s => Boolean(s.is_synthetic));
   }, [samples]);
 
-  // Aggregate missing values per device
+  // Aggregate missing values per device using central isValidMeasurement
   const missingByDevice = useMemo(() => {
     const devices = Array.from(new Set(samples.map(s => String(s.device || 'Unknown'))));
     const results: MissingStats[] = [];
@@ -80,7 +85,7 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
       const calcMissing = (col: string) => {
         const count = devSamples.filter(s => {
           const val = s[col];
-          return val === null || val === undefined || val === '' || val === 'NA' || val === '<NA>';
+          return !isValidMeasurement(val);
         }).length;
         const pct = total > 0 ? (count / total) * 100 : 0;
         return { count, pct };
@@ -104,14 +109,14 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
     return results;
   }, [samples]);
 
-  // CSI Availability per device
+  // CSI Availability per device using robust measurement validity check
   const csiStats = useMemo(() => {
     const devices = Array.from(new Set(samples.map(s => String(s.device || 'Unknown'))));
     return devices.map(dev => {
       const devSamples = samples.filter(s => String(s.device || 'Unknown') === dev);
       const total = devSamples.length;
       const csiCount = devSamples.filter(s => {
-        return s.csi_available === true || s.csi_rsrp !== null || s.csi_sinr !== null;
+        return s.csi_available === true || isValidMeasurement(s.csi_rsrp) || isValidMeasurement(s.csi_sinr);
       }).length;
       const pct = total > 0 ? (csiCount / total) * 100 : 0;
       return { device: dev, total, csiCount, pct };
@@ -148,6 +153,57 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
     return stats;
   }, [samples]);
 
+  // Overall measurement quality evaluation (Phase 12.1)
+  const qualityEvaluation = useMemo(() => {
+    if (samples.length === 0) {
+      return {
+        status: 'Insufficient',
+        title: 'Measurement quality: Insufficient',
+        description: 'There is not enough valid telemetry to support a reliable analysis of the current interval.',
+        color: 'var(--color-danger, #ef4444)',
+        bg: 'rgba(239, 68, 68, 0.1)',
+        border: 'var(--color-danger, #ef4444)',
+      };
+    }
+
+    const totalSamples = samples.length;
+    const validPrimary = samples.filter(s => isValidMeasurement(s.ss_rsrp) && isValidMeasurement(s.ss_rsrq)).length;
+    const primaryRatio = validPrimary / totalSamples;
+
+    const hasAnyCsi = samples.some(s => s.csi_available === true || isValidMeasurement(s.csi_rsrp));
+
+    if (primaryRatio >= 0.90 && hasAnyCsi) {
+      return {
+        status: 'Good',
+        title: 'Measurement quality: Good',
+        description: 'The required primary and secondary measurements are available for the current analysis.',
+        color: 'var(--color-success, #22c55e)',
+        bg: 'rgba(34, 197, 94, 0.1)',
+        border: 'var(--color-success, #22c55e)',
+      };
+    }
+
+    if (primaryRatio >= 0.70) {
+      return {
+        status: 'Limited',
+        title: 'Measurement quality: Limited',
+        description: 'Primary signal metrics are available, but some advanced measurements (like CSI on certain modems) are unavailable. Standard anomaly detection remains active, but deep beam-level comparisons may be limited.',
+        color: 'var(--color-warning, #eab308)',
+        bg: 'rgba(234, 179, 8, 0.1)',
+        border: 'var(--color-warning, #eab308)',
+      };
+    }
+
+    return {
+      status: 'Insufficient',
+      title: 'Measurement quality: Insufficient',
+      description: 'Key signal metrics (SS-RSRP / SS-RSRQ) are missing across more than 30% of the observations. Analysis may be unreliable.',
+      color: 'var(--color-danger, #ef4444)',
+      bg: 'rgba(239, 68, 68, 0.1)',
+      border: 'var(--color-danger, #ef4444)',
+    };
+  }, [samples]);
+
   // Preprocessing audit log metrics
   const qualityBlock = bundle?.quality as Record<string, unknown> | undefined;
   const prepLog = qualityBlock?.preprocess_log as Record<string, unknown> | undefined;
@@ -174,6 +230,77 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
           Inspect missing metrics, device quirks, deployment modes, and preprocessing logs.
         </p>
       </div>
+
+      {/* Mode Context Banner: Clarifying Live vs Demo Data Quality Purpose */}
+      {isLiveMode ? (
+        <section
+          style={{
+            padding: '14px 18px',
+            borderRadius: '8px',
+            background: 'var(--color-surface)',
+            borderLeft: '4px solid var(--color-primary, #3b82f6)',
+            border: '1px solid var(--color-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)' }}>
+            📡 Live Telemetry Data Quality & Integrity Monitor
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.5 }}>
+            In <strong>Live Mode</strong>, this page audits data integrity in real time across incoming WebSocket telemetry frames ({samples.length} frames received in current session). It monitors whether the connected phone exposes required 5G fields (SS-RSRP, SS-RSRQ, SS-SINR), tracks hardware capabilities (e.g. modem CSI exposure), and verifies Standalone (SA) vs Non-Standalone (NSA) deployment reporting on the live radio network.
+          </div>
+        </section>
+      ) : (
+        <section
+          style={{
+            padding: '14px 18px',
+            borderRadius: '8px',
+            background: 'var(--color-surface)',
+            borderLeft: '4px solid var(--color-primary, #3b82f6)',
+            border: '1px solid var(--color-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-primary)' }}>
+            📊 Offline Dataset Ingestion & Preprocessing Audit
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.5 }}>
+            In <strong>Demo Mode</strong>, this page displays the ingestion audit from the reference field recording dataset (52,654 raw records). It shows clean rows retained, sanitization statistics, and missing-value breakdowns across devices.
+          </div>
+        </section>
+      )}
+
+      {/* Measurement Quality Summary (Phase 12.1) */}
+      <section
+        aria-label="Measurement quality summary"
+        style={{
+          padding: '16px 20px',
+          borderRadius: '8px',
+          background: qualityEvaluation.bg,
+          border: `1px solid ${qualityEvaluation.border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '18px' }}>
+            {qualityEvaluation.status === 'Good' ? '🟢' : qualityEvaluation.status === 'Limited' ? '🟡' : '🔴'}
+          </span>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text)' }}>
+            {qualityEvaluation.title}
+          </span>
+        </div>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary, var(--color-text))', lineHeight: '1.5' }}>
+          {qualityEvaluation.description}
+        </p>
+      </section>
 
       {/* Synthetic Data Banner */}
       {hasSynthetic && (
@@ -453,6 +580,20 @@ export function DataQuality({ bundleOverride, samplesOverride }: DataQualityProp
                 <span style={{ color: 'var(--color-text-muted)' }}>
                   {item.csiCount} / {item.total}
                 </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--color-text-muted)',
+                  marginTop: '8px',
+                  paddingTop: '8px',
+                  borderTop: '1px dashed var(--color-border)',
+                  lineHeight: '1.4',
+                }}
+              >
+                {item.pct === 0
+                  ? 'This device does not expose CSI signals under Android telephony. Primary SS-RSRP/SS-RSRQ monitoring is active and unaffected.'
+                  : 'Provides 3GPP CSI reference signal metrics for advanced beam-level monitoring.'}
               </div>
             </div>
           ))}

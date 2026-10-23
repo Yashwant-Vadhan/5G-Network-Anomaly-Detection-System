@@ -16,7 +16,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../data/useData';
-import { EventRecord, AlertRecord, AlertDelivery } from '../types/contracts';
+import { EventRecord, AlertRecord, AlertDelivery, ScoredSample } from '../types/contracts';
+import { getAnomalyPresentation } from '../utils/anomalyExplanations';
 
 // Closed enum of the five fixed alert decision reasons from DESIGN_v2 / TECH_RULES_v2
 export const ALERT_DECISION_REASONS = [
@@ -70,15 +71,18 @@ export interface EventsDiagnosisProps {
   events?: EventRecord[];
   alerts?: AlertRecord[];
   onAcknowledgeAlert?: (alertId: string) => Promise<boolean> | void;
+  isLiveMode?: boolean;
+  liveSamples?: (ScoredSample | Record<string, unknown>)[];
 }
 
 export const EventsDiagnosis: React.FC<EventsDiagnosisProps> = ({
   events: propEvents,
   alerts: propAlerts,
   onAcknowledgeAlert,
+  isLiveMode = false,
 }) => {
   const { events: contextEvents, samples } = useData();
-  const allEvents = propEvents || contextEvents || [];
+  const allEvents = isLiveMode ? (propEvents || []) : (propEvents || contextEvents || []);
 
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sevFilter, setSevFilter] = useState<string>('all');
@@ -179,6 +183,23 @@ export const EventsDiagnosis: React.FC<EventsDiagnosisProps> = ({
       ? `Provisional — ${rawRecText}`
       : rawRecText || 'Continue standard metric monitoring.';
 
+  // Plain-language user explanation derived from evidence (Phase 10.2)
+  const presentation = useMemo(() => {
+    if (!activeEvent) return null;
+    const raw = activeEvent as unknown as Record<string, unknown>;
+    const isRecovered = String(activeEvent.status || raw.event_status) === 'FINAL';
+
+    return getAnomalyPresentation({
+      anomalyType: String(raw.anomaly_type || raw.anomalyType || activeEvent.anomaly_type || ''),
+      severity: String(raw.severity || activeEvent.max_severity || ''),
+      isRecovered,
+      backendDiagnosis: rawDiagSummary || null,
+      backendRecommendation: rawRecText || null,
+      durationSec: typeof raw.duration_sec === 'number' ? raw.duration_sec : null,
+      sampleCount: activeEvent.sample_count,
+    });
+  }, [activeEvent, rawDiagSummary, rawRecText]);
+
   // Event window sample points for chart
   const eventWindowSamples = useMemo(() => {
     if (!activeEvent || samples.length === 0) return [];
@@ -267,6 +288,33 @@ export const EventsDiagnosis: React.FC<EventsDiagnosisProps> = ({
       data-testid="events-diagnosis-page"
       style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
     >
+      {/* Live Continuous Monitoring Status Banner */}
+      {isLiveMode && allEvents.length === 0 && (
+        <section
+          data-testid="live-monitoring-active-banner"
+          style={{
+            padding: '20px 24px',
+            background: 'var(--color-surface)',
+            border: '1.5px solid #16a34a',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <span style={{ fontSize: '28px' }}>🛡️</span>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 700, color: '#166534' }}>
+              Continuous Anomaly Monitoring Active — 0 Anomalies Detected
+            </h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              The multi-agent detection pipeline is actively analyzing real-time radio telemetry from your connected phone. All measurements are currently within normal operating thresholds. If an anomaly occurs, it will automatically populate below with full root-cause analysis and actionable local LLM guidance.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Header & Filter Controls */}
       <section
         style={{
@@ -607,6 +655,87 @@ export const EventsDiagnosis: React.FC<EventsDiagnosisProps> = ({
                 No telemetry points in active session window.
               </div>
             )}
+          </div>
+
+          {/* User-Oriented Diagnosis & Guidance Hierarchy (Phase 10.2) */}
+          {presentation && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+                padding: '18px 20px',
+                borderRadius: '8px',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              {/* 1. What happened? */}
+              <div>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                  1. What happened?
+                </h4>
+                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-primary)', marginBottom: '4px' }}>
+                  {presentation.humanTitle}
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text)', lineHeight: 1.5 }}>
+                  The detection engine recorded {activeEvent.sample_count} telemetry samples during this event window.
+                </p>
+              </div>
+
+              {/* 2. What might have caused it? */}
+              <div>
+                <h5 style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: 700, color: 'var(--color-text)' }}>
+                  2. What might have caused it?
+                </h5>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                  {presentation.probableCauses}
+                </p>
+              </div>
+
+              {/* 3. What should you do? */}
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '13px',
+                }}
+              >
+                <div>
+                  <span style={{ marginRight: '6px' }}>💡</span>
+                  <strong style={{ color: 'var(--color-primary)' }}>What you can do: </strong>
+                  <span>{presentation.userAction}</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                  <strong>Technical follow-up: </strong>
+                  <span>{presentation.technicalAction}</span>
+                </div>
+              </div>
+
+              {/* 4. Has the problem recovered? */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                <strong style={{ color: 'var(--color-text)' }}>Recovery status: </strong>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 600,
+                    background: isProvisional ? '#fef3c7' : '#dcfce7',
+                    color: isProvisional ? '#92400e' : '#166534',
+                  }}
+                >
+                  {isProvisional ? 'Provisional — Monitoring recovery' : 'Event concluded / Recovered'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Section 5: Technical Evidence & Multi-Agent Reports */}
+          <div style={{ fontSize: '14px', fontWeight: 700, margin: '8px 0 0', color: 'var(--color-text)' }}>
+            Technical Evidence & Agent Reports
           </div>
 
           {/* Multi-Agent Cards Grid */}

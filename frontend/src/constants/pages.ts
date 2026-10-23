@@ -2,43 +2,50 @@ export interface PageConfig {
   path: string;
   label: string;
   desc: string;
+  group: 'MONITORING' | 'NETWORK DETAILS' | 'ADVANCED DIAGNOSTICS';
 }
 
 export const PAGES: PageConfig[] = [
   {
     path: '/overview',
-    label: '1. Overview',
-    desc: 'Diagnostic status, metrics, and multi-agent recommendations',
+    label: 'Overview',
+    desc: 'Connection status, diagnosis, and practical recommendations',
+    group: 'MONITORING',
   },
   {
     path: '/signals',
-    label: '2. Signal Explorer',
-    desc: 'Four-panel stacked time series (SS-RSRP, SS-RSRQ, SS-SINR, IF score)',
-  },
-  {
-    path: '/cells',
-    label: '3. Cells & Network',
-    desc: 'Discrete PCI/NCI transitions and carrier frequency timeline',
+    label: 'Signal Trends',
+    desc: 'Temporal signal strength, quality, and anomaly score trends',
+    group: 'MONITORING',
   },
   {
     path: '/events',
-    label: '4. Events & Diagnosis',
-    desc: 'Diagnosed events, provisional/final states, and multi-agent evidence',
+    label: 'Events & Explanations',
+    desc: 'Diagnosed events, plain-English explanations, and technical evidence',
+    group: 'MONITORING',
+  },
+  {
+    path: '/cells',
+    label: 'Cell & Network',
+    desc: 'Cell transitions, carrier frequency, and handover timeline',
+    group: 'NETWORK DETAILS',
   },
   {
     path: '/stream-health',
-    label: '5. Stream Health',
-    desc:
-      'Latency percentiles, clock skew, sequence completeness, and pipeline diagnostics',
+    label: 'Stream Health',
+    desc: 'Transport latency, clock skew, sequence gaps, and pipeline diagnostics',
+    group: 'ADVANCED DIAGNOSTICS',
   },
   {
     path: '/data-quality',
-    label: '6. Data Quality',
-    desc: 'Preprocess logs, validation drops, and device capability statistics',
+    label: 'Data Quality',
+    desc: 'Measurement completeness, CSI availability, and deployment statistics',
+    group: 'ADVANCED DIAGNOSTICS',
   },
   {
     path: '/about',
-    label: '7. About & Limitations',
-    desc: 'Research positioning, system non-claims, and architectural disclaimers',
+    label: 'About & Limitations',
+    desc: 'Research positioning, system non-claims, privacy, and model metadata',
+    group: 'ADVANCED DIAGNOSTICS',
   },
 ];

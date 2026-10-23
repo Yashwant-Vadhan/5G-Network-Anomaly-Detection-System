@@ -36,6 +36,7 @@ venv/
 coverage.xml
 htmlcov/
 scratch/
+*.zip
 
 # --- Jupyter ---
 .ipynb_checkpoints/
