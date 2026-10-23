@@ -264,8 +264,67 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def is_origin_allowed(
+    origin: str | None,
+    allowed_origins: list[str] | set[str],
+    host: str | None = None,
+    x_forwarded_host: str | None = None,
+) -> bool:
+    """Check if an Origin header (or reverse-proxied Host) matches allowed origins."""
+    if not allowed_origins:
+        return True
+
+    effective_hosts: list[str] = []
+    if host:
+        effective_hosts.append(host.split(":")[0].strip().lower())
+    if x_forwarded_host:
+        effective_hosts.append(x_forwarded_host.split(":")[0].strip().lower())
+
+    normalized_allowed: set[str] = set()
+    allowed_hostnames: set[str] = set()
+    for ao in allowed_origins:
+        ao_clean = ao.strip().rstrip("/")
+        normalized_allowed.add(ao_clean.lower())
+        if "://" in ao_clean:
+            allowed_hostnames.add(ao_clean.split("://", 1)[1].split(":")[0].strip().lower())
+        else:
+            allowed_hostnames.add(ao_clean.split(":")[0].strip().lower())
+
+    if not origin:
+        # If Origin header is omitted (e.g. stripped by reverse proxy / Envoy),
+        # accept if Host or X-Forwarded-Host matches an allowed origin domain.
+        for eh in effective_hosts:
+            if eh in allowed_hostnames:
+                return True
+        return False
+
+    if "," in origin:
+        return any(
+            is_origin_allowed(part.strip(), allowed_origins, host, x_forwarded_host)
+            for part in origin.split(",")
+            if part.strip()
+        )
+
+    orig_clean = origin.strip().rstrip("/").lower()
+    if orig_clean in normalized_allowed:
+        return True
+
+    # Strip default port 443 / 80
+    if orig_clean.endswith(":443") and orig_clean[:-4] in normalized_allowed:
+        return True
+    if orig_clean.endswith(":80") and orig_clean[:-3] in normalized_allowed:
+        return True
+
+    if "://" in orig_clean:
+        orig_hostname = orig_clean.split("://", 1)[1].split(":")[0].strip().lower()
+        if orig_hostname in allowed_hostnames:
+            return True
+
+    return False
+
+
 class OriginEnforcementMiddleware(BaseHTTPMiddleware):
-    """Enforce Origin allow-list for HTTP requests (T18-006)."""
+    """Enforces Contract C8 Origin header validation on cross-origin requests."""
 
     def __init__(self, app: Any, allowed_origins: list[str], is_public: bool = False) -> None:
         super().__init__(app)
@@ -274,8 +333,12 @@ class OriginEnforcementMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         origin = request.headers.get("origin")
+        host = request.headers.get("host")
+        xf_host = request.headers.get("x-forwarded-host")
         if origin:
-            if self.allowed_origins and origin not in self.allowed_origins:
+            if self.allowed_origins and not is_origin_allowed(
+                origin, self.allowed_origins, host, xf_host
+            ):
                 return JSONResponse(
                     status_code=403,
                     content={
@@ -569,8 +632,10 @@ def create_app(
         """Contract C7 phone telemetry ingest WebSocket protocol handler."""
         # 0. Check Origin allow-list if present (T18-006)
         origin = websocket.headers.get("origin")
+        host = websocket.headers.get("host")
+        xf_host = websocket.headers.get("x-forwarded-host")
         if config.allowed_origins and origin:
-            if origin not in config.allowed_origins:
+            if not is_origin_allowed(origin, config.allowed_origins, host, xf_host):
                 await websocket.close(code=4403, reason="Forbidden: Origin not allowed")
                 return
 
@@ -1658,19 +1723,24 @@ def create_app(
         """Live dashboard fan-out WebSocket streaming snapshot, samples, and events (C8)."""
         # Origin allow-list check (T18-006)
         origin = websocket.headers.get("origin")
+        host = websocket.headers.get("host")
+        xf_host = websocket.headers.get("x-forwarded-host")
         if config.allowed_origins:
-            if origin and origin not in config.allowed_origins:
-                await websocket.close(code=4403, reason="Forbidden: Origin not allowed")
-                return
-            if config.mode == "public" and not origin:
-                await websocket.close(
-                    code=4403, reason="Forbidden: Origin header required in public mode"
+            if not is_origin_allowed(origin, config.allowed_origins, host, xf_host):
+                logger.warning(
+                    "websocket_live rejected origin %r (host=%r, xf_host=%r, allowed=%r)",
+                    origin,
+                    host,
+                    xf_host,
+                    config.allowed_origins,
                 )
+                await websocket.close(code=4403, reason="Forbidden: Origin not allowed")
                 return
 
         if not config.allow_remote_view:
             client_host = websocket.client.host if websocket.client else "127.0.0.1"
             if client_host not in ("127.0.0.1", "::1", "localhost", "testclient"):
+                logger.warning("websocket_live rejected non-loopback host %r", client_host)
                 await websocket.close(code=4403, reason="Forbidden: Loopback only")
                 return
 

@@ -59,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
 ENTRYPOINT ["python", "-m", "streaming.server"]
-CMD ["--host", "0.0.0.0", "--port", "8000", "--mode", "public", "--allow-lan"]
+CMD ["--host", "0.0.0.0", "--port", "8000", "--mode", "public", "--allow-lan", "--allow-remote-view"]
