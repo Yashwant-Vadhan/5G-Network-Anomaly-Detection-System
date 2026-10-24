@@ -720,9 +720,102 @@ export const Overview: React.FC<OverviewProps> = ({
               )}
             </div>
           </section>
+
+          {/* Anomaly Detection Scores Card (placed on Left Column for balanced layout) */}
+          <section
+            data-testid="scores-card"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '8px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                color: 'var(--color-text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>🎯</span> ANOMALY DETECTION SCORES
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700 }}>
+                {ifScore !== null && ifScore !== undefined && !isNaN(Number(ifScore)) ? (
+                  <span>
+                    IF Anomaly Score: <strong>{Number(ifScore).toFixed(3)}</strong> / 1.000
+                  </span>
+                ) : (
+                  <span>IF Anomaly Score: <em>N/A (Ineligible)</em></span>
+                )}
+              </div>
+              {isStatisticalOnly && (
+                <div
+                  style={{
+                    fontSize: '11px',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    fontWeight: 600,
+                  }}
+                >
+                  ML-Only Statistical Flag (No Domain Rule Corroboration)
+                </div>
+              )}
+            </div>
+
+            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>
+              ℹ️ <strong>What this means:</strong> The Isolation Forest machine learning model scans 11 network features every second. Scores below 0.60 indicate normal radio variations, while scores above 0.60 indicate an unusual pattern and trigger automated multi-agent diagnosis.
+            </p>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: '12px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--color-border-subtle)',
+                fontSize: '13px',
+              }}
+            >
+              <div>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
+                  Baseline Max |Z| Score
+                </span>
+                <strong style={{ fontSize: '15px' }}>{formatVal(zMax, '', 2)}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
+                  Baseline Flag
+                </span>
+                <strong style={{ fontSize: '14px', color: baseFlag ? '#dc2626' : '#16a34a' }}>
+                  {baseFlag ? 'FLAGGED 🚩' : 'CLEAR'}
+                </strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
+                  IF Score Flag
+                </span>
+                <strong style={{ fontSize: '14px', color: ifFlag ? '#dc2626' : '#16a34a' }}>
+                  {ifFlag ? 'FLAGGED 🚩' : 'CLEAR'}
+                </strong>
+              </div>
+            </div>
+          </section>
         </div>
 
-        {/* Right Column: AI Multi-Agent Diagnostics & Anomaly Scores */}
+        {/* Right Column: AI Multi-Agent Diagnostics & Recommendations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Prominent AI Diagnostics & Local LLM Recommendations Card */}
           <section
@@ -891,99 +984,6 @@ export const Overview: React.FC<OverviewProps> = ({
                 </div>
               </div>
             )}
-          </div>
-        </section>
-
-        {/* Anomaly Detection Scores Card */}
-        <section
-          data-testid="scores-card"
-          style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '8px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              color: 'var(--color-text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span>🎯</span> ANOMALY DETECTION SCORES
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontSize: '18px', fontWeight: 700 }}>
-              {ifScore !== null && ifScore !== undefined && !isNaN(Number(ifScore)) ? (
-                <span>
-                  IF Anomaly Score: <strong>{Number(ifScore).toFixed(3)}</strong> / 1.000
-                </span>
-              ) : (
-                <span>IF Anomaly Score: <em>N/A (Ineligible)</em></span>
-              )}
-            </div>
-            {isStatisticalOnly && (
-              <div
-                style={{
-                  fontSize: '11px',
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  background: '#fef3c7',
-                  color: '#92400e',
-                  fontWeight: 600,
-                }}
-              >
-                ML-Only Statistical Flag (No Domain Rule Corroboration)
-              </div>
-            )}
-          </div>
-
-          <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>
-            ℹ️ <strong>What this means:</strong> The Isolation Forest machine learning model scans 11 network features every second. Scores below 0.60 indicate normal radio variations, while scores above 0.60 indicate an unusual pattern and trigger automated multi-agent diagnosis.
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '12px',
-              paddingTop: '10px',
-              borderTop: '1px solid var(--color-border-subtle)',
-              fontSize: '13px',
-            }}
-          >
-            <div>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
-                Baseline Max |Z| Score
-              </span>
-              <strong style={{ fontSize: '15px' }}>{formatVal(zMax, '', 2)}</strong>
-            </div>
-            <div>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
-                Baseline Flag
-              </span>
-              <strong style={{ fontSize: '14px', color: baseFlag ? '#dc2626' : '#16a34a' }}>
-                {baseFlag ? 'FLAGGED 🚩' : 'CLEAR'}
-              </strong>
-            </div>
-            <div>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block' }}>
-                IF Score Flag
-              </span>
-              <strong style={{ fontSize: '14px', color: ifFlag ? '#dc2626' : '#16a34a' }}>
-                {ifFlag ? 'FLAGGED 🚩' : 'CLEAR'}
-              </strong>
-            </div>
           </div>
         </section>
       </div>
