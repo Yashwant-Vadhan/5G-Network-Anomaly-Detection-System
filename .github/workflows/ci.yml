@@ -115,7 +115,6 @@ jobs:
           tags: |
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:${{ github.sha }}
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:latest
-            5gnads-app:test
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
 
