@@ -86,6 +86,9 @@ jobs:
       contents: read
       actions: write
       id-token: write
+    env:
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
     steps:
       - name: Checkout
@@ -95,7 +98,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Azure Container Registry
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.ACR_PASSWORD != ''
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}
@@ -107,8 +110,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != '' }}
-          load: ${{ secrets.ACR_PASSWORD == '' || github.ref != 'refs/heads/main' }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && env.ACR_PASSWORD != '' }}
+          load: ${{ env.ACR_PASSWORD == '' || github.ref != 'refs/heads/main' }}
           tags: |
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:${{ github.sha }}
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:latest
@@ -117,13 +120,13 @@ jobs:
           cache-to: type=gha,mode=max,ignore-error=true
 
       - name: Azure Login
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AZURE_CREDENTIALS != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.AZURE_CREDENTIALS != ''
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container App
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AZURE_CREDENTIALS != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.AZURE_CREDENTIALS != ''
         uses: azure/cli@v2
         with:
           inlineScript: |
