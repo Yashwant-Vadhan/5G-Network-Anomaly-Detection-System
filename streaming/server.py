@@ -416,7 +416,11 @@ def reap_idle_sessions(app: FastAPI, now: datetime | None = None) -> list[str]:
             continue
         if last_active.tzinfo is None:
             last_active = last_active.replace(tzinfo=UTC)
-        if last_active < cutoff:
+        expires_at = meta.get("expires_at")
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        is_expired_unpaired = (not meta.get("used", False)) and expires_at and now >= expires_at
+        if last_active < cutoff or is_expired_unpaired:
             active_sessions.pop(session_id, None)
             code = meta.get("pairing_code")
             if code and code in app.state.pairing_sessions:
