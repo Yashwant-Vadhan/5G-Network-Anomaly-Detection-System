@@ -160,28 +160,41 @@ curl -i http://localhost:8000/healthz
 1. Login and configure resource group:
    ```bash
    az login
-   az group create --name rg-5gnads --location eastus
-   az acr create --resource-group rg-5gnads --name acr5gnads --sku Basic
+   az group create --name rg-5gnads --location centralindia
+   az acr create --resource-group rg-5gnads --name acr5gnadsyashwant --sku Basic
    ```
-2. Push container image:
+2. Build container image in ACR:
    ```bash
-   az acr build --registry acr5gnads --image 5gnads-app:latest .
+   az acr build --registry acr5gnadsyashwant --image 5gnads-app:latest .
    ```
-3. Create Container App:
+3. Create / Update Container App:
    ```bash
    az containerapp create \
-     --name app-5gnads \
+     --name ca-5gnads \
      --resource-group rg-5gnads \
-     --environment env-5gnads \
-     --image acr5gnads.azurecr.io/5gnads-app:latest \
+     --environment cae-5gnads \
+     --image acr5gnadsyashwant.azurecr.io/5gnads-app:latest \
      --target-port 8000 \
      --ingress external \
-     --min-replicas 0 \
-     --max-replicas 2 \
+     --min-replicas 1 \
+     --max-replicas 3 \
      --env-vars \
        NADS_MODE=public \
-       NADS_ALLOWED_ORIGINS="https://app-5gnads.eastus.azurecontainerapps.io"
+       NADS_ALLOWED_ORIGINS="https://ca-5gnads.wittybay-f8759d93.centralindia.azurecontainerapps.io,http://localhost:8000"
    ```
+
+### Step 4: Automated CI/CD Pipeline (GitHub Actions)
+Continuous Deployment is configured in `.github/workflows/ci.yml`. On every push to the `main` branch, the workflow:
+1. Runs Python quality checks (ruff lint, pytest with coverage).
+2. Runs frontend verification (eslint, vitest, production build).
+3. Authenticates with Azure Container Registry (`acr5gnadsyashwant`).
+4. Builds the multi-stage Docker container and pushes tags `:latest` and `:<commit-sha>`.
+5. Authenticates to Azure and updates the Container App `ca-5gnads` to seamlessly roll out the new revision.
+
+#### Required GitHub Repository Secrets (`Settings -> Secrets and variables -> Actions`):
+- `AZURE_CREDENTIALS`: Service Principal JSON generated for Azure login.
+- `ACR_USERNAME`: Azure Container Registry username (`acr5gnadsyashwant`).
+- `ACR_PASSWORD`: Azure Container Registry admin password.
 
 ---
 

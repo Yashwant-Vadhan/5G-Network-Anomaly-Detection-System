@@ -79,7 +79,7 @@ jobs:
         run: npm run build
 
   container:
-    name: build container image
+    name: build, push and deploy container
     runs-on: ubuntu-latest
     needs: [quality, frontend]
     permissions:
@@ -93,15 +93,47 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build container image
+      - name: Log in to Azure Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}
+          username: ${{ secrets.ACR_USERNAME || 'acr5gnadsyashwant' }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push container image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          push: false
-          load: true
-          tags: 5gnads-app:test
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != '' }}
+          load: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != '') }}
+          tags: |
+            ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:${{ github.sha }}
+            ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:latest
+            5gnads-app:test
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
+
+      - name: Azure Login
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AZURE_CREDENTIALS != ''
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container App
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AZURE_CREDENTIALS != ''
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name ca-5gnads \
+              --resource-group rg-5gnads \
+              --image ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:${{ github.sha }}
+            echo "Deployment triggered. Verifying status..."
+            az containerapp show \
+              --name ca-5gnads \
+              --resource-group rg-5gnads \
+              --query "properties.runningStatus" -o tsv
 
 
