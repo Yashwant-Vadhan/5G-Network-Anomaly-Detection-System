@@ -85,6 +85,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+      id-token: write
 
     steps:
       - name: Checkout
@@ -107,7 +108,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != '' }}
-          load: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.ACR_PASSWORD != '') }}
+          load: ${{ secrets.ACR_PASSWORD == '' || github.ref != 'refs/heads/main' }}
           tags: |
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:${{ github.sha }}
             ${{ secrets.ACR_SERVER || 'acr5gnadsyashwant.azurecr.io' }}/5gnads-app:latest
