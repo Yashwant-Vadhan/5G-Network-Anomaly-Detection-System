@@ -47,6 +47,9 @@ COPY pyproject.toml ./
 # Copy compiled frontend SPA from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
+# Pre-generate pipeline artifacts, processed data, and ensure ML models are verified
+RUN python -m pipelines.run_pipeline --input data/sample --output data/processed
+
 # Create a non-root system user and set ownership
 RUN groupadd -g 10001 nads && \
     useradd -u 10001 -g nads -s /bin/bash -m nads && \

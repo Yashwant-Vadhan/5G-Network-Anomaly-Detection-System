@@ -233,7 +233,18 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to create session (${res.status} ${res.statusText})`);
+        let msg = `Failed to create session (${res.status} ${res.statusText})`;
+        try {
+          const errData = await res.json();
+          if (errData?.error?.message) {
+            msg = `Failed to create session (${res.status}): ${errData.error.message}`;
+          } else if (errData?.detail) {
+            msg = `Failed to create session (${res.status}): ${errData.detail}`;
+          }
+        } catch {
+          // ignore body parse error
+        }
+        throw new Error(msg.trim());
       }
 
       const data: CreateLiveSessionResponse = await res.json();

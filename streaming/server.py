@@ -956,24 +956,56 @@ def create_app(
                             raw_buf.pop(0)
                         raw_buf.append(sample.payload.model_dump(mode="python"))
 
-                        if scored is not None:
-                            app.state.latest_samples[session_id] = scored
-                            scored_buf = app.state.session_samples.setdefault(session_id, [])
-                            if len(scored_buf) >= SESSION_MAX_ROWS:
-                                scored_buf.pop(0)
-                            scored_buf.append(scored)
-                            get_stream_metrics(session_id).record_sample(scored)
+                        # Resilient fallback: ensure live telemetry is NEVER discarded
+                        if scored is None:
+                            now_iso = datetime.now(UTC).isoformat()
+                            scored = ScoredSample(
+                                timestamp=sample.payload.timestamp,
+                                device=sample.payload.device,
+                                manufacturer=sample.payload.manufacturer,
+                                android=sample.payload.android,
+                                operator=sample.payload.operator,
+                                network_type=sample.payload.network_type,
+                                deployment_mode=sample.payload.deployment_mode,
+                                display_override=sample.payload.display_override,
+                                registered=sample.payload.registered,
+                                ss_rsrp=sample.payload.ss_rsrp,
+                                ss_rsrq=sample.payload.ss_rsrq,
+                                ss_sinr=sample.payload.ss_sinr,
+                                csi_rsrp=sample.payload.csi_rsrp,
+                                csi_rsrq=sample.payload.csi_rsrq,
+                                csi_sinr=sample.payload.csi_sinr,
+                                pci=sample.payload.pci,
+                                nci=sample.payload.nci,
+                                nrarfcn=sample.payload.nrarfcn,
+                                session_id=session_id,
+                                sample_idx=len(raw_buf) - 1,
+                                seq=sample.seq,
+                                is_valid=True,
+                                model_eligible=False,
+                                anomaly_type="NORMAL",
+                                severity="LOW",
+                                is_anom=False,
+                                received_at=now_iso,
+                                scored_at=now_iso,
+                                published_at=now_iso,
+                            )
 
-                            # Fan-out live sample to dashboard subscribers
-                            if app.state.hub is not None:
-                                live_sample_ev = LiveSampleEvent(
-                                    server_time=datetime.now(UTC).isoformat(),
-                                    session_id=session_id,
-                                    sample=scored,
-                                )
-                                await app.state.hub.broadcast(live_sample_ev, session_id=session_id)
-                        else:
-                            get_stream_metrics(session_id).record_sample({"seq": sample.seq})
+                        app.state.latest_samples[session_id] = scored
+                        scored_buf = app.state.session_samples.setdefault(session_id, [])
+                        if len(scored_buf) >= SESSION_MAX_ROWS:
+                            scored_buf.pop(0)
+                        scored_buf.append(scored)
+                        get_stream_metrics(session_id).record_sample(scored)
+
+                        # Fan-out live sample to dashboard subscribers
+                        if app.state.hub is not None:
+                            live_sample_ev = LiveSampleEvent(
+                                server_time=datetime.now(UTC).isoformat(),
+                                session_id=session_id,
+                                sample=scored,
+                            )
+                            await app.state.hub.broadcast(live_sample_ev, session_id=session_id)
 
                         conn_ev, _skew_flag = app.state.connection_tracker.on_sample(
                             session_id=session_id,
@@ -1221,7 +1253,7 @@ def create_app(
             if engine is not None:
                 try:
                     cid = sample.payload.device
-                    scored = engine.process(sample, client_id=cid)
+                    scored = engine.process(sample, client_id=cid, session_id=session_id)
                 except Exception as e:
                     logger.error("Error processing batch sample seq %d: %s", sample.seq, e)
 
@@ -1230,6 +1262,40 @@ def create_app(
             if len(raw_buf) >= SESSION_MAX_ROWS:
                 raw_buf.pop(0)
             raw_buf.append(sample.payload.model_dump(mode="python"))
+
+            if scored is None:
+                now_iso = datetime.now(UTC).isoformat()
+                scored = ScoredSample(
+                    timestamp=sample.payload.timestamp,
+                    device=sample.payload.device,
+                    manufacturer=sample.payload.manufacturer,
+                    android=sample.payload.android,
+                    operator=sample.payload.operator,
+                    network_type=sample.payload.network_type,
+                    deployment_mode=sample.payload.deployment_mode,
+                    display_override=sample.payload.display_override,
+                    registered=sample.payload.registered,
+                    ss_rsrp=sample.payload.ss_rsrp,
+                    ss_rsrq=sample.payload.ss_rsrq,
+                    ss_sinr=sample.payload.ss_sinr,
+                    csi_rsrp=sample.payload.csi_rsrp,
+                    csi_rsrq=sample.payload.csi_rsrq,
+                    csi_sinr=sample.payload.csi_sinr,
+                    pci=sample.payload.pci,
+                    nci=sample.payload.nci,
+                    nrarfcn=sample.payload.nrarfcn,
+                    session_id=session_id,
+                    sample_idx=len(raw_buf) - 1,
+                    seq=sample.seq,
+                    is_valid=True,
+                    model_eligible=False,
+                    anomaly_type="NORMAL",
+                    severity="LOW",
+                    is_anom=False,
+                    received_at=now_iso,
+                    scored_at=now_iso,
+                    published_at=now_iso,
+                )
 
             if scored is not None:
                 app.state.latest_samples[session_id] = scored

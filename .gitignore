@@ -14,6 +14,8 @@ data/live/*
 models/*
 !models/.gitkeep
 !models/*.meta.example.json
+!models/*.joblib
+!models/*.meta.json
 
 # --- Secrets: none are required for the MVP; any future key uses an env var ---
 .env
