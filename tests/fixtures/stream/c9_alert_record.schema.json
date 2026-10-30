@@ -103,10 +103,12 @@
       "type": "string"
     },
     "policy": {
+      "additionalProperties": true,
       "title": "Policy",
       "type": "object"
     },
     "recommendation": {
+      "additionalProperties": true,
       "title": "Recommendation",
       "type": "object"
     },
