@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,7 +50,7 @@ fun PairingScreen(
     pairingClientFactory: (url: String) -> PairingClient = { url -> PairingClient(url) },
     tokenStorageSaver: (token: String) -> Unit = {}
 ) {
-    var serverUrl by remember { mutableStateOf("http://localhost:8000") }
+    var serverUrl by remember { mutableStateOf("https://ca-5gnads.wittybay-f8759d93.centralindia.azurecontainerapps.io") }
     var pairingCode by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var pairingResult by remember { mutableStateOf<PairingResult?>(null) }
@@ -86,6 +88,24 @@ fun PairingScreen(
                     .semantics { contentDescription = "Server URL input" },
                 singleLine = true
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { serverUrl = "https://ca-5gnads.wittybay-f8759d93.centralindia.azurecontainerapps.io" },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Azure Cloud", style = MaterialTheme.typography.labelSmall)
+                }
+                OutlinedButton(
+                    onClick = { serverUrl = "http://localhost:8000" },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Localhost", style = MaterialTheme.typography.labelSmall)
+                }
+            }
 
             OutlinedTextField(
                 value = pairingCode,
@@ -148,15 +168,18 @@ fun PairingScreen(
                     isLoading = true
                     pairingResult = null
                     val client = pairingClientFactory(serverUrl)
+                    val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
                     Thread {
                         val result = client.pair(pairingCode)
-                        isLoading = false
-                        pairingResult = result
+                        mainHandler.post {
+                            isLoading = false
+                            pairingResult = result
 
-                        if (result is PairingResult.Success) {
-                            // Securely store token without logging
-                            tokenStorageSaver(result.ingestToken)
-                            onPairSuccess(result.sessionId, result.ingestToken, serverUrl, result.wsUrl)
+                            if (result is PairingResult.Success) {
+                                // Securely store token without logging
+                                tokenStorageSaver(result.ingestToken)
+                                onPairSuccess(result.sessionId, result.ingestToken, serverUrl, result.wsUrl)
+                            }
                         }
                     }.start()
                 },

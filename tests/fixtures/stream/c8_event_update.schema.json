@@ -56,7 +56,6 @@
         "cell": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -69,7 +68,6 @@
         "cell_report": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -82,7 +80,6 @@
         "diagnosis": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -113,14 +110,12 @@
           "title": "Explanation Text"
         },
         "ml": {
-          "additionalProperties": true,
           "title": "Ml",
           "type": "object"
         },
         "network": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -133,7 +128,6 @@
         "network_report": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -146,7 +140,6 @@
         "recommendation": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -167,7 +160,6 @@
         "signal": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -180,7 +172,6 @@
         "signal_report": {
           "anyOf": [
             {
-              "additionalProperties": true,
               "type": "object"
             },
             {

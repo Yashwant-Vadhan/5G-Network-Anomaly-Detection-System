@@ -69,6 +69,7 @@ from streaming.schema import (
     Ack,
     AlertRecord,
     BatchIngestResponse,
+    ConnectionEvent,
     CreateLiveSessionResponse,
     DeleteLiveSessionResponse,
     ErrorDetail,
@@ -86,6 +87,7 @@ from streaming.schema import (
     LiveEventOpen,
     LiveEventUpdate,
     LiveSampleEvent,
+    LiveSessionStatusResponse,
     LiveSessionTicketResponse,
     MetricsResponse,
     ModelInfoResponse,
@@ -1606,6 +1608,16 @@ def create_app(
         meta["ingest_token"] = ingest_token
         app.state.session_ingest_tokens[ingest_token] = session_id
 
+        # Broadcast pairing event to hub so viewer WebSocket gets notified immediately
+        if getattr(app.state, "hub", None) is not None:
+            paired_ev = ConnectionEvent(
+                server_time=now_dt.isoformat(),
+                session_id=session_id,
+                state="WAITING",
+                source="phone",
+            )
+            await app.state.hub.broadcast(paired_ev, session_id=session_id)
+
         return PairResponse(
             session_id=session_id,
             ingest_token=ingest_token,
@@ -1635,6 +1647,37 @@ def create_app(
         return LiveSessionTicketResponse(
             ticket=ticket,
             expires_at=expires_at.isoformat(),
+        )
+
+    @app.get(
+        "/api/v1/live-sessions/{session_id}/status",
+        response_model=LiveSessionStatusResponse,
+    )
+    async def get_live_session_status(
+        session_id: str, request: Request
+    ) -> LiveSessionStatusResponse:
+        """Check live session pairing and connectivity status (C10)."""
+        verify_viewer_auth(request, session_id)
+        if session_id not in app.state.active_live_sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        meta = app.state.active_live_sessions[session_id]
+        client_id = meta.get("client_id")
+        is_paired = bool(meta.get("used", False))
+        is_connected = bool(client_id and client_id in app.state.active_ingest_clients)
+        sample_count = len(app.state.session_samples.get(session_id, []))
+        expires_at = meta.get("expires_at")
+        expires_at_iso = (
+            expires_at.isoformat() if hasattr(expires_at, "isoformat") else str(expires_at or "")
+        )
+
+        return LiveSessionStatusResponse(
+            session_id=session_id,
+            is_paired=is_paired,
+            is_connected=is_connected,
+            client_id=client_id,
+            sample_count=sample_count,
+            expires_at=expires_at_iso,
         )
 
     @app.delete(

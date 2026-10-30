@@ -1,0 +1,46 @@
+{
+  "description": "Status payload for a live session (Contract C10).",
+  "properties": {
+    "client_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Client Id"
+    },
+    "expires_at": {
+      "title": "Expires At",
+      "type": "string"
+    },
+    "is_connected": {
+      "title": "Is Connected",
+      "type": "boolean"
+    },
+    "is_paired": {
+      "title": "Is Paired",
+      "type": "boolean"
+    },
+    "sample_count": {
+      "default": 0,
+      "title": "Sample Count",
+      "type": "integer"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "is_paired",
+    "is_connected",
+    "expires_at"
+  ],
+  "title": "LiveSessionStatusResponse",
+  "type": "object"
+}

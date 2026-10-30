@@ -57,6 +57,7 @@ from streaming.schema import (  # noqa: E402
     LiveEventOpen,
     LiveEventUpdate,
     LiveSampleEvent,
+    LiveSessionStatusResponse,
     LiveSessionTicketResponse,
     MetricsResponse,
     ModelInfoResponse,
@@ -513,6 +514,18 @@ def get_golden_definitions() -> list[dict[str, Any]]:
             ),
         },
         {
+            "name": "c10_live_session_status_response",
+            "model": LiveSessionStatusResponse,
+            "example": LiveSessionStatusResponse(
+                session_id="live-abc123def456",
+                is_paired=True,
+                is_connected=False,
+                client_id="phone-collector",
+                sample_count=42,
+                expires_at="2026-10-09T10:15:30Z",
+            ),
+        },
+        {
             "name": "c10_live_session_ticket_response",
             "model": LiveSessionTicketResponse,
             "example": LiveSessionTicketResponse(
@@ -908,6 +921,15 @@ export interface PairResponse {
   ingest_token: string;
   ws_url: string;
   limits: IngestLimits;
+}
+
+export interface LiveSessionStatusResponse {
+  session_id: string;
+  is_paired: boolean;
+  is_connected: boolean;
+  client_id?: string | null;
+  sample_count: number;
+  expires_at: string;
 }
 
 export interface LiveSessionTicketResponse {

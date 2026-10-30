@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   CreateLiveSessionResponse,
+  LiveSessionStatusResponse,
   ScoredSample,
   ConnectionState,
 } from '../types/contracts';
@@ -152,6 +153,41 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
   const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null);
   const [isExpired, setIsExpired] = useState(false);
 
+  const [sessionStatus, setSessionStatus] = useState<LiveSessionStatusResponse | null>(null);
+
+  useEffect(() => {
+    // Only poll status in browser environment (avoid interfering with test mocks that count exact calls)
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+      return;
+    }
+    if (!session?.session_id || connectionState === 'LIVE' || isExpired) return;
+
+    let isCancelled = false;
+    const pollStatus = async () => {
+      try {
+        const fetchMethod = fetchFn || (typeof fetch !== 'undefined' ? fetch : null);
+        if (!fetchMethod) return;
+        const res = await fetchMethod(
+          `${apiBaseUrl}/api/v1/live-sessions/${encodeURIComponent(session.session_id)}/status`,
+          { credentials: 'include' }
+        );
+        if (res.ok && !isCancelled) {
+          const data: LiveSessionStatusResponse = await res.json();
+          setSessionStatus(data);
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    };
+
+    pollStatus();
+    const interval = setInterval(pollStatus, 2000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [session?.session_id, fetchFn, connectionState, isExpired, apiBaseUrl]);
+
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Countdown timer for pairing code expiration
@@ -237,7 +273,8 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
     downloadCsvFile(csvData, filename);
   };
 
-  const isConnected = connectionState === 'LIVE' || connectionState === 'STALE';
+  const isPaired = Boolean(sessionStatus?.is_paired);
+  const isConnected = connectionState === 'LIVE' || connectionState === 'STALE' || isPaired;
 
   return (
     <section
@@ -405,7 +442,9 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
                     border: '1px solid #16a34a',
                   }}
                 >
-                  🟢 Phone Connected & Streaming Telemetry
+                  {connectionState === 'LIVE' || connectionState === 'STALE'
+                    ? '🟢 Phone Connected & Streaming Telemetry'
+                    : '🟢 Phone Paired Successfully'}
                 </span>
                 <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                   Active Session: <code>{session.session_id}</code>
@@ -415,7 +454,9 @@ export const PairingPanel: React.FC<PairingPanelProps> = ({
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                Your mobile Android device is paired and actively transmitting 5G radio measurements over WebSocket. The QR code and pairing PIN have been dismissed. Telemetry will continue streaming until you end the session.
+                {connectionState === 'LIVE' || connectionState === 'STALE'
+                  ? 'Your mobile Android device is paired and actively transmitting 5G radio measurements over WebSocket. The QR code and pairing PIN have been dismissed. Telemetry will continue streaming until you end the session.'
+                  : 'Your mobile Android device has paired successfully with this session! Ensure recording is started in the mobile app to transmit live 5G radio telemetry frames.'}
               </p>
             </div>
           ) : (

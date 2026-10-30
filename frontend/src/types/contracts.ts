@@ -375,6 +375,15 @@ export interface PairResponse {
   limits: IngestLimits;
 }
 
+export interface LiveSessionStatusResponse {
+  session_id: string;
+  is_paired: boolean;
+  is_connected: boolean;
+  client_id?: string | null;
+  sample_count: number;
+  expires_at: string;
+}
+
 export interface LiveSessionTicketResponse {
   ticket: string;
   expires_at: string;

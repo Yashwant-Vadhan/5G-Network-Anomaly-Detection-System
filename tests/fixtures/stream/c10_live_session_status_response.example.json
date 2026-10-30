@@ -1,0 +1,8 @@
+{
+  "client_id": "phone-collector",
+  "expires_at": "2026-10-09T10:15:30Z",
+  "is_connected": false,
+  "is_paired": true,
+  "sample_count": 42,
+  "session_id": "live-abc123def456"
+}

@@ -138,5 +138,29 @@ jobs:
               --name ca-5gnads \
               --resource-group rg-5gnads \
               --query "properties.runningStatus" -o tsv
+  android:
+    name: build android collector apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android-collector/5GNetworkTester/gradlew
+
+      - name: Build Debug APK
+        working-directory: android-collector/5GNetworkTester
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: 5GNetworkTester-Debug-APK
+          path: android-collector/5GNetworkTester/app/build/outputs/apk/debug/app-debug.apk
 

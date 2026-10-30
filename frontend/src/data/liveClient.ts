@@ -10,6 +10,7 @@
  */
 
 import {
+  ConnectionEvent,
   ConnectionState,
   EventRecord,
   LiveEventClosed,
@@ -87,6 +88,7 @@ export interface LiveClientConfig {
 
 export type LiveClientListener = {
   onStateChange?: (state: ConnectionState) => void;
+  onConnection?: (conn: ConnectionEvent) => void;
   onSample?: (sample: ScoredSample) => void;
   onSnapshot?: (snapshot: SnapshotEvent) => void;
   onEvent?: (event: EventRecord, action: 'OPEN' | 'UPDATE' | 'CLOSED') => void;
@@ -292,6 +294,12 @@ export class LiveClient {
         this.setState(snap.state || 'LIVE');
       }
       for (const l of this.listeners) l.onSnapshot?.(snap);
+    } else if (type === 'connection') {
+      const conn = msg as unknown as ConnectionEvent;
+      if (conn.state) {
+        this.setState(conn.state);
+      }
+      for (const l of this.listeners) l.onConnection?.(conn);
     } else if (type === 'sample') {
       const ev = msg as unknown as LiveSampleEvent;
       this.currentSessionId = ev.session_id;

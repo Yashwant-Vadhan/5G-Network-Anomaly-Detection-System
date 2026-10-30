@@ -818,6 +818,19 @@ class PairResponse(BaseModel):
     limits: IngestLimits = Field(default_factory=IngestLimits)
 
 
+class LiveSessionStatusResponse(BaseModel):
+    """Status payload for a live session (Contract C10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    session_id: str
+    is_paired: bool
+    is_connected: bool
+    client_id: str | None = None
+    sample_count: int = 0
+    expires_at: str
+
+
 class LiveSessionTicketResponse(BaseModel):
     """Single-use live WebSocket ticket for browser viewer (Contract C10)."""
 

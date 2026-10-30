@@ -158,6 +158,9 @@ class MainActivity : ComponentActivity() {
                         onPairSuccess = { sessionId, ingestToken, serverUrl, wsUrl ->
                             initStreamClient(serverUrl, ingestToken, wsUrl)
                             currentScreen = AppScreen.HOME
+                            if (!collecting) {
+                                startCollection()
+                            }
                         },
                         onBack = { currentScreen = AppScreen.HOME },
                         tokenStorageSaver = { token ->

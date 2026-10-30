@@ -18,6 +18,7 @@ from ml.config import PAIRING_CODE_ALPHABET, PAIRING_CODE_LENGTH
 from streaming.schema import (
     CreateLiveSessionResponse,
     DeleteLiveSessionResponse,
+    LiveSessionStatusResponse,
     LiveSessionTicketResponse,
     PairRequest,
     PairResponse,
@@ -32,6 +33,7 @@ def test_c10_golden_examples_exist_and_validate() -> None:
         ("c10_create_live_session_response", CreateLiveSessionResponse),
         ("c10_pair_request", PairRequest),
         ("c10_pair_response", PairResponse),
+        ("c10_live_session_status_response", LiveSessionStatusResponse),
         ("c10_live_session_ticket_response", LiveSessionTicketResponse),
         ("c10_delete_live_session_response", DeleteLiveSessionResponse),
     ]
@@ -227,3 +229,39 @@ def test_ticket_and_delete_live_session() -> None:
         headers={"Authorization": f"Bearer {session_id}"},
     )
     assert after_res.status_code == 404
+
+
+def test_live_session_status_endpoint() -> None:
+    """GET /api/v1/live-sessions/{session_id}/status returns pairing & connection state (C10)."""
+    app = create_app(ServerConfig(ingest_token="global-secret", allow_remote_view=True))
+    client = TestClient(app)
+
+    # 1. Create session (sets viewer cookie on client)
+    create_res = client.post("/api/v1/live-sessions")
+    assert create_res.status_code == 200
+    session_id = create_res.json()["session_id"]
+    code = create_res.json()["pairing_code"]
+
+    # 2. Before pairing
+    status_res = client.get(f"/api/v1/live-sessions/{session_id}/status")
+    assert status_res.status_code == 200
+    data = status_res.json()
+    assert data["session_id"] == session_id
+    assert data["is_paired"] is False
+    assert data["is_connected"] is False
+    assert data["sample_count"] == 0
+
+    # 3. Pair device
+    pair_res = client.post(
+        "/api/v1/pair",
+        json={"pairing_code": code, "client_id": "test-phone", "app_version": "2.0.0"},
+    )
+    assert pair_res.status_code == 200
+
+    # 4. After pairing
+    status_res_after = client.get(f"/api/v1/live-sessions/{session_id}/status")
+    assert status_res_after.status_code == 200
+    data_after = status_res_after.json()
+    assert data_after["session_id"] == session_id
+    assert data_after["is_paired"] is True
+    assert data_after["client_id"] == "test-phone"
