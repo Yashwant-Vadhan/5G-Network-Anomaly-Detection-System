@@ -47,8 +47,8 @@ COPY pyproject.toml ./
 # Copy compiled frontend SPA from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Pre-generate pipeline artifacts, processed data, and ensure ML models are verified
-RUN python -m pipelines.run_pipeline --input data/sample --output data/processed
+# Verify ML model artifacts exist and can be loaded
+RUN python -c "import joblib; joblib.load('models/if_v1.joblib'); joblib.load('models/scaler.joblib'); print('Models verified successfully')"
 
 # Create a non-root system user and set ownership
 RUN groupadd -g 10001 nads && \
