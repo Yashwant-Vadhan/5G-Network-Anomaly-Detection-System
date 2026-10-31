@@ -283,8 +283,11 @@ class EventTracker:
                 prev_sev = self._current_event.severity
 
                 self._current_samples.append(s_dict)
-                sample_types = [s.get("anomaly_type", "NORMAL") for s in self._current_samples]
-                sample_sevs = [s.get("severity", "LOW") for s in self._current_samples]
+
+                # Determine active anomaly type and severity over trailing window (up to 10 samples)
+                recent_window = self._current_samples[-10:]
+                sample_types = [s.get("anomaly_type", "NORMAL") for s in recent_window]
+                sample_sevs = [s.get("severity", "LOW") for s in recent_window]
 
                 updated_atype = get_highest_precedence_type(sample_types)
                 updated_sev = get_max_severity(sample_sevs)
@@ -302,8 +305,15 @@ class EventTracker:
                     }
                 )
 
-                # Re-diagnose if type or severity changed
-                if updated_atype != prev_atype or updated_sev != prev_sev:
+                # Re-diagnose if type/severity changed or periodically every 5 samples
+                sample_count = len(self._current_samples)
+                should_reddiagnose = (
+                    updated_atype != prev_atype
+                    or updated_sev != prev_sev
+                    or (sample_count >= 5 and sample_count % 5 == 0)
+                )
+
+                if should_reddiagnose:
                     self._current_event = self._diagnose_event(
                         updated_event, "PROVISIONAL", scores_df
                     )

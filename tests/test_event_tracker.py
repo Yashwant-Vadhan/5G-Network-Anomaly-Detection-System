@@ -167,3 +167,76 @@ def test_provisional_event_metadata_update():
     )
     assert updated.diagnosis["summary"] == "Gradual radio degradation"
     assert updated.alert_decision.alerted is True
+
+
+def test_event_tracker_periodic_rediagnosis_and_type_adaptation():
+    """Developing provisional events refresh diagnoses periodically and adapt type to recent window."""
+    tracker = EventTracker(session_id="sm-a156e-1", device="SM-A156E", close_gap_samples=10)
+
+    # 1. First sample: COMBINED_ANOMALY
+    tracker.process_sample(
+        {
+            "timestamp": "2026-10-09T10:00:00",
+            "device": "SM-A156E",
+            "anomaly_type": "COMBINED_ANOMALY",
+            "severity": "HIGH",
+            "is_anom": True,
+            "ss_rsrp": -115.0,
+            "pci": 324,
+            "seq": 1,
+        }
+    )
+    assert tracker.active_event is not None
+    assert tracker.active_event.anomaly_type == "COMBINED_ANOMALY"
+    assert tracker.active_event.ml["sample_count"] == 1
+
+    # 2. Add samples 2..4: unchanged type/severity, sample_count < 5
+    for i in range(2, 5):
+        tracker.process_sample(
+            {
+                "timestamp": f"2026-10-09T10:00:{i:02d}",
+                "device": "SM-A156E",
+                "anomaly_type": "COMBINED_ANOMALY",
+                "severity": "HIGH",
+                "is_anom": True,
+                "ss_rsrp": -115.0,
+                "pci": 324,
+                "seq": i,
+            }
+        )
+    assert tracker.active_event.ml["sample_count"] == 4
+
+    # 3. Sample 5: hits periodic cadence (sample_count % 5 == 0) -> re-diagnoses
+    action, evt5 = tracker.process_sample(
+        {
+            "timestamp": "2026-10-09T10:00:05",
+            "device": "SM-A156E",
+            "anomaly_type": "COMBINED_ANOMALY",
+            "severity": "HIGH",
+            "is_anom": True,
+            "ss_rsrp": -116.0,
+            "pci": 324,
+            "seq": 5,
+        }
+    )
+    assert action == "UPDATE"
+    assert evt5.ml["sample_count"] == 5
+
+    # 4. Stream 10 more samples with PERSISTENT_POOR_QUALITY on cell 613
+    for i in range(6, 16):
+        tracker.process_sample(
+            {
+                "timestamp": f"2026-10-09T10:00:{i:02d}",
+                "device": "SM-A156E",
+                "anomaly_type": "PERSISTENT_POOR_QUALITY",
+                "severity": "HIGH",
+                "is_anom": True,
+                "ss_rsrp": -111.0,
+                "pci": 613,
+                "seq": i,
+            }
+        )
+
+    # Recent trailing window (last 10 samples) is now all PERSISTENT_POOR_QUALITY
+    assert tracker.active_event.anomaly_type == "PERSISTENT_POOR_QUALITY"
+    assert tracker.active_event.ml["sample_count"] == 15
