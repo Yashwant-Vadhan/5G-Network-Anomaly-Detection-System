@@ -17,6 +17,7 @@
       "type": "string"
     },
     "thresholds": {
+      "additionalProperties": true,
       "title": "Thresholds",
       "type": "object"
     }
